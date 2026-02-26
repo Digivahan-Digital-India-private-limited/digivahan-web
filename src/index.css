@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in-up 520ms ease-out both;
+}
+
+.animate-float {
+  animation: soft-float 4.5s ease-in-out infinite;
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-slide {
+  animation: slide 15s linear infinite;
+}
+
+.slider-wrapper {
+  width: 100%;
+  overflow: hidden;
+}
+
+.slider-track {
+  display: flex;
+  gap: 15px; 
+  width: max-content;
+  animation: slide 20s linear infinite;
+}
+
+.slider-image {
+  width: 80vw; /* thoda chhota taaki gap dikhe */
+  max-height: 500px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 5px;
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+
