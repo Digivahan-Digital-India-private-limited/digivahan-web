@@ -239,7 +239,7 @@ const SendNotificationpage = () => {
         seen_status: false,
       };
 
-      await axios.post("http://localhost:3000/api/notifications/send", payload);
+      await axios.post("https://api.digivahan.in/api/notifications/send", payload);
 
       if (!lockNotifications) {
         setLockNotifications(true); // first successful send ke baad disable

@@ -20,7 +20,7 @@ const SmsTabs = ({ setshowSmsPopup, userId, issueType }) => {
       };
 
       await axios.post(
-        "http://localhost:3000/api/send/sms-notification",
+        "https://api.digivahan.in/api/send/sms-notification",
         payload
       );
 
