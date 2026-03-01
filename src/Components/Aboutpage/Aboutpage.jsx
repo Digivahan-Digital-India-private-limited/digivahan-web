@@ -115,6 +115,79 @@ const Aboutpage = () => {
         </div>
       </section>
 
+      {/* ---- Founder's Message Section ---- */}
+      <section className="max-w-6xl mx-auto my-8 px-3">
+        <div className="relative bg-gradient-to-br from-yellow-50 via-white to-green-50 border border-yellow-200 rounded-3xl overflow-hidden shadow-lg flex flex-col md:flex-row animate-fade-in" style={{ minHeight: 480 }}>
+
+          {/* Decorative bottom-right accent */}
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-green-400 opacity-10 rounded-full translate-x-24 translate-y-24 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-yellow-400 opacity-10 rounded-full translate-x-16 -translate-y-16 pointer-events-none" />
+
+          {/* ── LEFT: full-height arc image ── */}
+          <div
+            className="relative flex-shrink-0 md:w-2/5 w-full bg-yellow-50 flex items-center justify-center"
+            style={{
+              clipPath: "ellipse(92% 50% at 0% 50%)",
+            }}
+          >
+            <img
+              src="/Sandeep Sir.jpeg"
+              alt="Sandeep Rathor – Founder & CEO"
+              className="w-full h-full object-contain object-bottom"
+              style={{ minHeight: 420, maxHeight: 600 }}
+              loading="lazy"
+            />
+            {/* name badge pinned at bottom of image */}
+            <div className="absolute bottom-6 left-4 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow">
+              <p className="font-bold text-gray-900 text-sm leading-tight">Sandeep Rathor</p>
+              <p className="text-xs text-yellow-600 font-medium">Founder &amp; CEO</p>
+            </div>
+          </div>
+
+          {/* ── RIGHT: message content ── */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-4 px-7 py-10 md:px-10 md:py-12 pr-6 md:pr-10 z-10 overflow-hidden">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-yellow-600 mb-1">🌟 Founder's Message</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-snug">
+                Leading Innovation with Purpose
+              </h2>
+            </div>
+
+            <span className="block text-6xl leading-none text-yellow-300 font-serif select-none">&ldquo;</span>
+
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed -mt-4">
+              At Digivahan Digital India Pvt. Ltd., our journey began with a simple yet powerful
+              vision — to make vehicle-related services smarter, more transparent, and easily
+              accessible for every Indian citizen.
+            </p>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              As the Founder, I strongly believe that technology should simplify lives, not
+              complicate them. With the rapid growth of digital transformation in India, there was
+              a clear need for a reliable and secure platform dedicated to vehicle management and
+              verification services. Digivahan was created to bridge that gap.
+            </p>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              Our mission is to build a seamless ecosystem where vehicle owners, authorities, and
+              citizens can connect through trust-driven digital solutions. From QR-based vehicle
+              identification to real-time verification services, we are committed to delivering
+              innovation with integrity.
+            </p>
+            <p className="text-gray-700 text-sm sm:text-base leading-relaxed font-medium">
+              We are not just building a platform — we are building a movement toward safer roads,
+              smarter documentation, and a digitally empowered India.
+            </p>
+            <p className="text-gray-500 text-sm italic">
+              Thank you for being part of our journey.
+            </p>
+
+            <div className="flex items-center gap-3 pt-1">
+              <div className="h-px flex-1 bg-yellow-200" />
+              <span className="text-yellow-600 font-semibold text-sm">— Sandeep Rathor</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ---- Third Section ---- */}
       <section className="max-w-6xl mx-auto py-3 px-2 flex flex-col md:flex-row gap-8 md:gap-12 items-start">
         {/* Left: Vision + Mission */}

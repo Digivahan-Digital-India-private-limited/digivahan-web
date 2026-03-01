@@ -1,6 +1,5 @@
 import React from "react";
 import { Helmet } from "react-helmet";
-import colImage from "../../assets/Col.svg";
 import { Link } from "react-router-dom";
 import Logo from "../../assets/logo.png"
 
@@ -66,14 +65,72 @@ const Heropage = () => {
             </div>
           </section>
 
-          {/* Right Image */}
+          {/* Right Image – animated rings + orbiting dots */}
           <aside className="flex-1 flex justify-center">
-            <img
-              src={colImage}
-              alt="Scan Digivahan QR to access vehicle details"
-              className="w-full max-w-sm sm:max-w-md"
-              loading="lazy"
-            />
+            <div className="relative flex items-center justify-center" style={{ width: 420, height: 460 }}>
+
+              {/* Outer ring (slow 18s) — carries yellow dot (left) + green dot (top-right) */}
+              <div
+                className="absolute inset-0 flex items-center justify-center animate-spin-cw-slow"
+                style={{ pointerEvents: "none" }}
+              >
+                <div
+                  className="absolute rounded-full border-2 border-dashed border-gray-300"
+                  style={{ width: 370, height: 370, opacity: 0.6 }}
+                />
+                {/* yellow ball */}
+                <div
+                  className="absolute rounded-full shadow-md"
+                  style={{
+                    width: 20, height: 20,
+                    background: "#F5C518",
+                    left: "50%", top: "50%",
+                    transform: "translate(calc(-50% - 185px), -50%)",
+                  }}
+                />
+                {/* green ball top-right */}
+                <div
+                  className="absolute rounded-full shadow-md"
+                  style={{
+                    width: 16, height: 16,
+                    background: "#34C759",
+                    left: "50%", top: "50%",
+                    transform: "translate(calc(-50% + 131px), calc(-50% - 131px))",
+                  }}
+                />
+              </div>
+
+              {/* Inner ring (faster 10s) — carries green ball (bottom-right) */}
+              <div
+                className="absolute inset-0 flex items-center justify-center animate-spin-cw"
+                style={{ pointerEvents: "none" }}
+              >
+                <div
+                  className="absolute rounded-full border-2 border-dashed border-gray-200"
+                  style={{ width: 270, height: 270, opacity: 0.5 }}
+                />
+                {/* green ball bottom-right */}
+                <div
+                  className="absolute rounded-full shadow-md"
+                  style={{
+                    width: 14, height: 14,
+                    background: "#30D158",
+                    left: "50%", top: "50%",
+                    transform: "translate(calc(-50% + 96px), calc(-50% + 96px))",
+                  }}
+                />
+              </div>
+
+              {/* QR card — stays stationary */}
+              <div className="relative z-10">
+                <img
+                  src="/DigiVahan Updated QR.png"
+                  alt="Scan Digivahan QR to access vehicle details"
+                  className="w-52"
+                  loading="lazy"
+                />
+              </div>
+            </div>
           </aside>
         </main>
       </header>

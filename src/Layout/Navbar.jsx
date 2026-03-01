@@ -40,25 +40,29 @@ const Navbar = () => {
         </div>
 
         {/* Right Side Buttons */}
-        {token !== undefined ? (
-          <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center gap-4">
+          {token !== undefined ? (
             <Link
               to="/admin-panel"
-              className="bg-yellow-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-yellow-600 transition"
+              className="text-yellow-500 font-semibold hover:text-yellow-600 transition"
             >
               Dashboard
             </Link>
-          </div>
-        ) : (
-          <div className="hidden md:flex items-center">
+          ) : (
             <Link
               to="/login-page"
-              className="bg-yellow-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-yellow-600 transition"
+              className="text-yellow-500 font-semibold hover:text-yellow-600 transition"
             >
-              Login
+              Log In
             </Link>
-          </div>
-        )}
+          )}
+          <Link
+            to="/explore-page"
+            className="bg-yellow-500 text-white px-5 py-2 rounded-md cursor-pointer hover:bg-yellow-600 transition font-semibold"
+          >
+            Explore
+          </Link>
+        </div>
 
         {/* Mobile Menu Toggle Button */}
         <button
@@ -71,7 +75,7 @@ const Navbar = () => {
 
       {/* Mobile Dropdown Menu */}
       {isOpen && (
-        <div className="md:hidden bg-white shadow-lg px-6 py-6 space-y-3 absolute top-18 left-0 w-full">
+        <div className="md:hidden bg-white shadow-lg px-6 py-4 space-y-3 border-t border-gray-100">
           <ul className="flex flex-col gap-3 text-gray-700 font-medium text-base">
             <li>
               <Link to="/" onClick={() => setIsOpen(false)}>
@@ -97,12 +101,38 @@ const Navbar = () => {
 
           <div className="flex flex-col gap-4">
             <Link
-              to="/login-page"
+              to="/explore-page"
               onClick={() => setIsOpen(false)}
-              className="bg-yellow-500 text-white px-4 py-2 rounded text-center hover:bg-yellow-600 transition"
+              className="bg-yellow-500 text-white px-4 py-2 rounded-md text-center hover:bg-yellow-600 transition font-semibold"
             >
-              Login
+              Explore
             </Link>
+            {token !== undefined ? (
+              <Link
+                to="/admin-panel"
+                onClick={() => setIsOpen(false)}
+                className="text-yellow-500 font-semibold text-center hover:text-yellow-600 transition"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login-page"
+                  onClick={() => setIsOpen(false)}
+                  className="text-yellow-500 font-semibold text-center hover:text-yellow-600 transition"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/visit-us-page"
+                  onClick={() => setIsOpen(false)}
+                  className="bg-yellow-500 text-white px-4 py-2 rounded-md text-center hover:bg-yellow-600 transition font-semibold"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

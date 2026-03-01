@@ -5,11 +5,12 @@ const RenewalReminderpage = () => {
   return (
     <section className="max-w-7xl mx-auto md:px-6 py-2">
       <div className="flex flex-col md:flex-row items-center gap-4 md:gap-12 p-3 md:p-8 rounded-lg">
-        <div className="shrink-0">
+        {/* Phone image wrapper */}
+        <div className="shrink-0 relative flex items-center justify-center">
           <img
             src={renewalImage}
             alt="Renewal Reminder"
-            className="w-full md:max-w-xs max-w-sm h-auto"
+            className="relative w-full md:max-w-xs max-w-sm h-auto z-10 transition-transform duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02]"
           />
         </div>
         <div className="border-l-2 border-yellow-400 h-40 md:h-64"></div>

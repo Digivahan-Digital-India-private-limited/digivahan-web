@@ -14,8 +14,11 @@ import ProtectionPolicy from "./Pages/ProtectionPolicy";
 import ReturnRefundPolicy from "./Pages/ReturnRefundPolicy";
 import TermsAndConditionsPage from "./Pages/TermsAndConditionsPage";
 import Contactpage from "./Components/Contactpage/Contactpage";
+import RaiseConcern from "./Pages/RaiseConcern";
 import VisitUs from "./Pages/VisitUs";
 import Reports from "./Pages/Reports";
+import Explorepage from "./Pages/Explorepage";
+import DeleteAccountPage from "./Pages/DeleteAccountPage";
 import SendNotificationpage from "./Pages/SendNotificationpage";
 import ConnectTabs from "./Pages/ConnectTabs";
 import AccidentNotification from "./Pages/AccidentNotification";
@@ -126,8 +129,11 @@ const App = () => {
           <Route path="/login-page" element={<Loginpage />} />
           <Route path="/login-otp" element={<OtpLoginPage />} />
           <Route path="/contact-page" element={<Contactpage />} />
+          <Route path="/Raise-concern-page" element={<RaiseConcern />} />
           <Route path="/visit-us-page" element={<VisitUs />} />
           <Route path="/Report-page" element={<Reports />} />
+          <Route path="/explore-page" element={<Explorepage />} />
+          <Route path="/delete-account" element={<DeleteAccountPage />} />
 
           {/* Information page */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

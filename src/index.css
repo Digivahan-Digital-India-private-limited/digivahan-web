@@ -73,4 +73,17 @@
   }
 }
 
+@keyframes spin-clockwise {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-spin-cw {
+  animation: spin-clockwise 10s linear infinite;
+}
+
+.animate-spin-cw-slow {
+  animation: spin-clockwise 18s linear infinite;
+}
+
 

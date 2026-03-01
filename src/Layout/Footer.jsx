@@ -41,9 +41,9 @@ export const Footer = () => {
             <li>
               <Link to="/about-us">About us</Link>
             </li>
-            <li>
+            {/* <li>
               <Link to="/news-page">News</Link>
-            </li>
+            </li> */}
             <li>
               <Link to="/updates-page">Updates</Link>
             </li>
@@ -68,6 +68,9 @@ export const Footer = () => {
             </li>
             <li>
               <Link to="/Report-page">Reports</Link>
+            </li>
+            <li>
+              <Link to="/delete-account" className="text-red-500 font-medium hover:text-red-600 transition-colors">Delete Account</Link>
             </li>
           </ul>
         </div>
@@ -106,21 +109,28 @@ export const Footer = () => {
               />
             </Link>
 
-            <Link to="#" className="">
+            <div className="relative inline-block">
               <img
                 src={Applestore}
-                alt="App Download"
-                className="h-8 w-auto cursor-pointer rounded-2xl"
+                alt="App Store"
+                className="h-8 w-auto rounded-2xl opacity-60"
               />
-            </Link>
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white bg-black/50 rounded-2xl">
+                Coming Soon
+              </span>
+            </div>
           </div>
 
           {/* Right Part (Icons) */}
           <div className="flex items-center gap-3 text-gray-600 text-xl mt-2">
             <FaYoutube className="text-red-600 cursor-pointer" />
-            <FaFacebookSquare className="text-blue-600 cursor-pointer" />
+            <a href="https://www.facebook.com/share/1Ahif9bxWA/" target="_blank" rel="noopener noreferrer">
+              <FaFacebookSquare className="text-blue-600 cursor-pointer" />
+            </a>
             <FaTwitter className="text-sky-500 cursor-pointer" />
-            <FaInstagramSquare className="text-pink-500 cursor-pointer" />
+            <a href="https://www.instagram.com/digivahan?igsh=MjFjcHJ4dnRhbWkz" target="_blank" rel="noopener noreferrer">
+              <FaInstagramSquare className="text-pink-500 cursor-pointer" />
+            </a>
             <span className="text-blue-600 cursor-pointer">
               <FaLinkedin />
             </span>
