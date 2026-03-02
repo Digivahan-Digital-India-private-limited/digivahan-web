@@ -4,7 +4,7 @@ import axios from "axios";
 const fetchUserDetails = async (qr_id) => {
   try {
     const res = await axios.get(
-      `http://localhost:3000/api/user-details/${qr_id}`,
+      `https://api.digivahan.in/api/user-details/${qr_id}`,
     );
 
     if (!res.data.success) {
