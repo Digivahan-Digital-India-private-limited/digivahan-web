@@ -5,6 +5,7 @@ import fetchUserDetails from "../utils/userApis";
 import { useParams, useNavigate } from "react-router-dom";
 import calculateAgeFromDate from "../utils/dateUtils";
 import { toast } from "react-toastify";
+import imageCompression from "browser-image-compression";
 
 function AccidentNotification() {
   const [images, setImages] = useState([]);
@@ -74,20 +75,25 @@ function AccidentNotification() {
     const files = Array.from(e.target.files);
 
     for (const file of files) {
-      console.log("TYPE:", file.type);
-      console.log("SIZE:", file.size / 1024 / 1024, "MB");
-
-      // 👇 YAHAN check karo
-      if (file.type === "image/heic" || file.type === "image/heif") {
-        alert("iPhone image detected. Please wait, converting...");
-        // agar convert nahi kar rahe ho, toh bas backend ko auto pe chhod do
-        // ya yahin block mat karo, sirf log ke liye rakho
-      }
+      console.log("Original Size:", file.size / 1024 / 1024, "MB");
 
       try {
+        // 🔥 Compress image before upload
+        const compressedFile = await imageCompression(file, {
+          maxSizeMB: 1, // max 1MB
+          maxWidthOrHeight: 1280,
+          useWebWorker: true,
+        });
+
+        console.log(
+          "Compressed Size:",
+          compressedFile.size / 1024 / 1024,
+          "MB",
+        );
+
         const formData = new FormData();
         formData.append("folder_name", "Alert_Image");
-        formData.append("image", file);
+        formData.append("image", compressedFile);
 
         const res = await axios.post(
           "https://api.digivahan.in/api/v1/notification/image",
@@ -95,6 +101,7 @@ function AccidentNotification() {
         );
 
         toast.success("Image Uploaded successfully!");
+
         setImages((prev) => [
           ...prev,
           {
