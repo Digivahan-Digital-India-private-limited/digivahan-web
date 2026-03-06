@@ -30,9 +30,9 @@ const Navbar = () => {
             <li>
               <Link to="/news-page">News</Link>
             </li>
-            <li>
+            {/* <li>
               <Link to="/updates-page">Updates</Link>
-            </li>
+            </li> */}
             <li>
               <Link to="/about-us">About Us</Link>
             </li>
@@ -87,11 +87,11 @@ const Navbar = () => {
                 News
               </Link>
             </li>
-            <li>
+            {/* <li>
               <Link to="/updates-page" onClick={() => setIsOpen(false)}>
                 Updates
               </Link>
-            </li>
+            </li> */}
             <li>
               <Link to="/about-us" onClick={() => setIsOpen(false)}>
                 About Us
