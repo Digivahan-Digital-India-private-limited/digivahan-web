@@ -4,25 +4,38 @@ function SmartQRFeaturepage() {
   return (
     <section className="max-w-7xl mx-auto py-10 px-4 md:px-6">
       <style>{`
-        @keyframes qrRingGlow {
-          0%   { transform: translate(-50%, -50%) scale(0.25); opacity: 0; }
-          15%  { opacity: 0.85; }
-          100% { transform: translate(-50%, -50%) scale(1);    opacity: 0; }
+        @keyframes qrSpinCW {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to   { transform: translate(-50%, -50%) rotate(360deg); }
         }
-        .qr-ring {
+        @keyframes qrSpinCCW {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to   { transform: translate(-50%, -50%) rotate(-360deg); }
+        }
+        .qr-ring-outer {
           position: absolute;
-          width: 460px;
-          height: 460px;
+          width: 420px;
+          height: 420px;
           border-radius: 50%;
-          border: 2.5px solid rgba(234, 88, 12, 0.85);
-          animation: qrRingGlow 3.4s ease-out infinite;
-          animation-fill-mode: both;
-          pointer-events: none;
+          border: 4px dashed rgba(132, 204, 22, 0.75);
           left: 50%;
           top: 50%;
           z-index: 0;
+          pointer-events: none;
+          animation: qrSpinCCW 18s linear infinite;
         }
-        .qr-ring-2 { animation-delay: 1.7s; }
+        .qr-ring-inner {
+          position: absolute;
+          width: 300px;
+          height: 300px;
+          border-radius: 50%;
+          border: 4px dashed rgba(234, 179, 8, 0.8);
+          left: 50%;
+          top: 50%;
+          z-index: 0;
+          pointer-events: none;
+          animation: qrSpinCW 12s linear infinite;
+        }
       `}</style>
 
       {/* Heading */}
@@ -64,9 +77,10 @@ function SmartQRFeaturepage() {
           className="relative flex-shrink-0"
           style={{ width: "500px", height: "620px" }}
         >
-          {/* 2 animated orange rings — centered on phone body */}
-          <div className="qr-ring" />
-          <div className="qr-ring qr-ring-2" />
+          {/* Outer thick dashed green ring — counter-clockwise */}
+          <div className="qr-ring-outer" />
+          {/* Inner thick dashed yellow ring — clockwise */}
+          <div className="qr-ring-inner" />
 
           {/* Phone mockup — centered */}
           <img

@@ -28,11 +28,8 @@ const Navbar = () => {
               <Link to="/">Home</Link>
             </li>
             <li>
-              <Link to="/news-page">News</Link>
+              <Link to="/visit-us-page">Visit Us</Link>
             </li>
-            {/* <li>
-              <Link to="/updates-page">Updates</Link>
-            </li> */}
             <li>
               <Link to="/about-us">About Us</Link>
             </li>
@@ -83,15 +80,10 @@ const Navbar = () => {
               </Link>
             </li>
             <li>
-              <Link to="/news-page" onClick={() => setIsOpen(false)}>
-                News
+              <Link to="/visit-us-page" onClick={() => setIsOpen(false)}>
+                Visit Us
               </Link>
             </li>
-            {/* <li>
-              <Link to="/updates-page" onClick={() => setIsOpen(false)}>
-                Updates
-              </Link>
-            </li> */}
             <li>
               <Link to="/about-us" onClick={() => setIsOpen(false)}>
                 About Us

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import Layout from "./Layout/Layout";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation, Navigate } from "react-router-dom";
 import Homepage from "./Components/Homepage/Homepage";
 import Aboutpage from "./Components/Aboutpage/Aboutpage";
 import Updatespage from "./Components/Updatespage/Updatespage";
@@ -102,7 +102,7 @@ import {
   ResetPassword,
   PasswordChanged
 } from "./Pages/IOSAppPage/UserAuthentication";
-import { Home, Profile, Notification, Chat, DocumentVault, MyOrder, TrackOrder, MyGarage, ReviewOrder, EditDeliveryAddress, Payment, OrderSuccessful, UpdateProfile, BasicDetails, PublicDetails, EmergencyContactsEmpty, EmergencyContactsList, EditEmergencyContact, AddEmergencyContact, ChangePassword, IOSAboutUs, IOSTermsConditions, IOSPrivacyPolicy } from './Pages/IOSAppPage/IOSDashboard';
+import { Home, Profile, Notification, Chat, DocumentVault, MyOrder, TrackOrder, MyGarage, ReviewOrder, EditDeliveryAddress, Payment, OrderSuccessful, UpdateProfile, BasicDetails, PublicDetails, EmergencyContactsEmpty, EmergencyContactsList, EditEmergencyContact, AddEmergencyContact, ChangePassword, IOSAboutUs, IOSTermsConditions, IOSPrivacyPolicy, VehicleInfo } from './Pages/IOSAppPage/IOSDashboard';
 
 // Virtual QR Management Pages
 import MyVirtualQREmpty from "./Pages/IOSAppPage/IOSDashboard/VirtualQR/MyVirtualQREmpty";
@@ -137,6 +137,7 @@ const App = () => {
 
           {/* Information page */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/digivahan-privacy-policy" element={<Navigate to="/privacy-policy" replace />} />
           <Route path="/protection-policy" element={<ProtectionPolicy />} />
           <Route
             path="/return-refund-policy"
@@ -201,6 +202,7 @@ const App = () => {
         <Route path="/ios/my-order" element={<MyOrder />} />
         <Route path="/ios/track-order" element={<TrackOrder />} />
         <Route path="/ios/my-garage" element={<MyGarage />} />
+        <Route path="/ios/vehicle-info" element={<VehicleInfo />} />
         <Route path="/ios/my-virtual-qr-empty" element={<MyVirtualQREmpty />} />
         <Route path="/ios/my-virtual-qr-list" element={<MyVirtualQRList />} />
         <Route path="/ios/my-virtual-qr-detail" element={<MyVirtualQRDetail />} />

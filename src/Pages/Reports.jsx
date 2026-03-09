@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
-import reportHeroImage from "../assets/visitus-2.png";
+import React, { useEffect, useState } from "react";
+const reportHeroImage = "/Report.webp";
 
 const Reports = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -181,72 +181,168 @@ const Reports = () => {
         .step-card:nth-child(3) .step-badge { animation-delay: 0.46s; }
         .step-card:nth-child(4) .step-badge { animation-delay: 0.59s; }
         .step-card:nth-child(5) .step-badge { animation-delay: 0.72s; }
+
+        @keyframes floatY {
+          0%, 100% { transform: translateY(0px); }
+          50%       { transform: translateY(-10px); }
+        }
+        @keyframes glowDot {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0); }
+          50%       { box-shadow: 0 0 0 5px rgba(234,179,8,0.35); }
+        }
+        @keyframes shimmerLine {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .rep-float   { animation: floatY 4s ease-in-out infinite; }
+        .rep-float-2 { animation: floatY 5s ease-in-out infinite 0.7s; }
+        .glow-dot    { animation: glowDot 2s ease-in-out infinite; }
+        .stat-card {
+          opacity: 0;
+          animation: fadeInUp 0.6s ease-out forwards;
+        }
+        .stat-card:nth-child(1) { animation-delay: 0.4s; }
+        .stat-card:nth-child(2) { animation-delay: 0.55s; }
+        .stat-card:nth-child(3) { animation-delay: 0.7s; }
+        .report-btn-shine {
+          position: relative;
+          overflow: hidden;
+        }
+        .report-btn-shine::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.35) 50%, transparent 60%);
+          background-size: 200% 100%;
+          animation: shimmerLine 2.4s linear infinite;
+        }
       `}</style>
 
       <main className="w-full min-h-screen bg-linear-to-br from-gray-50 via-white to-yellow-50 px-4 md:px-8 py-10 md:py-14">
         <div className="max-w-6xl mx-auto space-y-8">
-          <section className="bg-white/90 border border-gray-200 rounded-xl shadow-sm p-6 md:p-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-start">
-              <div className="rep-fade-left">
-                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 underline underline-offset-8 decoration-2 mb-6">
-                  Report
-                </h1>
+          {/* ══════════════════════════════════════════
+              HERO — Report
+          ══════════════════════════════════════════ */}
+          <section className="relative overflow-hidden rounded-2xl border border-yellow-100 shadow-xl `bg-linear-to-br from-yellow-50 via-white to-amber-50">
+            {/* Background blobs */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-300/20 rounded-full -translate-y-1/3 translate-x-1/4 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-orange-300/10 rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl pointer-events-none" />
 
-                <div className="space-y-3 text-gray-700 leading-7">
-                  <p>
-                    At Digivahan, your security, privacy, and trust are our
-                    highest priorities. We are fully committed to maintaining a
-                    safe and secure digital environment for all our users and
-                    partners.
-                  </p>
-                  <p>
-                    If you ever encounter any suspicious activity related to
-                    Digivahan â€” such as spam notifications, fraudulent
-                    messages, fake emails, unauthorized phone calls, phishing
-                    attempts, or any communication claiming to represent
-                    Digivahan â€” we strongly advise you to report it immediately
-                    through this page.
-                  </p>
-                  <p>
-                    Please do not ignore such incidents. Reporting them helps
-                    us take swift action and protect not only you but also
-                    other users from potential misuse or fraud.
-                  </p>
-                  <p>
-                    Once your report is submitted, our security and support
-                    team will carefully review the details, investigate the
-                    matter thoroughly, and take appropriate corrective or legal
-                    action wherever necessary.
-                  </p>
-                  <p>
-                    For your safety, please note that Digivahan never asks for
-                    OTPs, passwords, banking details, or any confidential
-                    information via phone calls, SMS, or unofficial emails.
-                    If you receive such requests, treat them as suspicious and
-                    report them immediately.
-                  </p>
-                  <p>
-                    We sincerely appreciate your cooperation in helping us
-                    maintain a secure, transparent, and trustworthy platform for
-                    everyone.
-                  </p>
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2">
+              {/* LEFT — content */}
+              <div className="flex flex-col justify-center p-8 md:p-12">
+                <div className="rep-fade-left">
+                  {/* Badge */}
+                  <span className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 text-xs font-bold px-3.5 py-1.5 rounded-full mb-5 border border-yellow-200">
+                    <span className="glow-dot w-2 h-2 bg-yellow-500 rounded-full inline-block" />
+                    Security &amp; Trust
+                  </span>
+
+                  <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight">
+                    Report an
+                  </h1>
+                  <h1 className="text-5xl md:text-6xl font-extrabold text-yellow-500 leading-tight mb-6 underline underline-offset-4 decoration-yellow-300">
+                    Issue
+                  </h1>
+
+                  <div className="space-y-3 text-gray-600 leading-7 text-sm md:text-base mb-8">
+                    <p>
+                      At Digivahan, your security, privacy, and trust are our
+                      highest priorities. We are fully committed to maintaining
+                      a safe and secure digital environment for all our users
+                      and partners.
+                    </p>
+                    <p>
+                      If you ever encounter any suspicious activity such as spam
+                      notifications, fraudulent messages, fake emails,
+                      unauthorized phone calls, or phishing attempts, we
+                      strongly advise you to report it immediately through this
+                      page.
+                    </p>
+                    <p>
+                      For your safety, Digivahan never asks for OTPs, passwords,
+                      or banking details via phone calls, SMS, or unofficial
+                      emails. Treat such requests as suspicious and report them
+                      immediately.
+                    </p>
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-3 mb-8">
+                    <div className="stat-card bg-white rounded-2xl p-4 text-center shadow-sm border border-yellow-100">
+                      <p className="text-2xl font-extrabold text-yellow-600">
+                        24h
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                        Response Time
+                      </p>
+                    </div>
+                    <div className="stat-card bg-white rounded-2xl p-4 text-center shadow-sm border border-yellow-100">
+                      <p className="text-2xl font-extrabold text-yellow-600">
+                        100%
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                        Confidential
+                      </p>
+                    </div>
+                    <div className="stat-card bg-white rounded-2xl p-4 text-center shadow-sm border border-yellow-100">
+                      <p className="text-2xl font-extrabold text-yellow-600">
+                        Free
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                        No Charges
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setIsDialogOpen(true)}
+                    className="report-btn-shine inline-flex items-center gap-2 bg-yellow-500 text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-yellow-600 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 active:scale-95"
+                  >
+                    <span>🚩</span> Report Now
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => setIsDialogOpen(true)}
-                  className="mt-7 bg-yellow-500 text-white px-7 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-                >
-                  Report Now
-                </button>
               </div>
 
-              <div className="rep-fade-right rep-delay-1">
-                <div className="relative rounded-2xl border border-gray-200 bg-white shadow-lg p-3">
-                  <img
-                    src={reportHeroImage}
-                    alt="Report Support Team"
-                    className="rounded-xl w-full h-auto object-cover"
-                  />
+              {/* RIGHT — full-height image */}
+              <div className="rep-fade-right rep-delay-1 relative min-h-100 lg:min-h-140">
+                <img
+                  src={reportHeroImage}
+                  alt="Report Support Team"
+                  className="absolute inset-0 w-full h-full object-cover lg:rounded-r-2xl"
+                />
+                {/* Overlays */}
+                <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/10 to-transparent lg:rounded-r-2xl" />
+                <div className="absolute inset-0 bg-linear-to-t from-yellow-50/50 via-transparent to-transparent hidden lg:block" />
+
+                {/* Floating badge — top left */}
+                <div className="rep-float absolute top-6 left-6 bg-white/90 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3 border border-yellow-100">
+                  <div className="w-9 h-9 rounded-xl bg-yellow-500 flex items-center justify-center shadow-md shadow-yellow-300 shrink-0 text-base">
+                    🛡️
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-800">
+                      Secure Reporting
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      End-to-end protected
+                    </p>
+                  </div>
+                </div>
+
+                {/* Floating badge — bottom right */}
+                <div className="rep-float-2 absolute bottom-6 right-6 bg-white/90 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3 border border-green-100">
+                  <div className="w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center shadow-md shadow-green-300 shrink-0 text-base">
+                    ✅
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-800">
+                      100% Confidential
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Your identity is safe
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -259,8 +355,12 @@ const Reports = () => {
                 <span className="text-3xl">📝</span>
               </div>
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">How to Report</h2>
-                <p className="text-gray-500 text-sm mt-1">Follow these simple steps to submit your report</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  How to Report
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  Follow these simple steps to submit your report
+                </p>
               </div>
             </div>
 
@@ -272,13 +372,20 @@ const Reports = () => {
               {/* Step 1 */}
               <div className="step-card group relative flex gap-5 bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm cursor-default overflow-hidden">
                 <div className="absolute inset-0 bg-yellow-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-yellow-500 text-white font-bold text-xl shadow-md shadow-yellow-200">1</div>
+                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-yellow-500 text-white font-bold text-xl shadow-md shadow-yellow-200">
+                  1
+                </div>
                 <div className="relative z-10 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xl">🔍</span>
-                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-yellow-600 transition-colors duration-300">Select the Issue</h3>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-yellow-600 transition-colors duration-300">
+                      Select the Issue
+                    </h3>
                   </div>
-                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">Choose the category that best matches your concern. If you are unsure, select the closest option available.</p>
+                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                    Choose the category that best matches your concern. If you
+                    are unsure, select the closest option available.
+                  </p>
                 </div>
                 <span className="absolute right-0 top-0 h-full w-1 bg-yellow-400 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top rounded-r-2xl" />
               </div>
@@ -286,13 +393,20 @@ const Reports = () => {
               {/* Step 2 */}
               <div className="step-card group relative flex gap-5 bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm cursor-default overflow-hidden">
                 <div className="absolute inset-0 bg-orange-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500 text-white font-bold text-xl shadow-md shadow-orange-200">2</div>
+                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500 text-white font-bold text-xl shadow-md shadow-orange-200">
+                  2
+                </div>
                 <div className="relative z-10 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xl">🖱️</span>
-                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-orange-600 transition-colors duration-300">Click on "Report Now"</h3>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-orange-600 transition-colors duration-300">
+                      Click on "Report Now"
+                    </h3>
                   </div>
-                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">After selecting the issue type, click the "Report Now" button to proceed.</p>
+                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                    After selecting the issue type, click the "Report Now"
+                    button to proceed.
+                  </p>
                 </div>
                 <span className="absolute right-0 top-0 h-full w-1 bg-orange-400 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top rounded-r-2xl" />
               </div>
@@ -300,13 +414,21 @@ const Reports = () => {
               {/* Step 3 */}
               <div className="step-card group relative flex gap-5 bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm cursor-default overflow-hidden">
                 <div className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500 text-white font-bold text-xl shadow-md shadow-blue-200">3</div>
+                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500 text-white font-bold text-xl shadow-md shadow-blue-200">
+                  3
+                </div>
                 <div className="relative z-10 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xl">📋</span>
-                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors duration-300">Fill in the Form</h3>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors duration-300">
+                      Fill in the Form
+                    </h3>
                   </div>
-                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">Provide accurate details about the issue, including a clear description of what happened. The more details you share, the faster we can assist you.</p>
+                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                    Provide accurate details about the issue, including a clear
+                    description of what happened. The more details you share,
+                    the faster we can assist you.
+                  </p>
                 </div>
                 <span className="absolute right-0 top-0 h-full w-1 bg-blue-400 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top rounded-r-2xl" />
               </div>
@@ -314,13 +436,21 @@ const Reports = () => {
               {/* Step 4 */}
               <div className="step-card group relative flex gap-5 bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm cursor-default overflow-hidden">
                 <div className="absolute inset-0 bg-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-purple-500 text-white font-bold text-xl shadow-md shadow-purple-200">4</div>
+                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-purple-500 text-white font-bold text-xl shadow-md shadow-purple-200">
+                  4
+                </div>
                 <div className="relative z-10 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xl">📎</span>
-                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-purple-600 transition-colors duration-300">Attach Supporting Proof</h3>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-purple-600 transition-colors duration-300">
+                      Attach Supporting Proof
+                    </h3>
                   </div>
-                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">Upload screenshots, documents, call logs, or any other relevant proof that supports your report. This helps our team investigate effectively.</p>
+                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                    Upload screenshots, documents, call logs, or any other
+                    relevant proof that supports your report. This helps our
+                    team investigate effectively.
+                  </p>
                 </div>
                 <span className="absolute right-0 top-0 h-full w-1 bg-purple-400 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top rounded-r-2xl" />
               </div>
@@ -328,17 +458,24 @@ const Reports = () => {
               {/* Step 5 */}
               <div className="step-card group relative flex gap-5 bg-white border border-green-100 rounded-2xl p-5 md:p-6 shadow-sm cursor-default overflow-hidden">
                 <div className="absolute inset-0 bg-green-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-green-500 text-white font-bold text-xl shadow-md shadow-green-200">5</div>
+                <div className="step-badge relative z-10 shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-green-500 text-white font-bold text-xl shadow-md shadow-green-200">
+                  5
+                </div>
                 <div className="relative z-10 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xl">✅</span>
-                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-green-600 transition-colors duration-300">Submit &amp; Wait for Our Response</h3>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-green-600 transition-colors duration-300">
+                      Submit &amp; Wait for Our Response
+                    </h3>
                   </div>
-                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">Once submitted, our team will review your case carefully. You will receive a response after evaluation, and appropriate action will be taken if required.</p>
+                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                    Once submitted, our team will review your case carefully.
+                    You will receive a response after evaluation, and
+                    appropriate action will be taken if required.
+                  </p>
                 </div>
                 <span className="absolute right-0 top-0 h-full w-1 bg-green-400 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top rounded-r-2xl" />
               </div>
-
             </div>
           </section>
         </div>

@@ -14,12 +14,6 @@ const Contactpage = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
   useEffect(() => {
     if (isModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -224,7 +218,7 @@ const Contactpage = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-blue-50">
         {/* Hero Section */}
         <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -269,7 +263,7 @@ const Contactpage = () => {
 
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="mt-8 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95"
+                className="mt-8 bg-linear-to-r from-yellow-500 to-yellow-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95"
               >
                 Open Contact Form
               </button>
@@ -277,13 +271,23 @@ const Contactpage = () => {
 
             {/* Right Image */}
             <div className="fade-in-right delay-200">
-              <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-2xl blur-2xl opacity-20"></div>
-                <img
-                  src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800"
-                  alt="Contact Team"
-                  className="relative rounded-2xl shadow-2xl w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
-                />
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-linear-to-r from-yellow-400 to-yellow-600 rounded-3xl blur-2xl opacity-25"></div>
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-4/3">
+                  <img
+                    src="/Contact Us.webp"
+                    alt="Contact Team"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-lg flex items-center gap-3">
+                    <span className="text-yellow-500 text-xl">📞</span>
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">We're Here to Help</p>
+                      <p className="text-xs text-gray-500">Mon – Sat, 10am – 6pm</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -300,7 +304,7 @@ const Contactpage = () => {
               {faqData.map((faq, index) => (
                 <div
                   key={index}
-                  className={`bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-md hover-lift border-l-4 border-yellow-500 fade-in-up delay-${Math.min((index + 1) * 100, 400)}`}
+                  className={`bg-linear-to-br from-gray-50 to-white p-6 rounded-xl shadow-md hover-lift border-l-4 border-yellow-500 fade-in-up delay-${Math.min((index + 1) * 100, 400)}`}
                 >
                   <h3 className="font-bold text-gray-900 mb-3 text-lg">
                     {index + 1}. {faq.question}
@@ -432,7 +436,7 @@ const Contactpage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white py-4 rounded-lg font-bold hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-linear-to-r from-yellow-500 to-yellow-600 text-white py-4 rounded-lg font-bold hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Sending..." : "Submit"}
               </button>

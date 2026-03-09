@@ -266,13 +266,15 @@ const Explorepage = () => {
 
               {/* Store badges */}
               <div className="flex flex-wrap gap-3 mt-6">
-                <span className="badge-anim flex items-center gap-2 bg-black text-white px-4 py-2 rounded-xl text-sm font-medium">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.36c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 4.03ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25Z"/></svg>
-                  App Store
-                </span>
-                <a href="https://play.google.com/store/apps/details?id=com.digivahan" target="_blank" rel="noopener noreferrer" className="badge-anim flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 transition">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="m3.18 23.76 10.64-10.64-2.22-2.22L3.18 23.76Zm14.73-12.7L15.4 9.49l-4.5 2.59 2.22 2.22 4.79-2.24Zm-14.73-9.82 8.42 8.42-2.22 2.22L3.18 1.24Zm12.22 7.29L12.9 6.12l2.5-1.44 3.73 2.11-3.73 2.74Z"/></svg>
-                  Google Play
+                <div className="relative flex flex-col items-center gap-1 cursor-not-allowed">
+                  <span className="badge-anim flex items-center gap-2 bg-black text-white px-4 py-2 rounded-xl text-sm font-medium opacity-60 select-none pointer-events-none">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.36c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 4.03ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25Z"/></svg>
+                    App Store
+                  </span>
+                  <span className="text-xs font-semibold text-gray-500 tracking-widest uppercase">Coming Soon</span>
+                </div>
+                <a href="https://play.google.com/store/apps/details?id=com.digivahan" target="_blank" rel="noopener noreferrer" className="badge-anim inline-block hover:opacity-85 transition">
+                  <img src="/src/assets/play-store.png" alt="Get it on Google Play" className="h-10 w-auto object-contain" />
                 </a>
               </div>
             </div>
@@ -547,21 +549,20 @@ const Explorepage = () => {
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Ready to Take Control of Your Vehicle?</h2>
             <p className="text-yellow-100 mb-7 text-base">Download Digivahan now and experience the smartest way to manage your vehicle — anytime, anywhere.</p>
             <div className="flex flex-wrap justify-center gap-4">
-              <a
-                href="#"
-                className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-900 transition"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.36c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 4.03ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25Z"/></svg>
-                Download on App Store
-              </a>
+              <div className="relative flex flex-col items-center gap-1 cursor-not-allowed">
+                <div className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold opacity-60 select-none pointer-events-none">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.36c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 4.03ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25Z"/></svg>
+                  Download on App Store
+                </div>
+                <span className="text-xs font-semibold text-white/80 tracking-widest uppercase">Coming Soon</span>
+              </div>
               <a
                 href="https://play.google.com/store/apps/details?id=com.digivahan"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition"
+                className="inline-block hover:opacity-85 transition"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="m3.18 23.76 10.64-10.64-2.22-2.22L3.18 23.76Zm14.73-12.7L15.4 9.49l-4.5 2.59 2.22 2.22 4.79-2.24Zm-14.73-9.82 8.42 8.42-2.22 2.22L3.18 1.24Zm12.22 7.29L12.9 6.12l2.5-1.44 3.73 2.11-3.73 2.74Z"/></svg>
-                Get it on Google Play
+                <img src="/src/assets/play-store.png" alt="Get it on Google Play" className="h-12 w-auto object-contain" />
               </a>
             </div>
           </div>

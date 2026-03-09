@@ -35,3 +35,6 @@ export { default as MyVirtualQRDetail } from './VirtualQR/MyVirtualQRDetail';
 export { default as IOSAboutUs } from './InfoPages/IOSAboutUs';
 export { default as IOSTermsConditions } from './InfoPages/IOSTermsConditions';
 export { default as IOSPrivacyPolicy } from './InfoPages/IOSPrivacyPolicy';
+
+// Vehicle
+export { default as VehicleInfo } from './VehicleInfo';
