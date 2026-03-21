@@ -1,19 +1,68 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { MyContext } from "../../../../ContextApi/DataProvider";
 
 const BlockedQR = () => {
+  const { BlockedQrByAdmin } = useContext(MyContext);
   const navigate = useNavigate();
   const [qrInput, setQrInput] = useState("");
   const [showDetails, setShowDetails] = useState(false);
-  const [action, setAction] = useState("");
+  const [blockedReason, setBlockedReason] = useState("");
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  const today = new Date();
+  const presentDate = `${String(today.getDate()).padStart(2, "0")}-${String(
+    today.getMonth() + 1,
+  ).padStart(2, "0")}-${today.getFullYear()}`;
 
   const handleCheck = () => {
     if (!qrInput.trim()) return;
     setShowDetails(true);
+    setIsBlocked(false);
+  };
+
+  const handleBlockQr = () => {
+    setShowConfirmPopup(true);
+  };
+
+  const handleConfirmBlock = async () => {
+    try {
+      if (!qrInput.trim()) {
+        toast.error("QR ID is required");
+        return;
+      }
+
+      if (!blockedReason.trim()) {
+        toast.error("Please enter reason");
+        return;
+      }
+
+      const payload = {
+        qr_id: qrInput,
+        reason: blockedReason,
+      };
+
+      const res = await BlockedQrByAdmin(payload);
+
+      if (res?.success) {
+        toast.success("QR Blocked Successfully 🎉");
+
+        setIsBlocked(true);
+        setShowConfirmPopup(false);
+        setBlockedReason("");
+      } else {
+        toast.error("Failed to block QR");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error blocking QR");
+    }
   };
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    qrInput
+    qrInput,
   )}`;
 
   return (
@@ -86,7 +135,7 @@ const BlockedQR = () => {
                 <p className="text-sm text-gray-500">Blocked Date</p>
                 <input
                   type="text"
-                  value="28-11-2025"
+                  value={presentDate}
                   readOnly
                   className="border rounded-lg px-4 py-2 w-48 bg-white"
                 />
@@ -96,77 +145,65 @@ const BlockedQR = () => {
                 <p className="text-sm text-gray-500">Blocked Reason</p>
                 <textarea
                   rows="3"
-                  readOnly
                   className="w-full border rounded-lg p-4 bg-white"
-                  value="Suspicious activity detected on multiple transactions"
+                  placeholder="Enter the valid Reason for blocked qr"
+                  value={blockedReason}
+                  onChange={(e) => setBlockedReason(e.target.value)}
                 />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={handleBlockQr}
+                  disabled={isBlocked}
+                  className={`px-6 py-3 rounded-lg transition ${
+                    isBlocked
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-red-600 text-white hover:bg-red-700"
+                  }`}
+                >
+                  Block QR
+                </button>
+
+                {isBlocked && (
+                  <p className="text-sm text-green-600 mt-3 font-medium">
+                    QR has been marked as blocked.
+                  </p>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Action Dropdown */}
-          <div className="mt-6">
-            <p className="mb-2 font-medium">Select Action</p>
-            <select
-              value={action}
-              onChange={(e) => setAction(e.target.value)}
-              className="w-full border-2 border-red-500 rounded-xl px-4 py-3"
-            >
-              <option value="">Choose an action...</option>
-              <option value="delete">Delete QR Code</option>
-              <option value="track">Track User</option>
-              <option value="unblock">Unblock QR Code</option>
-            </select>
-
-            {/* Action Based UI */}
-            {action === "delete" && (
-              <div className="mt-6 bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
-                <p className="text-red-700 font-medium mb-4">
-                  ⚠ Warning: This will permanently delete the QR code from the
-                  system.
-                </p>
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
-                >
-                  🗑 Delete QR Code
-                </button>
-              </div>
-            )}
-
-            {action === "unblock" && (
-              <div className="mt-6 bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
-                <p className="font-medium mb-2">
-                  Justification for Unblocking{" "}
-                  <span className="text-red-500">*</span>
-                </p>
-                <textarea
-                  rows="4"
-                  placeholder="Provide detailed reason for unblocking this QR code..."
-                  className="w-full border rounded-lg p-4 mb-4"
-                />
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
-                >
-                  🔓 Unblock QR Code
-                </button>
-              </div>
-            )}
-
-            {action === "track" && (
-              <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
-                <p className="text-blue-700 mb-4">
-                  View complete user profile and transaction history
-                </p>
-                <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
-                  👁 Track User Profile
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
+
+      {showConfirmPopup && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Confirm QR Blocking
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to block this QR code? Users will not be
+              able to use this QR until it is manually restored.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmPopup(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBlock}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

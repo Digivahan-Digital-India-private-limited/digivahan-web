@@ -1,80 +1,88 @@
-﻿import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect, useContext } from "react";
 import { Truck, FileText, Settings, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
- 
+import { MyContext } from "../../../ContextApi/DataProvider";
+
 function Order() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [orderCounts, setOrderCounts] = useState({
-    shiprocket: 0,
-    delhivery: 0,
-    manifest: 0,
-    partners: 3
-  });
- 
+  const { DeliveryOrders, ShiprocketOrders, ConfirmedOrders, PendingOrders } =
+    useContext(MyContext);
+
+  const shiprocketOrders =
+    ShiprocketOrders?.filter(
+      (order) =>
+        order.active_partner === "shiprocket" && order.order_status === "NEW",
+    ) || [];
+
+  const delhiveryOrders =
+    DeliveryOrders?.filter(
+      (order) =>
+        order.active_partner === "delivery" && order.order_status === "NEW",
+    ) || [];
+
+  const confirmedOrders =
+    ConfirmedOrders?.filter((order) => order.order_status === "CONFIRMED") ||
+    [];
+
+  const pendingOrders =
+    PendingOrders?.filter((order) => order.order_status === "NEW") || [];
+    
+
   // Fetch order counts from API
   const fetchOrderCounts = async () => {
     setLoading(true);
     try {
-      
       // Simulate API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 1000));
-     
-      // Mock data - replace with actual API calls
-      setOrderCounts({
-        shiprocket: 8,
-        delhivery: 8,
-        manifest: 13,
-        partners: 3
-      });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       console.error("Error fetching order counts:", error);
     } finally {
       setLoading(false);
     }
   };
- 
+
   useEffect(() => {
     fetchOrderCounts();
   }, []);
- 
+
   const orderCards = [
     {
       id: "shiprocket",
       title: "Shiprocket",
       description: "Click to view details",
-      count: orderCounts.shiprocket,
+      count: shiprocketOrders.length,
       gradient: "from-purple-400 to-purple-500",
       icon: Package,
-      link: "/orders-panel/shiprocket"
+      link: "/orders-panel/shiprocket",
     },
     {
       id: "partners",
       title: "Delivery Partners",
       description: "Switch and manage partners",
-      count: orderCounts.partners,
+      count: 2,
       gradient: "from-cyan-400 to-cyan-500",
       icon: Truck,
       link: "/orders-panel/delivery-partners",
-      showPartnersText: true
+      showPartnersText: true,
     },
     {
       id: "delhivery",
       title: "Delhivery",
       description: "Click to view details",
-      count: orderCounts.delhivery,
+      count: delhiveryOrders.length,
       gradient: "from-rose-400 to-rose-500",
       icon: Truck,
-      link: "/orders-panel/delhivery"
+      link: "/orders-panel/delhivery",
     },
     {
       id: "manifest",
       title: "Generate Manifest & Label",
       description: "Click to view details",
-      count: orderCounts.manifest,
+      count: confirmedOrders.length,
       gradient: "from-amber-400 to-amber-500",
       icon: FileText,
-      link: "/orders-panel/generate-manifest"
+      link: "/orders-panel/generate-manifest",
     },
     {
       id: "manage",
@@ -83,18 +91,30 @@ function Order() {
       gradient: "from-indigo-400 to-indigo-500",
       icon: Settings,
       link: "/orders-panel/manage",
-      hideCount: true
-    }
+      hideCount: true,
+    },
+
+    {
+      id: "pending",
+      title: "Pending Order",
+      description: "Fetch The Pending Orders",
+      count: pendingOrders.length,
+      gradient: "from-red-400 to-indigo-500",
+      icon: Settings,
+      link: "/orders-panel/pending-orders",
+    },
   ];
- 
+
   return (
     <main className="w-full min-h-screen bg-white">
       <div className="w-full bg-white">
         <div className="p-6">
           <h1 className="text-4xl font-bold mb-2">Orders Management</h1>
-          <p className="text-gray-600 text-lg">Manage all your order operations</p>
+          <p className="text-gray-600 text-lg">
+            Manage all your order operations
+          </p>
         </div>
- 
+
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {orderCards.map((card) => {
@@ -111,8 +131,12 @@ function Order() {
                       <Icon className="w-8 h-8 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-white">{card.title}</h2>
-                      <p className="text-sm text-white/90">{card.description}</p>
+                      <h2 className="text-xl font-bold text-white">
+                        {card.title}
+                      </h2>
+                      <p className="text-sm text-white/90">
+                        {card.description}
+                      </p>
                       {!card.hideCount && (
                         <p className="text-sm font-semibold text-white mt-1">
                           {loading ? (
@@ -150,7 +174,5 @@ function Order() {
     </main>
   );
 }
- 
+
 export default Order;
- 
- 

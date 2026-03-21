@@ -1,26 +1,181 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+
+const STORAGE_KEY = "digivahanConcerns";
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+
+const getStoredConcerns = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
 const RaiseConcern = () => {
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const [errors, setErrors] = useState({});
+  const [tokenIdInput, setTokenIdInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [supportingFiles, setSupportingFiles] = useState([]);
+
   const [formData, setFormData] = useState({
     name: "",
-    company: "",
     contactInfo: "",
     concernCategory: "",
     issueDescription: "",
     supportingDocs: "",
   });
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, files, type } = e.target;
+
+    let fieldValue = type === "file" ? files?.[0]?.name || "" : value;
+
+    if (name === "contactInfo" && type !== "file") {
+      fieldValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    if (name === "supportingDocs" && type === "file") {
+      const selectedFiles = Array.from(files || []);
+      setSupportingFiles(selectedFiles);
+      fieldValue = selectedFiles.map((file) => file.name).join(", ");
+    }
+
     setFormData({
       ...formData,
-      [name]: value,
+      [name]: fieldValue,
     });
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const validationErrors = {};
+
+    if (!formData.name.trim()) {
+      validationErrors.name = "Name is required.";
+    } else if (!/^[A-Za-z\s]{2,}$/.test(formData.name.trim())) {
+      validationErrors.name = "Name should contain only letters and spaces.";
+    }
+
+    if (!formData.contactInfo.trim()) {
+      validationErrors.contactInfo = "Phone number is required.";
+    } else if (!/^\d{10}$/.test(formData.contactInfo.trim())) {
+      validationErrors.contactInfo = "Enter a valid 10-digit phone number.";
+    }
+
+    if (!formData.concernCategory) {
+      validationErrors.concernCategory = "Please select a concern category.";
+    }
+
+    if (!formData.issueDescription.trim()) {
+      validationErrors.issueDescription = "Issue description is required.";
+    } else if (formData.issueDescription.trim().length < 15) {
+      validationErrors.issueDescription = "Description should be at least 15 characters.";
+    }
+
+    return validationErrors;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Form submitted:", formData);
+    const validationErrors = validateForm();
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = new FormData();
+      payload.append("name", formData.name.trim());
+      payload.append("phoneNumber", formData.contactInfo.trim());
+      payload.append("category", formData.concernCategory);
+      payload.append("issueDescription", formData.issueDescription.trim());
+
+      supportingFiles.forEach((file) => {
+        payload.append("incidentProof", file);
+      });
+
+      const response = await axios.post(`${BASE_URL}/api/concern/raise`, payload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.message || "Failed to raise concern.");
+      }
+
+      const apiData = response.data.data || {};
+      const tokenId = response.data.ticketId || apiData._id || `CON-${Date.now()}`;
+
+      const existingConcerns = getStoredConcerns();
+      const newConcern = {
+        id: tokenId,
+        name: apiData.name || formData.name,
+        contactInfo: apiData.phoneNumber || formData.contactInfo,
+        concernCategory: (apiData.category || formData.concernCategory || "").toLowerCase(),
+        issueDescription: apiData.issueDescription || formData.issueDescription,
+        supportingDocs:
+          formData.supportingDocs ||
+          (Array.isArray(apiData.incidentProof) ? apiData.incidentProof.join(", ") : ""),
+        status: apiData.status
+          ? apiData.status.charAt(0).toUpperCase() + apiData.status.slice(1)
+          : "Open",
+        createdAt: apiData.createdAt || new Date().toISOString(),
+        chat: apiData.conversation || [],
+      };
+
+      const updatedConcerns = [
+        newConcern,
+        ...existingConcerns.filter((item) => item.id !== tokenId),
+      ];
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedConcerns));
+
+      setFormData({
+        name: "",
+        contactInfo: "",
+        concernCategory: "",
+        issueDescription: "",
+        supportingDocs: "",
+      });
+      setErrors({});
+      setSupportingFiles([]);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      setTokenIdInput(tokenId);
+      toast.success(response.data.message || `Concern submitted successfully. Token ID: ${tokenId}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to submit concern.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTokenSearch = () => {
+    const tokenId = tokenIdInput.trim();
+
+    if (!tokenId) {
+      toast.error("Please enter your token ID.");
+      return;
+    }
+
+    const matchedConcern = getStoredConcerns().find((item) => item.id === tokenId);
+
+    if (!matchedConcern) {
+      toast.error("No concern found for this token ID.");
+      return;
+    }
+
+    navigate(`/concern-chat-user/${tokenId}`);
   };
 
   return (
@@ -248,10 +403,7 @@ const RaiseConcern = () => {
                   <span className="text-yellow-500">●</span> Your Name
                 </li>
                 <li className="flex items-center gap-3 hover:text-yellow-600 transition-colors duration-300">
-                  <span className="text-yellow-500">●</span> Company Name (if applicable)
-                </li>
-                <li className="flex items-center gap-3 hover:text-yellow-600 transition-colors duration-300">
-                  <span className="text-yellow-500">●</span> Contact Information
+                  <span className="text-yellow-500">●</span> Phone Number
                 </li>
                 <li className="flex items-center gap-3 hover:text-yellow-600 transition-colors duration-300">
                   <span className="text-yellow-500">●</span> Concern Category
@@ -274,39 +426,34 @@ const RaiseConcern = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300 ${
+                      errors.name ? "border-red-400" : "border-gray-200"
+                    }`}
                     placeholder="Enter your full name"
                     required
                   />
+                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
 
                 <div className="transform transition-all duration-300 hover:scale-[1.02]">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Company Name (if applicable)
+                    Phone Number *
                   </label>
                   <input
-                    type="text"
-                    name="company"
-                    value={formData.company}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300"
-                    placeholder="Enter your company name"
-                  />
-                </div>
-
-                <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Contact Information (Email/Phone) *
-                  </label>
-                  <input
-                    type="text"
+                    type="tel"
                     name="contactInfo"
                     value={formData.contactInfo}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300"
-                    placeholder="Email or phone number"
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300 ${
+                      errors.contactInfo ? "border-red-400" : "border-gray-200"
+                    }`}
+                    placeholder="Enter your phone number"
                     required
                   />
+                  {errors.contactInfo && <p className="text-red-500 text-xs mt-1">{errors.contactInfo}</p>}
                 </div>
 
                 <div className="transform transition-all duration-300 hover:scale-[1.02]">
@@ -317,7 +464,9 @@ const RaiseConcern = () => {
                     name="concernCategory"
                     value={formData.concernCategory}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300 cursor-pointer"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300 cursor-pointer ${
+                      errors.concernCategory ? "border-red-400" : "border-gray-200"
+                    }`}
                     required
                   >
                     <option value="">Select a category</option>
@@ -328,6 +477,7 @@ const RaiseConcern = () => {
                     <option value="billing">Billing Issues</option>
                     <option value="other">Other</option>
                   </select>
+                  {errors.concernCategory && <p className="text-red-500 text-xs mt-1">{errors.concernCategory}</p>}
                 </div>
 
                 <div className="transform transition-all duration-300 hover:scale-[1.02]">
@@ -339,10 +489,13 @@ const RaiseConcern = () => {
                     value={formData.issueDescription}
                     onChange={handleChange}
                     rows="5"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300 resize-none"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300 resize-none ${
+                      errors.issueDescription ? "border-red-400" : "border-gray-200"
+                    }`}
                     placeholder="Please describe your concern in detail..."
                     required
                   ></textarea>
+                  {errors.issueDescription && <p className="text-red-500 text-xs mt-1">{errors.issueDescription}</p>}
                 </div>
 
                 <div className="transform transition-all duration-300 hover:scale-[1.02]">
@@ -352,16 +505,19 @@ const RaiseConcern = () => {
                   <input
                     type="file"
                     name="supportingDocs"
+                    ref={fileInputRef}
                     onChange={handleChange}
+                    multiple
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100 cursor-pointer"
                   />
                 </div>
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-linear-to-r from-yellow-500 to-yellow-600 text-white font-bold py-4 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95 mt-6"
                 >
-                  Submit Concern
+                  {isSubmitting ? "Submitting..." : "Submit Concern"}
                 </button>
               </form>
 
@@ -369,6 +525,34 @@ const RaiseConcern = () => {
                 <p className="text-sm text-blue-800 leading-relaxed">
                   <strong>🔒 Confidentiality Assured:</strong> Our team is committed to handling your concern professionally and confidentially.
                 </p>
+              </div>
+
+              <div className="mt-6 p-4 rounded-xl border border-blue-200 bg-linear-to-r from-blue-50/70 to-indigo-50/60">
+                <h4 className="text-lg font-bold text-gray-900 mb-3">Chat with Admin via Token ID</h4>
+                <p className="text-sm text-gray-700 mb-3">
+                  Enter your concern token ID to continue chat with admin.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={tokenIdInput}
+                    onChange={(e) => setTokenIdInput(e.target.value)}
+                    placeholder="Enter token ID (e.g. CON-1234567890)"
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTokenSearch}
+                    className="px-4 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                  >
+                    Open Chat
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-lg border border-slate-200 p-3 text-sm text-slate-600">
+                  Enter token ID and click <strong>Open Chat</strong> to continue on the full chat page.
+                </div>
               </div>
             </div>
           </div>

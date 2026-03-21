@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Smartphone,
+  CalendarDays,
+  UserX,
 } from "lucide-react";
 
 const menuItems = [
@@ -23,12 +25,16 @@ const menuItems = [
   { name: "Orders", icon: ShoppingCart, link: "/orders-panel" },
   { name: "QR Management", icon: QrCode, link: "/qr-panel" },
   { name: "Customer Queries", icon: MessageSquare, link: "/customer-queries" },
-  { name: "Reviews", icon: Star, link: "/admin/reviews" },
-  { name: "Issues / Priority", icon: AlertTriangle, link: "/admin/issues" },
-  { name: "Reports", icon: FileText, link: "/admin/reports" },
-  { name: "Manage User App", icon: Users, link: "/manage-user" },
-  { name: "iOS App", icon: Smartphone, link: "/ios/login" },
-  { name: "Settings", icon: Settings, link: "" },
+  { name: "Raise Concern", icon: AlertTriangle, link: "/manage-concerns" },
+  { name: "Delete Account Request", icon: UserX, link: "/delete-account-requests" },
+  { name: "Report Issue", icon: FileText, link: "/report-issues" },
+  { name: "Manage Appointment", icon: CalendarDays, link: "/manage-appointment" },
+  // { name: "Reviews", icon: Star, link: "/admin/reviews" },
+  // { name: "Issues / Priority", icon: AlertTriangle, link: "/admin/issues" },
+  // { name: "Reports", icon: FileText, link: "/admin/reports" },
+  // { name: "Manage User App", icon: Users, link: "/manage-user" },
+  // { name: "iOS App", icon: Smartphone, link: "/ios/login" },
+  // { name: "Settings", icon: Settings, link: "" },
 ];
 
 function Sidebar() {

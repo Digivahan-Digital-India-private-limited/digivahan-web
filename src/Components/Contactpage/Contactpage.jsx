@@ -1,6 +1,34 @@
 import React, { useState, useEffect } from "react";
 import emailjs from "@emailjs/browser";
 import { FaPhoneAlt, FaTimes } from "react-icons/fa";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+const FAQ_TYPE_MAP = {
+  General: "General Information Queries",
+  Technical: "Technical Queries",
+  Account: "Account Queries",
+  Payment: "Payment Queries",
+  "Order Status": "Order Status Queries",
+  Product: "Product Queries",
+  Billing: "Billing Queries",
+  Support: "Support Queries",
+};
+
+const mapApiTypeToTab = (type = "") => {
+  const normalized = type.toLowerCase();
+
+  if (normalized.includes("general")) return "General";
+  if (normalized.includes("technical")) return "Technical";
+  if (normalized.includes("account")) return "Account";
+  if (normalized.includes("payment")) return "Payment";
+  if (normalized.includes("order")) return "Order Status";
+  if (normalized.includes("product")) return "Product";
+  if (normalized.includes("billing")) return "Billing";
+  if (normalized.includes("support")) return "Support";
+
+  return type || "General";
+};
 
 const Contactpage = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +42,9 @@ const Contactpage = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFaqCategory, setSelectedFaqCategory] = useState("General");
+  const [faqData, setFaqData] = useState([]);
+  const [faqLoading, setFaqLoading] = useState(false);
   useEffect(() => {
     if (isModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -24,6 +55,36 @@ const Contactpage = () => {
       document.body.style.overflow = 'unset';
     };
   }, [isModalOpen]);
+
+  useEffect(() => {
+    const fetchFaqByCategory = async () => {
+      try {
+        setFaqLoading(true);
+        const queryValue = FAQ_TYPE_MAP[selectedFaqCategory] || selectedFaqCategory;
+        const response = await axios.get(`${BASE_URL}/api/faq/list`, {
+          params: { list: queryValue },
+        });
+
+        const list = Array.isArray(response?.data?.data) ? response.data.data : [];
+        const normalizedFaqs = list.map((faqItem) => ({
+          id: faqItem?._id,
+          question: faqItem?.question || "",
+          answer: faqItem?.answer || "",
+          type: faqItem?.type || "",
+          category: mapApiTypeToTab(faqItem?.type),
+        }));
+
+        setFaqData(normalizedFaqs);
+      } catch (error) {
+        console.error("Failed to fetch FAQs:", error);
+        setFaqData([]);
+      } finally {
+        setFaqLoading(false);
+      }
+    };
+
+    fetchFaqByCategory();
+  }, [selectedFaqCategory]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -62,48 +123,19 @@ const Contactpage = () => {
       .finally(() => setLoading(false));
   };
 
-  const faqData = [
-    {
-      question: "What is Digivahan?",
-      answer: "Digivahan is a vehicle-focused digital platform that provides automotive data, business integrations, and service solutions for dealers, logistics partners, and enterprise clients."
-    },
-    {
-      question: "Who can partner with Digivahan?",
-      answer: "Authorized vehicle dealers, logistics & courier partners, fleet operators, technology providers, and business associates can collaborate with Digivahan for long-term partnerships."
-    },
-    {
-      question: "How can I become a dealer or service partner?",
-      answer: 'You can visit our "Visit Us" page to schedule a business meeting or submit a partnership inquiry through the contact form. Our Business Development team will guide you through the onboarding process.'
-    },
-    {
-      question: "Does Digivahan provide API integration?",
-      answer: "Yes. Digivahan offers API integration support for businesses that want to connect their systems with our platform. Our Technical Integration team assists with documentation, testing, and deployment."
-    },
-    {
-      question: "What documents are required for partnership onboarding?",
-      answer: "Required documents may include: Business registration proof, GST details (if applicable), Authorized signatory details, Company profile. Our team will share the complete checklist during the onboarding discussion."
-    },
-    {
-      question: "How long does the onboarding process take?",
-      answer: "The onboarding timeline depends on document verification and technical integration requirements. Typically, the process may take 3–7 working days after submission of complete documentation."
-    },
-    {
-      question: "How can I raise a service-related concern?",
-      answer: 'You can use the "Raise Concern" page to submit your issue with complete details. Our team reviews and responds within 24 working hours.'
-    },
-    {
-      question: "Is Digivahan available for bulk or enterprise services?",
-      answer: "Yes. We support enterprise-level collaborations and bulk service requirements based on business needs and operational alignment."
-    },
-    {
-      question: "Can I schedule a meeting before visiting the office?",
-      answer: "Yes. We recommend booking an appointment in advance to ensure proper availability of the concerned department."
-    },
-    {
-      question: "How can I contact Digivahan for urgent queries?",
-      answer: 'You can reach out via our official email or contact number mentioned on the "Contact Us" page for priority assistance.'
-    }
+  const baseFaqCategories = [
+    "General",
+    "Technical",
+    "Account",
+    "Payment",
+    "Order Status",
+    "Product",
+    "Billing",
+    "Support",
   ];
+  const faqCategories = baseFaqCategories;
+
+  const filteredFaqData = faqData.filter((faq) => faq.category === selectedFaqCategory);
 
   return (
     <>
@@ -299,11 +331,34 @@ const Contactpage = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 fade-in-up">
               FAQ Section
             </h2>
+
+            <div className="flex flex-wrap justify-center gap-3 mb-10 fade-in-up delay-100">
+              {faqCategories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedFaqCategory(category)}
+                  className={`px-4 py-1.5 rounded-md text-sm font-semibold border transition-all duration-300 ${
+                    selectedFaqCategory === category
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-800 border-gray-300 hover:border-blue-500"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
             
             <div className="grid md:grid-cols-2 gap-6">
-              {faqData.map((faq, index) => (
+              {faqLoading && (
+                <div className="md:col-span-2 bg-gray-50 p-6 rounded-xl border border-gray-200 text-center text-gray-600">
+                  Loading FAQs...
+                </div>
+              )}
+
+              {!faqLoading && filteredFaqData.map((faq, index) => (
                 <div
-                  key={index}
+                  key={faq.id || index}
                   className={`bg-linear-to-br from-gray-50 to-white p-6 rounded-xl shadow-md hover-lift border-l-4 border-yellow-500 fade-in-up delay-${Math.min((index + 1) * 100, 400)}`}
                 >
                   <h3 className="font-bold text-gray-900 mb-3 text-lg">
@@ -312,6 +367,12 @@ const Contactpage = () => {
                   <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
                 </div>
               ))}
+
+              {!faqLoading && filteredFaqData.length === 0 && (
+                <div className="md:col-span-2 bg-gray-50 p-6 rounded-xl border border-gray-200 text-center text-gray-600">
+                  No FAQs available in this category.
+                </div>
+              )}
             </div>
           </div>
         </div>

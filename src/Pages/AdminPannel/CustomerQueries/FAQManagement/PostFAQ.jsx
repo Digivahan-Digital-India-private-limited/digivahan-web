@@ -1,6 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HelpCircle } from "lucide-react";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digicapital.co.in";
+const FAQ_STORAGE_KEY = "digivahan_posted_faqs";
+const FAQ_TYPE_MAP = {
+  General: "General Information Queries",
+  Technical: "Technical Queries",
+  Account: "Account Queries",
+  Payment: "Payment Queries",
+  "Order Status": "Order Status Queries",
+  Product: "Product Queries",
+  Billing: "Billing Queries",
+  Support: "Support Queries",
+};
 
 const PostFAQ = () => {
   const navigate = useNavigate();
@@ -8,6 +22,11 @@ const PostFAQ = () => {
     questionType: "General",
     question: "",
     answer: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successDialog, setSuccessDialog] = useState({
+    isOpen: false,
+    message: "",
   });
 
   const questionTypes = [
@@ -25,10 +44,52 @@ const PostFAQ = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
-    console.log("Post FAQ:", formData);
-    // Add API call here
-    navigate("/customer-queries");
+  const handleSubmit = async () => {
+    const question = formData.question.trim();
+    const answer = formData.answer.trim();
+
+    if (!formData.questionType || !question || !answer) {
+      alert("Please fill Question Type, Question and Answer.");
+      return;
+    }
+
+    const payload = {
+      type: FAQ_TYPE_MAP[formData.questionType] || formData.questionType,
+      question,
+      answer,
+    };
+
+    try {
+      setIsSubmitting(true);
+      const response = await axios.post(`${BASE_URL}/api/faq/add`, payload);
+      const createdFaq = response?.data?.data;
+
+      const faqForUi = {
+        id: createdFaq?._id || `${Date.now()}`,
+        category: payload.type,
+        question: createdFaq?.question || payload.question,
+        answer: createdFaq?.answer || payload.answer,
+        createdAt: createdFaq?.createdAt || new Date().toISOString(),
+      };
+
+      const existingFaqs = JSON.parse(localStorage.getItem(FAQ_STORAGE_KEY) || "[]");
+      const updatedFaqs = [faqForUi, ...existingFaqs];
+      localStorage.setItem(FAQ_STORAGE_KEY, JSON.stringify(updatedFaqs));
+
+      setSuccessDialog({
+        isOpen: true,
+        message: response?.data?.message || "FAQ posted successfully.",
+      });
+      setFormData({
+        questionType: "General",
+        question: "",
+        answer: "",
+      });
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to post FAQ.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -139,9 +200,10 @@ const PostFAQ = () => {
         <div className="flex items-center justify-start gap-3 p-6 md:p-8 border-t border-gray-200 bg-gray-50">
           <button
             onClick={handleSubmit}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+            disabled={isSubmitting}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Post FAQ
+            {isSubmitting ? "Posting..." : "Post FAQ"}
           </button>
           <button
             onClick={handleCancel}
@@ -151,6 +213,25 @@ const PostFAQ = () => {
           </button>
         </div>
       </div>
+
+      {successDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Success</h3>
+            <p className="text-gray-600 mb-6">{successDialog.message}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessDialog({ isOpen: false, message: "" });
+                navigate("/customer-queries");
+              }}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

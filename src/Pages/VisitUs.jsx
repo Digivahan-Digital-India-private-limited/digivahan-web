@@ -1,16 +1,9 @@
-import React, { useEffect, useRef } from "react";
-import HeropageImage from "../assets/visitus.png";
-import Qrimage from "../assets/visitus-2.png";
-import {
-  FaUserCircle,
-  FaHandshake,
-  FaBuilding,
-  FaCogs,
-  FaTruck,
-  FaChartLine,
-  FaCalendarCheck,
-} from "react-icons/fa";
+import React, { useEffect, useRef, useState } from "react";
+import { FaHandshake, FaBuilding, FaCogs, FaTruck, FaChartLine, FaCalendarCheck } from "react-icons/fa";
 import { MdBusiness, MdEngineering, MdSupportAgent } from "react-icons/md";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
 /* ── Scroll-reveal hook ── */
 function useReveal() {
@@ -19,13 +12,8 @@ function useReveal() {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add("vu-visible");
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 },
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add("vu-visible"); observer.disconnect(); } },
+      { threshold: 0.15 }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -34,26 +22,11 @@ function useReveal() {
 }
 
 const VISITORS = [
-  {
-    icon: <FaBuilding className="text-yellow-500 text-xl" />,
-    label: "Authorized Vehicle Dealers",
-  },
-  {
-    icon: <FaTruck className="text-yellow-500 text-xl" />,
-    label: "Logistics & Courier Partners",
-  },
-  {
-    icon: <FaCogs className="text-yellow-500 text-xl" />,
-    label: "Technology & API Integration Partners",
-  },
-  {
-    icon: <FaTruck className="text-yellow-500 text-xl" />,
-    label: "Fleet Operators",
-  },
-  {
-    icon: <FaChartLine className="text-yellow-500 text-xl" />,
-    label: "Investors & Business Associates",
-  },
+  { icon: <FaBuilding className="text-yellow-500 text-xl" />, label: "Authorized Vehicle Dealers" },
+  { icon: <FaTruck className="text-yellow-500 text-xl" />, label: "Logistics & Courier Partners" },
+  { icon: <FaCogs className="text-yellow-500 text-xl" />, label: "Technology & API Integration Partners" },
+  { icon: <FaTruck className="text-yellow-500 text-xl" />, label: "Fleet Operators" },
+  { icon: <FaChartLine className="text-yellow-500 text-xl" />, label: "Investors & Business Associates" },
 ];
 
 const TEAMS = [
@@ -78,12 +51,90 @@ const TEAMS = [
 ];
 
 const VisitUs = () => {
-  const heroRef = useReveal();
-  const mockRef = useReveal();
-  const whoRef = useReveal();
+  const heroRef   = useReveal();
+  const mockRef   = useReveal();
+  const whoRef    = useReveal();
   const whoImgRef = useReveal();
-  const meetRef = useReveal();
-  const mapRef = useReveal();
+  const meetRef   = useReveal();
+  const appointmentRef = useReveal();
+  const mapRef    = useReveal();
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minAppointmentDate = tomorrow.toISOString().split("T")[0];
+
+  const [formData, setFormData] = useState({
+    name: "",
+    companyName: "",
+    phoneNumber: "",
+    businessEmail: "",
+    whomToMeet: "",
+    role: "",
+    reason: "",
+    proposalDescription: "",
+    requestedDate: "",
+  });
+  const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const today = new Date().toISOString().split("T")[0];
+
+    if (!formData.requestedDate || formData.requestedDate <= today) {
+      setSubmitMessage({
+        type: "error",
+        text: "Requested date must be from tomorrow onwards.",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setSubmitMessage({ type: "", text: "" });
+
+      const response = await axios.post(`${BASE_URL}/api/appointment/create`, formData);
+
+      const success = response?.data?.success;
+      if (!success) {
+        throw new Error(response?.data?.message || "Failed to submit appointment request.");
+      }
+
+      setSubmitMessage({
+        type: "success",
+        text:
+          response?.data?.message ||
+          "Appointment request submitted successfully. Our team will contact you shortly.",
+      });
+
+      setFormData({
+        name: "",
+        companyName: "",
+        phoneNumber: "",
+        businessEmail: "",
+        whomToMeet: "",
+        role: "",
+        reason: "",
+        proposalDescription: "",
+        requestedDate: "",
+      });
+    } catch (error) {
+      setSubmitMessage({
+        type: "error",
+        text:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Something went wrong while submitting your appointment request.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <main className="w-full font-sans overflow-x-hidden">
@@ -145,55 +196,56 @@ const VisitUs = () => {
         .vu-map-wrap { clip-path: inset(100% 0 0 0); transition: clip-path .9s cubic-bezier(.4,0,.2,1); }
         .vu-visible .vu-map-wrap,
         .vu-visible.vu-map-wrap { clip-path: inset(0% 0 0 0); }
+
+        /* appointment form visuals */
+        .vu-form-card {
+          background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
+          border: 1px solid #fde68a;
+          box-shadow: 0 24px 50px rgba(0,0,0,.08);
+        }
+        .vu-input {
+          border: 1px solid #e5e7eb;
+          transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+        }
+        .vu-input:focus {
+          outline: none;
+          border-color: #f59e0b;
+          box-shadow: 0 0 0 4px rgba(245,158,11,.15);
+          transform: translateY(-1px);
+        }
+        @keyframes vuGlow {
+          0%, 100% { opacity: .5; }
+          50% { opacity: 1; }
+        }
+        .vu-glow {
+          animation: vuGlow 3s ease-in-out infinite;
+        }
       `}</style>
 
       {/* ══════════════════════════════════════════
           Section 1 — Hero / Partner With Us
       ══════════════════════════════════════════ */}
       <section className="relative w-full bg-white py-20 px-6 overflow-hidden">
+
         {/* Gradient blobs */}
-        <div
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-10 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, #fbbf24 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full opacity-10 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, #f97316 0%, transparent 70%)",
-          }}
-        />
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-10 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #fbbf24 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full opacity-10 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #f97316 0%, transparent 70%)" }} />
 
         {/* Decorative + crosses */}
         {[
-          { top: "6%", left: "30%" },
-          { top: "6%", left: "52%" },
-          { top: "6%", left: "74%" },
-          { top: "6%", right: "3%" },
-          { top: "35%", left: "30%" },
-          { top: "60%", left: "30%" },
-          { top: "85%", left: "30%" },
-          { top: "35%", right: "3%" },
-          { top: "60%", right: "3%" },
-          { top: "85%", right: "3%" },
-          { top: "94%", left: "38%" },
-          { top: "94%", left: "55%" },
-          { top: "94%", left: "72%" },
+          { top:"6%",  left:"30%" }, { top:"6%",  left:"52%" }, { top:"6%",  left:"74%" }, { top:"6%",  right:"3%" },
+          { top:"35%", left:"30%" }, { top:"60%", left:"30%" }, { top:"85%", left:"30%" },
+          { top:"35%", right:"3%" }, { top:"60%", right:"3%" }, { top:"85%", right:"3%" },
+          { top:"94%", left:"38%" }, { top:"94%", left:"55%" }, { top:"94%", left:"72%" },
         ].map((pos, i) => (
-          <span
-            key={i}
-            className="absolute text-yellow-200 text-xl select-none pointer-events-none font-light vu-dot"
-            style={{ ...pos, animationDelay: `${i * 0.3}s` }}
-          >
-            +
-          </span>
+          <span key={i} className="absolute text-yellow-200 text-xl select-none pointer-events-none font-light vu-dot"
+            style={{ ...pos, animationDelay: `${i * 0.3}s` }}>+</span>
         ))}
 
-        <div
-          ref={heroRef}
-          className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-16"
-        >
+        <div ref={heroRef} className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-16">
+
           {/* LEFT */}
           <div className="space-y-5 vu-fade-left">
             <div className="inline-flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full">
@@ -203,53 +255,44 @@ const VisitUs = () => {
               Visit <span className="vu-underline">Us</span>
             </h1>
             <p className="flex items-center gap-2 text-gray-800 font-semibold text-base">
-              <FaHandshake className="text-yellow-500 text-xl" /> Partner With
-              Us
+              <FaHandshake className="text-yellow-500 text-xl" /> Partner With Us
             </p>
             <p className="text-gray-500 text-sm leading-7">
-              At Digivahan, we collaborate with forward-thinking businesses that
-              want to grow in the automotive and vehicle services ecosystem.
+              At Digivahan, we collaborate with forward-thinking businesses that want to
+              grow in the automotive and vehicle services ecosystem.
             </p>
             <p className="text-gray-500 text-sm leading-7">
-              If you are interested in dealership onboarding, logistics
-              partnerships, API integrations, bulk service requirements, or
-              long-term strategic collaboration — we welcome you to visit our
-              office for a detailed business discussion.
+              If you are interested in dealership onboarding, logistics partnerships, API
+              integrations, bulk service requirements, or long-term strategic collaboration —
+              we welcome you to visit our office for a detailed business discussion.
             </p>
             <p className="text-gray-500 text-sm leading-7">
-              We believe strong partnerships are built on transparency,
-              operational clarity, and mutual growth. A face-to-face meeting
-              allows us to better understand your business model, discuss
-              workflows, evaluate integration possibilities, and align on
-              long-term objectives.
+              We believe strong partnerships are built on transparency, operational clarity, and
+              mutual growth. A face-to-face meeting allows us to better understand your
+              business model, discuss workflows, evaluate integration possibilities, and align
+              on long-term objectives.
             </p>
             <p className="text-gray-500 text-sm leading-7">
-              Our team ensures structured discussions, clear communication, and
-              a professional onboarding process for all our partners. Let's
-              build scalable and growth-driven opportunities together. 🚀
+              Our team ensures structured discussions, clear communication, and a
+              professional onboarding process for all our partners.
+              Let's build scalable and growth-driven opportunities together. 🚀
             </p>
             <div className="flex gap-3 pt-2">
-              <a
-                href="#map-section"
-                className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-yellow-200"
-              >
+              <a href="#map-section"
+                className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-yellow-200">
                 📍 Find Us
               </a>
-              <a
-                href="#who-section"
-                className="inline-flex items-center gap-2 border border-gray-300 hover:border-yellow-400 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 hover:text-yellow-600"
-              >
-                Learn More →
+              <a href="#appointment-section"
+                className="inline-flex items-center gap-2 border border-gray-300 hover:border-yellow-400 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 hover:text-yellow-600">
+                Book an Appointment →
               </a>
             </div>
           </div>
 
           {/* RIGHT — hero image */}
           <div ref={mockRef} className="flex justify-center vu-fade-right">
-            <div
-              className="relative w-full rounded-3xl overflow-hidden shadow-2xl group"
-              style={{ boxShadow: "0 25px 60px rgba(0,0,0,.15)" }}
-            >
+            <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl group"
+              style={{ boxShadow: "0 25px 60px rgba(0,0,0,.15)" }}>
               <img
                 src="/Visit Us Top.webp"
                 alt="Partner meeting"
@@ -265,41 +308,28 @@ const VisitUs = () => {
       {/* ══════════════════════════════════════════
           Section 2 — Who Can Visit Us?
       ══════════════════════════════════════════ */}
-      <section
-        id="who-section"
-        className="w-full py-20 px-6"
-        style={{
-          background: "linear-gradient(135deg,#fffbeb 0%,#fff7ed 100%)",
-        }}
-      >
+      <section id="who-section" className="w-full py-20 px-6" style={{ background: "linear-gradient(135deg,#fffbeb 0%,#fff7ed 100%)" }}>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-16">
+
           {/* LEFT */}
           <div ref={whoRef} className="space-y-7 vu-fade-left">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full">
                 🏢 Open Doors
               </div>
-              <h2 className="text-4xl font-extrabold text-gray-900">
-                Who Can Visit Us?
-              </h2>
-              <p className="text-gray-500 text-sm">
-                We welcome partners who drive the future of vehicle services.
-              </p>
+              <h2 className="text-4xl font-extrabold text-gray-900">Who Can Visit Us?</h2>
+              <p className="text-gray-500 text-sm">We welcome partners who drive the future of vehicle services.</p>
             </div>
 
             <ul className="space-y-3">
               {VISITORS.map((v, i) => (
-                <li
-                  key={i}
+                <li key={i}
                   data-delay={String(i)}
-                  className="vu-fade-up flex items-center gap-4 bg-white rounded-xl px-5 py-4 shadow-sm border border-yellow-100 vu-card cursor-default"
-                >
+                  className="vu-fade-up flex items-center gap-4 bg-white rounded-xl px-5 py-4 shadow-sm border border-yellow-100 vu-card cursor-default">
                   <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center shrink-0">
                     {v.icon}
                   </div>
-                  <span className="text-gray-800 font-medium text-sm">
-                    {v.label}
-                  </span>
+                  <span className="text-gray-800 font-medium text-sm">{v.label}</span>
                   <span className="ml-auto text-yellow-400 text-lg">→</span>
                 </li>
               ))}
@@ -308,10 +338,7 @@ const VisitUs = () => {
 
           {/* RIGHT — person image */}
           <div ref={whoImgRef} className="vu-zoom w-full">
-            <div
-              className="relative w-full rounded-3xl overflow-hidden"
-              style={{ boxShadow: "0 30px 60px rgba(234,179,8,.18)" }}
-            >
+            <div className="relative w-full rounded-3xl overflow-hidden" style={{ boxShadow: "0 30px 60px rgba(234,179,8,.18)" }}>
               <div className="absolute -inset-3 rounded-3xl border-2 border-dashed border-yellow-300 opacity-60 pointer-events-none" />
               <img
                 src="/Who Can Visit Us.webp"
@@ -323,9 +350,7 @@ const VisitUs = () => {
               <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm shadow-xl rounded-xl px-4 py-3 flex items-center gap-3 border border-yellow-100">
                 <FaCalendarCheck className="text-yellow-500 text-2xl shrink-0" />
                 <div>
-                  <p className="text-xs font-bold text-gray-800">
-                    Book a Visit
-                  </p>
+                  <p className="text-xs font-bold text-gray-800">Book a Visit</p>
                   <p className="text-xs text-gray-500">Mon – Sat, 10am – 6pm</p>
                 </div>
               </div>
@@ -338,10 +363,8 @@ const VisitUs = () => {
           Section 3 — Whom to Meet
       ══════════════════════════════════════════ */}
       <section className="w-full bg-white py-20 px-6">
-        <div
-          ref={meetRef}
-          className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-stretch gap-16"
-        >
+        <div ref={meetRef} className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-stretch gap-16">
+
           {/* LEFT */}
           <div className="space-y-6 vu-fade-left">
             <div className="space-y-2">
@@ -352,30 +375,23 @@ const VisitUs = () => {
                 Whom to Meet
               </h2>
               <p className="text-gray-500 text-sm leading-6">
-                For business discussions and partnership opportunities, connect
-                with the right team for your needs.
+                For business discussions and partnership opportunities, connect with the right team for your needs.
               </p>
             </div>
 
             <div className="space-y-4">
               {TEAMS.map((t, i) => (
-                <div
-                  key={i}
+                <div key={i}
                   data-delay={String(i)}
                   style={{ transitionDelay: t.delay }}
-                  className="vu-fade-up vu-team-card relative bg-gray-50 hover:bg-white rounded-xl p-5 border border-gray-100 vu-card cursor-default overflow-hidden"
-                >
+                  className="vu-fade-up vu-team-card relative bg-gray-50 hover:bg-white rounded-xl p-5 border border-gray-100 vu-card cursor-default overflow-hidden">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0 mt-0.5">
                       {t.icon}
                     </div>
                     <div>
-                      <p className="font-bold text-gray-800 text-sm mb-1">
-                        {t.title}
-                      </p>
-                      <p className="text-gray-500 text-sm leading-6">
-                        {t.desc}
-                      </p>
+                      <p className="font-bold text-gray-800 text-sm mb-1">{t.title}</p>
+                      <p className="text-gray-500 text-sm leading-6">{t.desc}</p>
                     </div>
                   </div>
                 </div>
@@ -385,25 +401,24 @@ const VisitUs = () => {
             <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
               <FaCalendarCheck className="text-yellow-500 text-xl shrink-0 mt-0.5" />
               <p className="text-gray-600 text-sm leading-6">
-                To ensure availability and proper scheduling, we recommend{" "}
-                <strong className="text-gray-800">
-                  booking an appointment
-                </strong>{" "}
-                prior to your visit.
+                To ensure availability and proper scheduling, we recommend <strong className="text-gray-800">booking an appointment</strong> prior to your visit.
               </p>
             </div>
+
+            <a
+              href="#appointment-section"
+              className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-yellow-200"
+            >
+              Book an Appointment →
+            </a>
           </div>
 
           {/* RIGHT — target image full height */}
-          <div
-            className="vu-fade-right relative rounded-2xl overflow-hidden min-h-120"
-            style={{ boxShadow: "0 30px 60px rgba(0,0,0,.14)" }}
-          >
+          <div className="vu-fade-right relative rounded-2xl overflow-hidden min-h-120"
+            style={{ boxShadow: "0 30px 60px rgba(0,0,0,.14)" }}>
             {/* glow border */}
-            <div
-              className="absolute -inset-3 rounded-2xl opacity-20 pointer-events-none"
-              style={{ background: "linear-gradient(135deg,#fbbf24,#f97316)" }}
-            />
+            <div className="absolute -inset-3 rounded-2xl opacity-20 pointer-events-none"
+              style={{ background: "linear-gradient(135deg,#fbbf24,#f97316)" }} />
             <img
               src="/Whom to Meet.webp"
               alt="Whom to meet"
@@ -419,7 +434,98 @@ const VisitUs = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          Section 4 — Google Maps
+          Section 4 — Appointment Form
+      ══════════════════════════════════════════ */}
+      <section id="appointment-section" className="w-full py-20 px-6 bg-linear-to-b from-white to-yellow-50">
+        <div ref={appointmentRef} className="max-w-5xl mx-auto">
+          <div className="text-center space-y-3 mb-10 vu-fade-up">
+            <div className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full vu-glow">
+              📅 Appointment Request
+            </div>
+            <h2 className="text-4xl font-extrabold text-gray-900">Book an Appointment</h2>
+            <p className="text-gray-600 text-sm md:text-base max-w-3xl mx-auto leading-7">
+              Share your details for a structured business discussion with the right Digivahan team. Please provide accurate information so we can schedule your meeting smoothly.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="vu-form-card rounded-3xl p-6 md:p-10 space-y-6 vu-fade-up">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-semibold text-gray-700">Name</label>
+                <input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white" placeholder="Enter your full name" />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="companyName" className="text-sm font-semibold text-gray-700">Company Name</label>
+                <input id="companyName" name="companyName" type="text" value={formData.companyName} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white" placeholder="Enter your company name" />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700">Phone Number</label>
+                <input id="phoneNumber" name="phoneNumber" type="tel" pattern="[0-9]{10}" inputMode="numeric" value={formData.phoneNumber} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white" placeholder="10-digit phone number" />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="businessEmail" className="text-sm font-semibold text-gray-700">Business Email</label>
+                <input id="businessEmail" name="businessEmail" type="email" value={formData.businessEmail} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white" placeholder="name@company.com" />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="whomToMeet" className="text-sm font-semibold text-gray-700">Whom to Meet</label>
+                <select id="whomToMeet" name="whomToMeet" value={formData.whomToMeet} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white">
+                  <option value="">Select team</option>
+                  <option value="Business Development Team">Business Development Team</option>
+                  <option value="Technical Integration Team">Technical Integration Team</option>
+                  <option value="Operations Team">Operations Team</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="role" className="text-sm font-semibold text-gray-700">Role</label>
+                <select id="role" name="role" value={formData.role} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white">
+                  <option value="">Select your role</option>
+                  <option value="Authorized Vehicle Dealers">Authorized Vehicle Dealers</option>
+                  <option value="Logistics & Courier Partners">Logistics & Courier Partners</option>
+                  <option value="Technology & API Integration Partners">Technology & API Integration Partners</option>
+                  <option value="Fleet Operators">Fleet Operators</option>
+                  <option value="Investors & Business Associates">Investors & Business Associates</option>
+                </select>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="reason" className="text-sm font-semibold text-gray-700">Reason</label>
+                <input id="reason" name="reason" type="text" value={formData.reason} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white" placeholder="Type the reason for your appointment" />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="proposalDescription" className="text-sm font-semibold text-gray-700">Proposal Description</label>
+                <textarea id="proposalDescription" name="proposalDescription" rows={4} value={formData.proposalDescription} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white resize-none" placeholder="Describe your proposal in detail" />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="requestedDate" className="text-sm font-semibold text-gray-700">Requested Date</label>
+                <input id="requestedDate" name="requestedDate" type="date" min={minAppointmentDate} value={formData.requestedDate} onChange={handleChange} required className="vu-input w-full rounded-xl px-4 py-3 text-sm bg-white" />
+                <p className="text-xs text-gray-500">Appointment date can be selected from tomorrow onward only.</p>
+              </div>
+            </div>
+
+            {submitMessage.text && (
+              <p className={`text-sm font-medium ${submitMessage.type === "error" ? "text-red-600" : "text-green-600"}`}>
+                {submitMessage.text}
+              </p>
+            )}
+
+            <div className="pt-2">
+              <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-400 disabled:cursor-not-allowed text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-yellow-200">
+                {isSubmitting ? "Submitting..." : "Submit Appointment Request"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          Section 5 — Google Maps
       ══════════════════════════════════════════ */}
       <section id="map-section" className="w-full bg-gray-50 py-16 px-6">
         <div className="max-w-7xl mx-auto space-y-8">
@@ -428,21 +534,13 @@ const VisitUs = () => {
             <div className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
               📍 Find Us
             </div>
-            <h2 className="text-3xl font-extrabold text-gray-900">
-              Our Office Location
-            </h2>
-            <p className="text-gray-500 text-sm">
-              J3C4+MF9, Prem Nagar, Block E, Param Puri, Uttam Nagar, Delhi –
-              110059
-            </p>
+            <h2 className="text-3xl font-extrabold text-gray-900">Our Office Location</h2>
+            <p className="text-gray-500 text-sm">J3C4+MF9, Prem Nagar, Block E, Param Puri, Uttam Nagar, Delhi – 110059</p>
           </div>
 
           {/* Map */}
-          <div
-            ref={mapRef}
-            className="vu-zoom rounded-2xl overflow-hidden shadow-2xl border border-gray-200"
-            style={{ boxShadow: "0 25px 60px rgba(0,0,0,.12)" }}
-          >
+          <div ref={mapRef} className="vu-zoom rounded-2xl overflow-hidden shadow-2xl border border-gray-200"
+            style={{ boxShadow: "0 25px 60px rgba(0,0,0,.12)" }}>
             <iframe
               title="Digivahan Office Location"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3502.0!2d77.05!3d28.63!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d053a83b0b3b3%3A0x1234567890abcdef!2sJ3C4%2BMF9%2C%20Prem%20Nagar%2C%20Block%20E%2C%20Param%20Puri%2C%20Uttam%20Nagar%2C%20Delhi%2C%20110059!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
@@ -456,6 +554,7 @@ const VisitUs = () => {
           </div>
         </div>
       </section>
+
     </main>
   );
 };

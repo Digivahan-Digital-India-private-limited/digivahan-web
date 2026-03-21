@@ -1,12 +1,32 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2 } from "lucide-react";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digicapital.co.in";
+const FAQ_TYPE_MAP = {
+  General: "General Information Queries",
+  Technical: "Technical Queries",
+  Account: "Account Queries",
+  Payment: "Payment Queries",
+  "Order Status": "Order Status Queries",
+  Product: "Product Queries",
+  Billing: "Billing Queries",
+  Support: "Support Queries",
+};
 
 const DeleteFAQ = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     questionType: "General",
-    selectedQuestion: "",
+    selectedQuestionId: "",
+  });
+  const [faqOptions, setFaqOptions] = useState([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [successDialog, setSuccessDialog] = useState({
+    isOpen: false,
+    message: "",
   });
 
   const questionTypes = [
@@ -20,25 +40,69 @@ const DeleteFAQ = () => {
     "Support",
   ];
 
-  const existingQuestions = [
-    "How do I create an account?",
-    "What are your business hours?",
-    "How can I contact support?",
-    "How do I reset my password?",
-    "What payment methods do you accept?",
-    "How can I track my order?",
-    "What is your refund policy?",
-    "How do I update my profile?",
-  ];
-
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
-    console.log("Delete FAQ:", formData);
-    // Add API call here
-    navigate("/customer-queries");
+  const fetchFaqByType = async (questionType) => {
+    try {
+      setIsLoadingQuestions(true);
+      const queryValue = FAQ_TYPE_MAP[questionType] || questionType;
+      const response = await axios.get(`${BASE_URL}/api/faq/list`, {
+        params: { list: queryValue },
+      });
+      const list = Array.isArray(response?.data?.data) ? response.data.data : [];
+      const normalizedFaqs = list.map((faq) => ({
+        id: faq?._id,
+        question: faq?.question || "",
+        answer: faq?.answer || "",
+      }));
+      setFaqOptions(normalizedFaqs);
+    } catch (error) {
+      console.error("Failed to fetch FAQ list:", error);
+      setFaqOptions([]);
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFaqByType(formData.questionType);
+  }, [formData.questionType]);
+
+  const handleQuestionTypeChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      questionType: value,
+      selectedQuestionId: "",
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.questionType || !formData.selectedQuestionId) {
+      alert("Please select question type and question.");
+      return;
+    }
+
+    const confirmed = window.confirm("Are you sure you want to delete this FAQ?");
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await axios.delete(
+        `${BASE_URL}/api/faq/delete/${formData.selectedQuestionId}`,
+      );
+
+      setSuccessDialog({
+        isOpen: true,
+        message: response?.data?.message || "FAQ deleted successfully.",
+      });
+      setFormData((prev) => ({ ...prev, selectedQuestionId: "" }));
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to delete FAQ.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -105,7 +169,7 @@ const DeleteFAQ = () => {
             </label>
             <select
               value={formData.questionType}
-              onChange={(e) => handleInputChange("questionType", e.target.value)}
+              onChange={(e) => handleQuestionTypeChange(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition"
             >
               {questionTypes.map((type) => (
@@ -122,18 +186,22 @@ const DeleteFAQ = () => {
               Select Question <span className="text-red-500">*</span>
             </label>
             <select
-              value={formData.selectedQuestion}
+              value={formData.selectedQuestionId}
               onChange={(e) =>
-                handleInputChange("selectedQuestion", e.target.value)
+                handleInputChange("selectedQuestionId", e.target.value)
               }
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition"
             >
               <option value="">Choose a question...</option>
-              {existingQuestions.map((question, index) => (
-                <option key={index} value={question}>
-                  {question}
-                </option>
-              ))}
+              {isLoadingQuestions ? (
+                <option disabled>Loading questions...</option>
+              ) : (
+                faqOptions.map((faq) => (
+                  <option key={faq.id} value={faq.id}>
+                    {faq.question}
+                  </option>
+                ))
+              )}
             </select>
           </div>
         </div>
@@ -142,10 +210,11 @@ const DeleteFAQ = () => {
         <div className="flex items-center justify-start gap-3 p-6 md:p-8 border-t border-gray-200 bg-gray-50">
           <button
             onClick={handleSubmit}
-            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-medium flex items-center gap-2"
+            disabled={isDeleting || isLoadingQuestions}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-medium flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Trash2 className="w-4 h-4" />
-            Delete FAQ
+            {isDeleting ? "Deleting..." : "Delete FAQ"}
           </button>
           <button
             onClick={handleCancel}
@@ -155,6 +224,25 @@ const DeleteFAQ = () => {
           </button>
         </div>
       </div>
+
+      {successDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Success</h3>
+            <p className="text-gray-600 mb-6">{successDialog.message}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessDialog({ isOpen: false, message: "" });
+                navigate("/customer-queries");
+              }}
+              className="w-full bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition font-medium"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

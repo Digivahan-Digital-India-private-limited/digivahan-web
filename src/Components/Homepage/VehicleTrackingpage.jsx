@@ -2,7 +2,7 @@ import React from "react";
 
 const VehicleTrackingpage = () => {
   return (
-    <section className="max-w-7xl mx-auto py-10 px-4 md:px-6">
+    <section className="max-w-7xl mx-auto py-10 px-4 md:px-6 vt-section-wrap">
       <style>{`
         @keyframes vtRingOut {
           0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
@@ -23,6 +23,33 @@ const VehicleTrackingpage = () => {
           top: 46%;
         }
         .vt-ring-2 { animation-delay: 1.7s; }
+
+        /* Responsive scaling for the fixed-size 660×540 canvas — mobile only */
+        .vt-image-container {
+          transform-origin: top center;
+        }
+        @media (max-width: 479px) {
+          .vt-image-container {
+            transform: scale(0.54);
+            margin-bottom: -248px;
+          }
+        }
+        @media (min-width: 480px) and (max-width: 599px) {
+          .vt-image-container {
+            transform: scale(0.68);
+            margin-bottom: -173px;
+          }
+        }
+        @media (min-width: 600px) and (max-width: 767px) {
+          .vt-image-container {
+            transform: scale(0.85);
+            margin-bottom: -81px;
+          }
+        }
+        /* Prevent horizontal scroll on mobile without touching desktop layout */
+        @media (max-width: 1023px) {
+          .vt-section-wrap { overflow-x: clip; }
+        }
       `}</style>
 
       {/* Heading */}
@@ -45,7 +72,7 @@ const VehicleTrackingpage = () => {
           Left  card left:0  width:240 → right edge 240px → 15px behind phone ✓
           Right card right:0 width:240 → left  edge 420px → 15px behind phone ✓
         */}
-        <div className="relative shrink-0" style={{ width: "660px", height: "540px" }}>
+        <div className="relative shrink-0 vt-image-container" style={{ width: "660px", height: "540px" }}>
 
           {/* 2 animated gold rings — lowest layer */}
           <div className="vt-ring" />
