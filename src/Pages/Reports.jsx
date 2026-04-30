@@ -102,7 +102,7 @@ const normalizeHistory = (history) => {
 const normalizePriority = (priority) => {
   const key = String(priority || "").trim().toLowerCase();
   if (["high", "critical"].includes(key)) return "high";
-  if (["average", "medium", "normal"].includes(key)) return "average";
+  if (["average", "medium", "normal"].includes(key)) return "medium";
   return "low";
 };
 
@@ -161,7 +161,7 @@ const getPriorityFromIssueType = (issueType) => {
   const key = normalizeIssueTypeKey(issueType);
 
   if (key === "phishing" || key === "fake-calls") return "high";
-  if (key === "fake-email" || key === "spam") return "average";
+  if (key === "fake-email" || key === "spam") return "medium";
   return "low";
 };
 
@@ -793,7 +793,7 @@ const Reports = () => {
                 />
                 {/* Overlays */}
                 <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/10 to-transparent lg:rounded-r-2xl" />
-                <div className="absolute inset-0 bg-linear-to-t from-yellow-50/50 via-transparent to-transparent hidden lg:block" />
+                <div className="absolute inset-0 bg-linear-to-r from-yellow-50/50 via-transparent to-transparent hidden lg:block" />
 
                 {/* Floating badge — top left */}
                 <div className="rep-float absolute top-6 left-6 bg-white/90 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3 border border-yellow-100">

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Edit } from "lucide-react";
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digicapital.co.in";
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 const FAQ_TYPE_MAP = {
   General: "General Information Queries",
   Technical: "Technical Queries",

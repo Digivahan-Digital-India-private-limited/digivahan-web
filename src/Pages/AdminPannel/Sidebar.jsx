@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -18,7 +18,9 @@ import {
   Smartphone,
   CalendarDays,
   UserX,
+  BriefcaseBusiness,
 } from "lucide-react";
+import { MyContext } from "../../ContextApi/DataProvider";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, link: "/admin-panel" },
@@ -29,6 +31,7 @@ const menuItems = [
   { name: "Delete Account Request", icon: UserX, link: "/delete-account-requests" },
   { name: "Report Issue", icon: FileText, link: "/report-issues" },
   { name: "Manage Appointment", icon: CalendarDays, link: "/manage-appointment" },
+  { name: "HR Manager", icon: BriefcaseBusiness, link: "/hr-manager" },
   // { name: "Reviews", icon: Star, link: "/admin/reviews" },
   // { name: "Issues / Priority", icon: AlertTriangle, link: "/admin/issues" },
   // { name: "Reports", icon: FileText, link: "/admin/reports" },
@@ -40,6 +43,15 @@ const menuItems = [
 function Sidebar() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+  const { LogoutAdmin } = useContext(MyContext);
+
+  const handleLogout = async () => {
+    const result = await LogoutAdmin();
+    if (result) {
+      navigate("/login-page");
+    }
+  };
 
   return (
     <>
@@ -102,7 +114,11 @@ function Sidebar() {
 
         {/* Logout (Always at bottom, no overlap) */}
         <div className="px-3 py-4 border-t">
-          <button className={`flex items-center gap-3 w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition ${collapsed ? 'justify-center' : ''}`} title={collapsed ? 'Logout' : ''}>
+          <button 
+            onClick={handleLogout}
+            className={`flex items-center gap-3 w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition ${collapsed ? 'justify-center' : ''}`} 
+            title={collapsed ? 'Logout' : ''}
+          >
             <LogOut className="w-5 h-5 shrink-0" />
             <span className={`text-sm font-medium transition-opacity duration-300 ${collapsed ? 'opacity-0 w-0 hidden' : 'opacity-100'}`}>
               {!collapsed && "Logout"}

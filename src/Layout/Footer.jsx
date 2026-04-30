@@ -15,7 +15,7 @@ export const Footer = () => {
   return (
     <footer className="bg-white border-t border-gray-200">
       {/* Top section */}
-      <div className="max-w-6xl mx-auto px-2 py-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8">
+      <div className="max-w-6xl mx-auto px-2 py-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-8">
         {/* Logo + Company Info */}
         <div className="space-y-3">
           <img
@@ -41,22 +41,9 @@ export const Footer = () => {
             <li>
               <Link to="/about-us">About us</Link>
             </li>
-            {/* <li>
-              <Link to="/news-page">News</Link>
-            </li> */}
-            {/* <li>
-              <Link to="/updates-page">Updates</Link>
-            </li> */}
             <li>
-              <Link to="/login-page">Login</Link>
+              <Link to="/career-page">Career</Link>
             </li>
-          </ul>
-        </div>
-
-        {/* Support */}
-        <div>
-          <ul className="flex flex-col gap-2 text-sm">
-            <li className="text-gray-600 font-bold">Support</li>
             <li>
               <Link to="/contact-page">Contact Us</Link>
             </li>
@@ -68,6 +55,65 @@ export const Footer = () => {
             </li>
             <li>
               <Link to="/Report-page">Reports</Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* Marketplace */}
+        <div>
+          <ul className="flex flex-col gap-2 text-sm">
+            <li className="text-gray-600 font-bold">Marketplace</li>
+            <li>
+              <Link to="/marketplace">Marketplace Home</Link>
+            </li>
+            <li>
+              <Link to="/marketplace/buy">Buy Cars</Link>
+            </li>
+            <li>
+              <Link to="/marketplace/sell">Sell Cars</Link>
+            </li>
+            <li>
+              <Link to="/marketplace/trust">Trust Center</Link>
+            </li>
+            <li>
+              <Link to="/marketplace/reviews">Customer Reviews</Link>
+            </li>
+            <li>
+              <Link to="/marketplace/support">Marketplace Support</Link>
+            </li>
+            <li>
+              <Link to="/marketplace/tools/emi">EMI Calculator</Link>
+            </li>
+            <li>
+              <Link to="/marketplace/tools/service-cost">Service Cost Calculator</Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* My Account */}
+        <div>
+          <ul className="flex flex-col gap-2 text-sm">
+            <li className="text-gray-600 font-bold">My Account</li>
+            <li>
+              <Link to="/dashboard">My Account</Link>
+            </li>
+            <li>
+              <Link to="/orders">My Orders</Link>
+            </li>
+            <li>
+              <Link to="/virtual-qr">My Virtual QRs</Link>
+            </li>
+            <li>
+              <Link to="/document-vault">Document Vault</Link>
+            </li>
+            <li>
+              <Link to="/profile/update">Update Profile</Link>
+            </li>
+            <li>
+              <Link to="/login">User Login</Link>
+            </li>
+            <li>
+              <Link to="/login-page">Admin Login</Link>
             </li>
             <li>
               <Link to="/delete-account" className="text-red-500 font-medium hover:text-red-600 transition-colors">Delete Account</Link>

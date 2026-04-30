@@ -3,7 +3,7 @@ import axios from "axios";
 import { AlertTriangle, CalendarClock, Mail, Phone, RefreshCcw, Search, ShieldAlert, Tag, Ticket, Trash2, UserCheck, X } from "lucide-react";
 import { toast } from "react-toastify";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digicapital.co.in";
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -22,7 +22,7 @@ const STATUS_BADGES = {
 
 const PRIORITY_BADGES = {
   high: "bg-rose-100 text-rose-700 border-rose-200",
-  average: "bg-amber-100 text-amber-700 border-amber-200",
+  medium: "bg-amber-100 text-amber-700 border-amber-200",
   low: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
@@ -61,7 +61,7 @@ const formatDate = (value) => {
 const normalizePriority = (value) => {
   const key = String(value || "").trim().toLowerCase();
   if (["high", "critical"].includes(key)) return "high";
-  if (["average", "medium", "normal"].includes(key)) return "average";
+  if (["average", "medium", "normal"].includes(key)) return "medium";
   return "low";
 };
 

@@ -25,7 +25,6 @@ const FilterQR = () => {
 
   const { filterQrData, filterQrlist } = useContext(MyContext);
 
-  console.log();
   
 
   // 🔥 API call on filter change

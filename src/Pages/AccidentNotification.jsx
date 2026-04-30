@@ -7,6 +7,7 @@ import calculateAgeFromDate from "../utils/dateUtils";
 import { toast } from "react-toastify";
 import imageCompression from "browser-image-compression";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 function AccidentNotification() {
   const [images, setImages] = useState([]);
   const [message, setmessage] = useState("");
@@ -96,7 +97,7 @@ function AccidentNotification() {
         formData.append("image", compressedFile);
 
         const res = await axios.post(
-          "https://api.digivahan.in/api/v1/notification/image",
+          `${BASE_URL}/api/v1/notification/image`,
           formData,
         );
 
@@ -122,7 +123,7 @@ function AccidentNotification() {
     if (!window.confirm("Delete this image?")) return;
     try {
       const res = await axios.post(
-        "https://api.digivahan.in/api/v1/notification/delete-image",
+        `${BASE_URL}/api/v1/notification/delete-image`,
         { public_id },
       );
 
@@ -171,7 +172,7 @@ function AccidentNotification() {
       };
 
       const response = await axios.post(
-        "https://api.digivahan.in/api/notifications/send",
+        `${BASE_URL}/api/notifications/send`,
         payload,
       );
       // console.log("Notification sent:", response.data);

@@ -275,7 +275,7 @@ const VisitUs = () => {
             <p className="text-gray-500 text-sm leading-7">
               Our team ensures structured discussions, clear communication, and a
               professional onboarding process for all our partners.
-              Let's build scalable and growth-driven opportunities together. 🚀
+              Let's build scalable and growth-driven opportunities together. 
             </p>
             <div className="flex gap-3 pt-2">
               <a href="#map-section"

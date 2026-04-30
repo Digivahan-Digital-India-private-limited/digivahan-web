@@ -19,6 +19,8 @@ import UserConcernChat from "./Pages/UserConcernChat";
 import VisitUs from "./Pages/VisitUs";
 import Reports from "./Pages/Reports";
 import Explorepage from "./Pages/Explorepage";
+import OrderQrPage from "./Pages/OrderQrPage";
+import CareerPage from "./Pages/CareerPage";
 import DeleteAccountPage from "./Pages/DeleteAccountPage";
 import SendNotificationpage from "./Pages/SendNotificationpage";
 import ConnectTabs from "./Pages/ConnectTabs";
@@ -95,6 +97,7 @@ import ManageConcerns from "./Pages/AdminPannel/Concerns/ManageConcerns";
 import ConcernChat from "./Pages/AdminPannel/Concerns/ConcernChat";
 import DeleteAccountRequests from "./Pages/AdminPannel/DeleteAccountRequests/DeleteAccountRequests";
 import ReportIssueList from "./Pages/AdminPannel/ReportsIssue/ReportIssueList";
+import HRManager from "./Pages/AdminPannel/HRManager/HRManager";
 
 // Protected Routes
 import ProtectedRoutes from "./ProtectedRoutes/ProtectedRoutes";
@@ -141,6 +144,62 @@ import {
 import MyVirtualQREmpty from "./Pages/IOSAppPage/IOSDashboard/VirtualQR/MyVirtualQREmpty";
 import MyVirtualQRList from "./Pages/IOSAppPage/IOSDashboard/VirtualQR/MyVirtualQRList";
 import MyVirtualQRDetail from "./Pages/IOSAppPage/IOSDashboard/VirtualQR/MyVirtualQRDetail";
+import SeoHead from "./Components/Seo/SeoHead";
+
+// New User System (Frontend Foundation)
+import UserProtectedRoute from "./features/auth/components/UserProtectedRoute";
+import LoginPage from "./features/auth/pages/LoginPage";
+import OtpVerificationPage from "./features/auth/pages/OtpVerificationPage";
+import AccountCreatedPage from "./features/auth/pages/AccountCreatedPage";
+import LoginSuccessPage from "./features/auth/pages/LoginSuccessPage";
+import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
+import PasswordChangedPage from "./features/auth/pages/PasswordChangedPage";
+import AppLayout from "./features/shared/components/layout/AppLayout";
+import MarketplaceLayout from "./features/shared/components/layout/MarketplaceLayout";
+import DashboardPage from "./features/dashboard/pages/DashboardPage";
+import MyGaragePage from "./features/vehicles/pages/MyGaragePage";
+import AddVehiclePage from "./features/vehicles/pages/AddVehiclePage";
+import VehicleDetailsPage from "./features/vehicles/pages/VehicleDetailsPage";
+import MyVirtualQRPage from "./features/qr/pages/MyVirtualQRPage";
+import MyVirtualQRListPage from "./features/qr/pages/MyVirtualQRListPage";
+import MyVirtualQRDetailPage from "./features/qr/pages/MyVirtualQRDetailPage";
+import OrdersPage from "./features/orders/pages/OrdersPage";
+import TrackOrderPage from "./features/orders/pages/TrackOrderPage";
+import ReviewOrderPage from "./features/orders/pages/ReviewOrderPage";
+import EditDeliveryAddressPage from "./features/orders/pages/EditDeliveryAddressPage";
+import PaymentPage from "./features/orders/pages/PaymentPage";
+import OrderSuccessPage from "./features/orders/pages/OrderSuccessPage";
+import NotificationsPage from "./features/notifications/pages/NotificationsPage";
+import ProfilePage from "./features/profile/pages/ProfilePage";
+import EmergencyContactsPage from "./features/profile/pages/EmergencyContactsPage";
+import UpdateProfilePage from "./features/profile/pages/UpdateProfilePage";
+import BasicDetailsPage from "./features/profile/pages/BasicDetailsPage";
+import PublicDetailsPage from "./features/profile/pages/PublicDetailsPage";
+import ChangePasswordPage from "./features/profile/pages/ChangePasswordPage";
+import AddEmergencyContactPage from "./features/profile/pages/AddEmergencyContactPage";
+import EditEmergencyContactPage from "./features/profile/pages/EditEmergencyContactPage";
+import ChatPage from "./features/support/pages/ChatPage";
+import DocumentVaultPage from "./features/documents/pages/DocumentVaultPage";
+import MarketplaceHomePage from "./features/marketplace/pages/MarketplaceHomePage";
+import BuyCarsPage from "./features/marketplace/pages/BuyCarsPage";
+import SellCarsPage from "./features/marketplace/pages/SellCarsPage";
+import BuyCarDetailsPage from "./features/marketplace/pages/BuyCarDetailsPage";
+import BuyCarComparePage from "./features/marketplace/pages/BuyCarComparePage";
+import SellerInstantQuotePage from "./features/marketplace/pages/SellerInstantQuotePage";
+import SellerInspectionBookingPage from "./features/marketplace/pages/SellerInspectionBookingPage";
+import SellerFinalOfferPage from "./features/marketplace/pages/SellerFinalOfferPage";
+import SellerTransferTrackerPage from "./features/marketplace/pages/SellerTransferTrackerPage";
+import MarketplaceTrustPage from "./features/marketplace/pages/MarketplaceTrustPage";
+import MarketplaceReviewsPage from "./features/marketplace/pages/MarketplaceReviewsPage";
+import MarketplaceSupportPage from "./features/marketplace/pages/MarketplaceSupportPage";
+import MarketplaceEmiCalculatorPage from "./features/marketplace/pages/MarketplaceEmiCalculatorPage";
+import MarketplaceServiceCostCalculatorPage from "./features/marketplace/pages/MarketplaceServiceCostCalculatorPage";
+
+const SemanticPage = ({ children, label = "Page content" }) => (
+  <section aria-label={label} className="w-full h-full">
+    {children}
+  </section>
+);
 
 const App = () => {
   const { pathname } = useLocation();
@@ -150,8 +209,102 @@ const App = () => {
   }, [pathname]);
 
   return (
-    <main className="w-full h-full">
+    <div className="w-full h-full">
+      <SeoHead />
       <Routes>
+        {/* New User System Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/otp" element={<OtpVerificationPage />} />
+        <Route path="/login/verify-number" element={<Navigate to="/login" replace />} />
+        <Route path="/login/verify-email" element={<Navigate to="/login" replace />} />
+        <Route path="/account-created" element={<AccountCreatedPage />} />
+        <Route path="/login-success" element={<LoginSuccessPage />} />
+        <Route path="/password-reset" element={<ResetPasswordPage />} />
+        <Route path="/password-reset/changed" element={<PasswordChangedPage />} />
+
+        <Route
+          element={
+            <UserProtectedRoute>
+              <AppLayout />
+            </UserProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/vehicles" element={<MyGaragePage />} />
+          <Route path="/my-garage" element={<Navigate to="/vehicles" replace />} />
+          <Route path="/vehicles/add" element={<AddVehiclePage />} />
+          <Route path="/vehicles/:id" element={<VehicleDetailsPage />} />
+          <Route path="/vehicles/:id/qr" element={<MyVirtualQRPage />} />
+          <Route path="/virtual-qr" element={<MyVirtualQRListPage />} />
+          <Route path="/virtual-qr/:id" element={<MyVirtualQRDetailPage />} />
+          <Route path="/my-virtual-qr-list" element={<Navigate to="/virtual-qr" replace />} />
+          <Route path="/my-virtual-qr-detail/:id" element={<MyVirtualQRDetailPage />} />
+          <Route path="/my-virtual-qr-empty" element={<Navigate to="/virtual-qr" replace />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/my-order" element={<Navigate to="/orders" replace />} />
+          <Route path="/orders/:id/track" element={<TrackOrderPage />} />
+          <Route path="/orders/:id/review" element={<ReviewOrderPage />} />
+          <Route path="/orders/:id/delivery" element={<EditDeliveryAddressPage />} />
+          <Route path="/orders/:id/payment" element={<PaymentPage />} />
+          <Route path="/orders/:id/success" element={<OrderSuccessPage />} />
+          <Route path="/track-order" element={<TrackOrderPage />} />
+          <Route path="/review-order" element={<ReviewOrderPage />} />
+          <Route path="/edit-delivery-address" element={<EditDeliveryAddressPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/order-successful" element={<OrderSuccessPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/document-vault" element={<DocumentVaultPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/update" element={<UpdateProfilePage />} />
+          <Route path="/profile/basic-details" element={<BasicDetailsPage />} />
+          <Route path="/profile/public-details" element={<PublicDetailsPage />} />
+          <Route path="/profile/change-password" element={<ChangePasswordPage />} />
+          <Route path="/update-profile" element={<Navigate to="/profile/update" replace />} />
+          <Route path="/basic-details" element={<Navigate to="/profile/basic-details" replace />} />
+          <Route path="/public-details" element={<Navigate to="/profile/public-details" replace />} />
+          <Route path="/change-password" element={<Navigate to="/profile/change-password" replace />} />
+          <Route
+            path="/profile/emergency-contacts"
+            element={<EmergencyContactsPage />}
+          />
+          <Route path="/emergency-contacts-list" element={<Navigate to="/profile/emergency-contacts" replace />} />
+          <Route path="/emergency-contacts-empty" element={<Navigate to="/profile/emergency-contacts" replace />} />
+          <Route
+            path="/profile/emergency-contacts/add"
+            element={<AddEmergencyContactPage />}
+          />
+          <Route path="/add-emergency-contact" element={<Navigate to="/profile/emergency-contacts/add" replace />} />
+          <Route
+            path="/profile/emergency-contacts/:id/edit"
+            element={<EditEmergencyContactPage />}
+          />
+        </Route>
+
+        <Route
+          element={
+            <UserProtectedRoute>
+              <MarketplaceLayout />
+            </UserProtectedRoute>
+          }
+        >
+          <Route path="/marketplace" element={<MarketplaceHomePage />} />
+          <Route path="/marketplace/trust" element={<MarketplaceTrustPage />} />
+          <Route path="/marketplace/reviews" element={<MarketplaceReviewsPage />} />
+          <Route path="/marketplace/support" element={<MarketplaceSupportPage />} />
+          <Route path="/marketplace/tools/emi" element={<MarketplaceEmiCalculatorPage />} />
+          <Route path="/marketplace/tools/service-cost" element={<MarketplaceServiceCostCalculatorPage />} />
+          <Route path="/marketplace/buy" element={<BuyCarsPage />} />
+          <Route path="/marketplace/buy/compare" element={<BuyCarComparePage />} />
+          <Route path="/marketplace/buy/:listingId" element={<BuyCarDetailsPage />} />
+          <Route path="/marketplace/sell" element={<SellCarsPage />} />
+          <Route path="/marketplace/sell/quote" element={<SellerInstantQuotePage />} />
+          <Route path="/marketplace/sell/inspection" element={<SellerInspectionBookingPage />} />
+          <Route path="/marketplace/sell/final-offer" element={<SellerFinalOfferPage />} />
+          <Route path="/marketplace/sell/transfer-tracker" element={<SellerTransferTrackerPage />} />
+          <Route path="/buy-cars" element={<Navigate to="/marketplace/buy" replace />} />
+          <Route path="/sell-cars" element={<Navigate to="/marketplace/sell" replace />} />
+        </Route>
         <Route element={<Layout />}>
           <Route path="/" element={<Homepage />} />
 
@@ -161,6 +314,8 @@ const App = () => {
           <Route path="/news-page" element={<Newspage />} />
           <Route path="/login-page" element={<Loginpage />} />
           <Route path="/login-otp" element={<OtpLoginPage />} />
+          <Route path="/user-login" element={<Navigate to="/login" replace />} />
+          <Route path="/user-login-otp" element={<Navigate to="/login/otp" replace />} />
           <Route path="/contact-page" element={<Contactpage />} />
           <Route path="/Raise-concern-page" element={<RaiseConcern />} />
           <Route path="/concern-chat-user" element={<UserConcernChat />} />
@@ -171,6 +326,8 @@ const App = () => {
           <Route path="/visit-us-page" element={<VisitUs />} />
           <Route path="/Report-page" element={<Reports />} />
           <Route path="/explore-page" element={<Explorepage />} />
+          <Route path="/order-qr" element={<OrderQrPage />} />
+          <Route path="/career-page" element={<CareerPage />} />
           <Route path="/delete-account" element={<DeleteAccountPage />} />
 
           {/* Information page */}
@@ -190,96 +347,97 @@ const App = () => {
           />
         </Route>
 
-        <Route path="/digivahan/about-us" element={<Aboutpage />} />
-        <Route path="/digivahan/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/digivahan/about-us" element={<SemanticPage label="About DigiVahan"><Aboutpage /></SemanticPage>} />
+        <Route path="/digivahan/privacy-policy" element={<SemanticPage label="Privacy policy"><PrivacyPolicy /></SemanticPage>} />
         <Route
           path="/digivahan/protection-policy"
-          element={<ProtectionPolicy />}
+          element={<SemanticPage label="Data protection policy"><ProtectionPolicy /></SemanticPage>}
         />
         <Route
           path="/digivahan/terms-and-conditions"
-          element={<TermsAndConditionsPage />}
+          element={<SemanticPage label="Terms and conditions"><TermsAndConditionsPage /></SemanticPage>}
         />
+
 
         <Route
           path="/send-notification/:qr_id"
-          element={<SendNotificationpage />}
+          element={<SemanticPage label="Send notification"><SendNotificationpage /></SemanticPage>}
         />
 
         <Route
           path="/connect-tabs/:qr_id/:issue_type"
-          element={<ConnectTabs />}
+          element={<SemanticPage label="Connect tabs"><ConnectTabs /></SemanticPage>}
         />
 
         <Route
           path="/accident-notification/:qr_id"
-          element={<AccidentNotification />}
+          element={<SemanticPage label="Accident notification"><AccidentNotification /></SemanticPage>}
         />
 
         <Route
           path="/emergency-notification/:qr_id"
-          element={<EmergencyContactUspage />}
+          element={<SemanticPage label="Emergency contact notification"><EmergencyContactUspage /></SemanticPage>}
         />
 
         <Route
           path="/access-vehicle-doc/:qr_id"
-          element={<AccessVehicleDoc />}
+          element={<SemanticPage label="Access vehicle documents"><AccessVehicleDoc /></SemanticPage>}
         />
 
         {/* iOS App Pages */}
-        <Route path="/ios/login" element={<IOSLoginPage />} />
-        <Route path="/ios/verify-number" element={<VerifyNumber />} />
-        <Route path="/ios/verify-email" element={<VerifyEmail />} />
-        <Route path="/ios/verify-otp" element={<VerifyOTP />} />
-        <Route path="/ios/account-created" element={<AccountCreated />} />
-        <Route path="/ios/login-success" element={<LoginSuccess />} />
-        <Route path="/ios/reset-password" element={<ResetPassword />} />
-        <Route path="/ios/password-changed" element={<PasswordChanged />} />
-        <Route path="/ios/dashboard" element={<Home />} />
-        <Route path="/ios/profile" element={<Profile />} />
-        <Route path="/ios/notifications" element={<Notification />} />
-        <Route path="/ios/chat" element={<Chat />} />
-        <Route path="/ios/document-vault" element={<DocumentVault />} />
-        <Route path="/ios/my-order" element={<MyOrder />} />
-        <Route path="/ios/track-order" element={<TrackOrder />} />
-        <Route path="/ios/my-garage" element={<MyGarage />} />
-        <Route path="/ios/vehicle-info" element={<VehicleInfo />} />
-        <Route path="/ios/my-virtual-qr-empty" element={<MyVirtualQREmpty />} />
-        <Route path="/ios/my-virtual-qr-list" element={<MyVirtualQRList />} />
+        <Route path="/ios/login" element={<SemanticPage label="iOS login"><IOSLoginPage /></SemanticPage>} />
+        <Route path="/ios/verify-number" element={<SemanticPage label="Verify number"><VerifyNumber /></SemanticPage>} />
+        <Route path="/ios/verify-email" element={<SemanticPage label="Verify email"><VerifyEmail /></SemanticPage>} />
+        <Route path="/ios/verify-otp" element={<SemanticPage label="Verify OTP"><VerifyOTP /></SemanticPage>} />
+        <Route path="/ios/account-created" element={<SemanticPage label="Account created"><AccountCreated /></SemanticPage>} />
+        <Route path="/ios/login-success" element={<SemanticPage label="Login success"><LoginSuccess /></SemanticPage>} />
+        <Route path="/ios/reset-password" element={<SemanticPage label="Reset password"><ResetPassword /></SemanticPage>} />
+        <Route path="/ios/password-changed" element={<SemanticPage label="Password changed"><PasswordChanged /></SemanticPage>} />
+        <Route path="/ios/dashboard" element={<SemanticPage label="iOS dashboard"><Home /></SemanticPage>} />
+        <Route path="/ios/profile" element={<SemanticPage label="Profile"><Profile /></SemanticPage>} />
+        <Route path="/ios/notifications" element={<SemanticPage label="Notifications"><Notification /></SemanticPage>} />
+        <Route path="/ios/chat" element={<SemanticPage label="Chat"><Chat /></SemanticPage>} />
+        <Route path="/ios/document-vault" element={<SemanticPage label="Document vault"><DocumentVault /></SemanticPage>} />
+        <Route path="/ios/my-order" element={<SemanticPage label="My order"><MyOrder /></SemanticPage>} />
+        <Route path="/ios/track-order" element={<SemanticPage label="Track order"><TrackOrder /></SemanticPage>} />
+        <Route path="/ios/my-garage" element={<SemanticPage label="My garage"><MyGarage /></SemanticPage>} />
+        <Route path="/ios/vehicle-info" element={<SemanticPage label="Vehicle information"><VehicleInfo /></SemanticPage>} />
+        <Route path="/ios/my-virtual-qr-empty" element={<SemanticPage label="Virtual QR empty state"><MyVirtualQREmpty /></SemanticPage>} />
+        <Route path="/ios/my-virtual-qr-list" element={<SemanticPage label="Virtual QR list"><MyVirtualQRList /></SemanticPage>} />
         <Route
           path="/ios/my-virtual-qr-detail"
-          element={<MyVirtualQRDetail />}
+          element={<SemanticPage label="Virtual QR details"><MyVirtualQRDetail /></SemanticPage>}
         />
-        <Route path="/ios/update-profile" element={<UpdateProfile />} />
-        <Route path="/ios/basic-details" element={<BasicDetails />} />
-        <Route path="/ios/public-details" element={<PublicDetails />} />
+        <Route path="/ios/update-profile" element={<SemanticPage label="Update profile"><UpdateProfile /></SemanticPage>} />
+        <Route path="/ios/basic-details" element={<SemanticPage label="Basic details"><BasicDetails /></SemanticPage>} />
+        <Route path="/ios/public-details" element={<SemanticPage label="Public details"><PublicDetails /></SemanticPage>} />
         <Route
           path="/ios/emergency-contacts-empty"
-          element={<EmergencyContactsEmpty />}
+          element={<SemanticPage label="Emergency contacts"><EmergencyContactsEmpty /></SemanticPage>}
         />
         <Route
           path="/ios/emergency-contacts-list"
-          element={<EmergencyContactsList />}
+          element={<SemanticPage label="Emergency contacts list"><EmergencyContactsList /></SemanticPage>}
         />
         <Route
           path="/ios/edit-emergency-contact"
-          element={<EditEmergencyContact />}
+          element={<SemanticPage label="Edit emergency contact"><EditEmergencyContact /></SemanticPage>}
         />
         <Route
           path="/ios/add-emergency-contact"
-          element={<AddEmergencyContact />}
+          element={<SemanticPage label="Add emergency contact"><AddEmergencyContact /></SemanticPage>}
         />
-        <Route path="/ios/change-password" element={<ChangePassword />} />
-        <Route path="/ios/about-us" element={<IOSAboutUs />} />
-        <Route path="/ios/terms-conditions" element={<IOSTermsConditions />} />
-        <Route path="/ios/privacy-policy" element={<IOSPrivacyPolicy />} />
-        <Route path="/ios/review-order" element={<ReviewOrder />} />
+        <Route path="/ios/change-password" element={<SemanticPage label="Change password"><ChangePassword /></SemanticPage>} />
+        <Route path="/ios/about-us" element={<SemanticPage label="About DigiVahan iOS"><IOSAboutUs /></SemanticPage>} />
+        <Route path="/ios/terms-conditions" element={<SemanticPage label="iOS terms and conditions"><IOSTermsConditions /></SemanticPage>} />
+        <Route path="/ios/privacy-policy" element={<SemanticPage label="iOS privacy policy"><IOSPrivacyPolicy /></SemanticPage>} />
+        <Route path="/ios/review-order" element={<SemanticPage label="Review order"><ReviewOrder /></SemanticPage>} />
         <Route
           path="/ios/edit-delivery-address"
-          element={<EditDeliveryAddress />}
+          element={<SemanticPage label="Edit delivery address"><EditDeliveryAddress /></SemanticPage>}
         />
-        <Route path="/ios/payment" element={<Payment />} />
-        <Route path="/ios/order-successful" element={<OrderSuccessful />} />
+        <Route path="/ios/payment" element={<SemanticPage label="Payment"><Payment /></SemanticPage>} />
+        <Route path="/ios/order-successful" element={<SemanticPage label="Order successful"><OrderSuccessful /></SemanticPage>} />
         <Route
           element={
             <ProtectedRoutes>
@@ -350,6 +508,7 @@ const App = () => {
           />
           <Route path="/report-issues" element={<ReportIssueList />} />
           <Route path="/manage-appointment" element={<ManageAppointment />} />
+          <Route path="/hr-manager" element={<HRManager />} />
           <Route path="/post-faq" element={<PostFAQ />} />
           <Route path="/delete-faq" element={<DeleteFAQ />} />
           <Route path="/update-faq" element={<UpdateFAQ />} />
@@ -407,7 +566,7 @@ const App = () => {
           />
         </Route>
       </Routes>
-    </main>
+    </div>
   );
 };
 

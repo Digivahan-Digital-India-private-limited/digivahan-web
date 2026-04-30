@@ -73,7 +73,7 @@ function SmartQRFeaturepage() {
 
         {/* Left: yellow bar + text */}
         <div className="flex items-stretch gap-5 flex-1 max-w-lg">
-          <div className="w-1 self-stretch bg-yellow-400 rounded-full shrink-0" />
+          <div className="w-1 self-stretch bg-yellow-400 rounded-full flex-shrink-0" />
           <div className="space-y-3">
             <h3 className="text-2xl font-semibold text-black">
               Smart QR – Connect Securely in Seconds
@@ -96,7 +96,7 @@ function SmartQRFeaturepage() {
         {/* Right: phone + floating card + animated rings */}
         {/* order-first moves image before text on mobile; lg:order-none restores desktop order */}
         <div
-          className="relative shrink-0 qr-image-container order-first lg:order-0"
+          className="relative shrink-0 qr-image-container order-first lg:order-none"
           style={{ width: "500px", height: "620px" }}
         >
           {/* Outer thick dashed green ring — counter-clockwise */}
