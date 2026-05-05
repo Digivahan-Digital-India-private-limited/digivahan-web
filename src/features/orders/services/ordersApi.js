@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 import httpClient from "../../shared/api/httpClient";
 import {
   requestWithFallback,
@@ -60,11 +62,22 @@ export const upsertLocalOrder = (payload) => {
 export const listOrders = async () => {
   const localOrders = getLocalOrders().map(normalizeOrder);
 
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
   const response = await requestWithFallback(
     [
+      () => userId ? httpClient.get(`/api/v1/orders/${userId}`) : Promise.reject("No User ID"),
       () => httpClient.get("/api/orders/user"),
       () => httpClient.get("/api/orders"),
-      () => httpClient.get("/api/user/orders"),
     ],
     () => ({ data: mergeOrders(localOrders, mockOrders) }),
   );

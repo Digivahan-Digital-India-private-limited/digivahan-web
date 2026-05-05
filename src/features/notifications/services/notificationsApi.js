@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 import httpClient from "../../shared/api/httpClient";
 import {
   requestWithFallback,
@@ -58,11 +60,22 @@ export const listNotifications = async () => {
     return local.map(normalizeNotification);
   }
 
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
   const response = await requestWithFallback(
     [
+      () => userId ? httpClient.get(`/api/v1/notifications/${userId}`) : Promise.reject("No User ID"),
       () => httpClient.get("/api/notifications"),
       () => httpClient.get("/api/notifications/list"),
-      () => httpClient.get("/api/user/notifications"),
     ],
     () => ({ data: getMockBackedNotifications() }),
   );

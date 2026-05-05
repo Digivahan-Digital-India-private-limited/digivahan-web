@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const STORAGE_KEY = "digivahanConcerns";
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
@@ -100,9 +101,11 @@ const RaiseConcern = () => {
         payload.append("incidentProof", file);
       });
 
+      const token = Cookies.get("user_token");
       const response = await axios.post(`${BASE_URL}/api/concern/raise`, payload, {
         headers: {
           "Content-Type": "multipart/form-data",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 

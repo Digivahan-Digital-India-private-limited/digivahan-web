@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import emailjs from "@emailjs/browser";
 import { FaPhoneAlt, FaTimes } from "react-icons/fa";
 import axios from "axios";
+import Cookies from "js-cookie";
+import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 const FAQ_TYPE_MAP = {
@@ -90,20 +91,37 @@ const Contactpage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setSuccess("");
 
-    emailjs
-      .send(
-        "service_714b67q",
-        "template_x7eknz8",
-        formData,
-        "jDelYHimttaB-w2vA"
-      )
-      .then(() => {
+    try {
+      const token = Cookies.get("user_token");
+      if (!token) {
+        toast.error("Please login first to submit your query.");
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone,
+        query_type: "Contact Form",
+        query: formData.message,
+      };
+
+      const response = await axios.post(`${BASE_URL}/api/user/submit-query`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data?.success) {
         setSuccess("Your message has been sent successfully! 💙");
+        toast.success("Query submitted successfully!");
         setFormData({
           first_name: "",
           last_name: "",
@@ -115,12 +133,16 @@ const Contactpage = () => {
           setIsModalOpen(false);
           setSuccess("");
         }, 2000);
-      })
-      .catch((error) => {
-        console.error("EmailJS Error:", error);
-        alert("Failed to send message 😔");
-      })
-      .finally(() => setLoading(false));
+      } else {
+        throw new Error(response.data?.message || "Failed to send message");
+      }
+    } catch (error) {
+      console.error("Query Submission Error:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Failed to send message 😔";
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const baseFaqCategories = [

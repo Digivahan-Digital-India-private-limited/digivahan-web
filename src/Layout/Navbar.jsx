@@ -73,13 +73,13 @@ const Navbar = () => {
             </Link>
           )}
 
-          <Link
+          {/* <Link
             to="/marketplace"
             className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-amber-300 via-yellow-400 to-orange-300 px-4 py-2 text-sm font-semibold text-slate-900 shadow-[0_0_0_1px_rgba(251,191,36,0.55),0_0_20px_rgba(251,191,36,0.5)] ring-1 ring-amber-200/70 transition hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(251,191,36,0.7),0_0_28px_rgba(251,191,36,0.65)]"
           >
             <FaStore className="text-[13px]" />
             <span>Open Marketplace</span>
-          </Link>
+          </Link> */}
         </div>
 
         {/* Mobile Menu Toggle Button */}

@@ -9,7 +9,7 @@ const OtpVerificationPage = () => {
   const phone = location.state?.phone || localStorage.getItem("user_login_phone") || "**********";
   const { verifyUserOtp } = useContext(MyContext);
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const refs = useRef([]);
 
@@ -28,8 +28,8 @@ const OtpVerificationPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const code = otp.join("");
-    if (code.length !== 6) {
-      toast.error("Enter complete 6-digit OTP");
+    if (code.length !== 4) {
+      toast.error("Enter complete 4-digit OTP");
       return;
     }
 
@@ -54,7 +54,7 @@ const OtpVerificationPage = () => {
       <div className="w-full max-w-md rounded-3xl border border-emerald-100 bg-white p-8 shadow-[0_30px_80px_rgba(16,185,129,0.15)]">
         <h1 className="text-2xl font-bold text-slate-900">Verify OTP</h1>
         <p className="mt-2 text-sm text-slate-500">
-          Enter the 6-digit code sent to +91 {phone}. This is a UI-only mock flow for now.
+          Enter the 4-digit code sent to +91 {phone}.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">

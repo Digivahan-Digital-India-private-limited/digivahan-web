@@ -6,8 +6,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 const BASE_URL =
   import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
-const ENABLE_DUMMY_USER_AUTH =
-  import.meta.env.VITE_ENABLE_DUMMY_USER_AUTH !== "false";
+const ENABLE_DUMMY_USER_AUTH = false;
 export const MyContext = createContext();
 
 const DataProvider = ({ children }) => {
@@ -95,13 +94,13 @@ const DataProvider = ({ children }) => {
     try {
       const response = await postWithFallback(
         [
+          "/api/auth/otp-based-login",
           "/api/auth/user/send-otp",
           "/api/auth/send-otp",
-          "/api/marketplace/auth/send-otp",
         ],
         {
-          phone,
-          role: "user",
+          login_via: "phone",
+          value: phone,
         },
       );
 
@@ -144,23 +143,24 @@ const DataProvider = ({ children }) => {
 
       const response = await postWithFallback(
         [
+          "/api/auth/verify-login-otp",
           "/api/auth/user/verify-otp",
           "/api/auth/user/verify-user",
-          "/api/marketplace/auth/verify-otp",
         ],
         {
-          phone,
+          login_via: "phone",
+          value: phone,
           otp: userOtp,
-          OtpCode: userOtp,
-          mode: "buy_sell",
         },
       );
 
       if (response?.data) {
         const token =
+          response.data.user?.token ||
           response.data.token ||
           response.data.accessToken ||
-          response.data?.data?.token;
+          response.data?.data?.token ||
+          response.data?.data?.accessToken;
 
         if (token) {
           Cookies.set("user_token", token, {

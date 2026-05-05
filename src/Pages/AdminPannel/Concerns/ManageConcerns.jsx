@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 import {
 	AlertTriangle,
 	ArrowLeft,
@@ -145,7 +146,13 @@ const ManageConcerns = () => {
 					params.category = categoryFilter;
 				}
 
-				const response = await axios.get(`${BASE_URL}/api/concern/list`, { params });
+				const token = Cookies.get("admin_token");
+				const response = await axios.get(`${BASE_URL}/api/concern/list`, {
+					params,
+					headers: {
+						...(token ? { Authorization: `Bearer ${token}` } : {}),
+					},
+				});
 
 				if (!response?.data?.success) {
 					throw new Error(response?.data?.error || "Failed to fetch concerns.");
@@ -241,8 +248,12 @@ const ManageConcerns = () => {
 		try {
 			setDeletingConcernId(id);
 
+			const token = Cookies.get("admin_token");
 			const response = await axios.delete(`${BASE_URL}/api/concern/delete`, {
 				data: { ids: [id], id },
+				headers: {
+					...(token ? { Authorization: `Bearer ${token}` } : {}),
+				},
 			});
 
 			if (!response?.data?.success) {
@@ -271,8 +282,12 @@ const ManageConcerns = () => {
 		try {
 			setIsDeletingMultiple(true);
 
+			const token = Cookies.get("admin_token");
 			const response = await axios.delete(`${BASE_URL}/api/concern/delete`, {
 				data: { ids: checkedConcernIds },
+				headers: {
+					...(token ? { Authorization: `Bearer ${token}` } : {}),
+				},
 			});
 
 			if (!response?.data?.success) {
@@ -301,10 +316,16 @@ const ManageConcerns = () => {
 		try {
 			setIsUpdatingStatus(true);
 
+			const token = Cookies.get("admin_token");
 			const response = await axios.put(
 				`${BASE_URL}/api/concern/status/${activeConcern.id}`,
 				{
 					status: UI_TO_API_STATUS_UPDATE[draftStatus] || draftStatus.toLowerCase(),
+				},
+				{
+					headers: {
+						...(token ? { Authorization: `Bearer ${token}` } : {}),
+					},
 				},
 			);
 
@@ -572,9 +593,43 @@ const ManageConcerns = () => {
 								</div>
 
 								<div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-									<p className="text-xs text-slate-500 mb-1">Issue Description</p>
-									<p className="text-sm text-slate-700 leading-relaxed">{activeConcern.issueDescription || "-"}</p>
-									<p className="text-xs text-slate-500 mt-3">Support Doc: {activeConcern.supportingDocs || "N/A"}</p>
+									<p className="text-xs text-slate-500 mb-2 font-medium">Issue Description</p>
+									<p className="text-s font-semibold text-slate-900 leading-relaxed">{activeConcern.issueDescription || "-"}</p>
+									
+									{activeConcern.supportingDocs && activeConcern.supportingDocs.trim() !== "N/A" && (
+										<div className="mt-4">
+											<p className="text-xs text-slate-500 mb-2 font-medium">Support Documents</p>
+											<div className="flex flex-wrap gap-3">
+												{activeConcern.supportingDocs.split(",").map((url, idx) => {
+													const trimmedUrl = url.trim();
+													if (!trimmedUrl || trimmedUrl === "N/A") return null;
+													return (
+														<a 
+															key={idx} 
+															href={trimmedUrl} 
+															target="_blank" 
+															rel="noopener noreferrer"
+															title="Click to view full image"
+															className="relative group block w-18 h-18 sm:w-22 sm:h-22 rounded-lg overflow-hidden border border-slate-300 bg-white hover:border-blue-500 transition shadow-sm hover:shadow-md"
+														>
+															<img 
+																src={trimmedUrl} 
+																alt={`Supporting Document ${idx + 1}`}
+																className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+																onError={(e) => {
+																	e.target.style.display = 'none';
+																	if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+																}}
+															/>
+															<div className="hidden absolute inset-0 items-center justify-center bg-slate-50 text-slate-400 text-[10px] text-center p-2 leading-tight">
+																File Preview Not Available
+															</div>
+														</a>
+													);
+												})}
+											</div>
+										</div>
+									)}
 								</div>
 
 								<div className="p-4 rounded-lg border border-slate-200 bg-slate-50">

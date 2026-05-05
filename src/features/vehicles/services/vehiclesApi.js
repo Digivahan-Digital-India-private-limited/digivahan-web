@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 import httpClient from "../../shared/api/httpClient";
 import {
   requestWithFallback,
@@ -80,11 +82,21 @@ export const getMockBackedVehicles = () => {
 };
 
 export const listVehicles = async () => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
   const response = await requestWithFallback(
     [
+      () => userId ? httpClient.get(`/api/v1/garage/${userId}`) : Promise.reject("No User ID"),
       () => httpClient.get("/api/vehicles"),
-      () => httpClient.get("/api/user/vehicles"),
-      () => httpClient.get("/api/marketplace/vehicles"),
     ],
     () => ({ data: getMockBackedVehicles() }),
   );

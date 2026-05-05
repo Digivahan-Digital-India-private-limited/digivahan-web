@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 import httpClient from "../../shared/api/httpClient";
 import {
   requestWithFallback,
@@ -25,26 +27,22 @@ const splitName = (fullName = "") => {
   };
 };
 
-const normalizeProfile = (item) => ({
-  ...(splitName(item?.name || item?.full_Name || item?.full_name || "")),
-  id: String(item?.id || item?._id || item?.user_id || "u1"),
-  firstName:
-    item?.firstName ||
-    item?.first_name ||
-    splitName(item?.name || item?.full_Name || item?.full_name || "").firstName ||
-    splitName(mockProfile.name).firstName,
-  lastName:
-    item?.lastName ||
-    item?.last_name ||
-    splitName(item?.name || item?.full_Name || item?.full_name || "").lastName ||
-    splitName(mockProfile.name).lastName,
-  name: item?.name || item?.full_Name || item?.full_name || "User",
-  phone: item?.phone || item?.phone_number || mockProfile.phone,
-  email: item?.email || mockProfile.email,
-  address: item?.address || mockProfile.address,
-  occupation: item?.occupation || mockProfile.occupation || "",
-  avatar: item?.avatar || item?.profile_pic || mockProfile.avatar,
-});
+const normalizeProfile = (item) => {
+  const basic = item?.basic_details || {};
+  const publicData = item?.public_details || {};
+
+  return {
+    id: String(item?.id || item?._id || item?.user_id || "u1"),
+    firstName: basic.first_name || item?.firstName || item?.first_name || splitName(item?.name || item?.full_Name || item?.full_name || "").firstName || "",
+    lastName: basic.last_name || item?.lastName || item?.last_name || splitName(item?.name || item?.full_Name || item?.full_name || "").lastName || "",
+    name: item?.name || item?.full_Name || item?.full_name || `${basic.first_name || ""} ${basic.last_name || ""}`.trim() || "User",
+    phone: basic.phone_number || item?.phone || item?.phone_number || "",
+    email: basic.email || item?.email || "",
+    address: publicData.address || item?.address || "",
+    occupation: basic.occupation || item?.occupation || "",
+    avatar: basic.profile_pic || item?.avatar || item?.profile_pic || "",
+  };
+};
 
 const normalizeEmergencyContact = (item) => ({
   id: String(item?.id || item?._id || item?.contact_id || ""),
@@ -100,11 +98,22 @@ const mapProfilePayload = (payload) => ({
 });
 
 export const getProfile = async () => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
   const response = await requestWithFallback(
     [
+      () => userId ? httpClient.post("/api/get_user_details", { user_id: userId, details_type: "all" }) : Promise.reject("No User ID"),
       () => httpClient.get("/api/users/me"),
       () => httpClient.get("/api/user/profile"),
-      () => httpClient.get("/api/users"),
     ],
     () => ({ data: getLocalProfile() || mockProfile }),
   );
@@ -138,14 +147,27 @@ export const listEmergencyContacts = async () => {
 };
 
 export const updateProfile = async (payload) => {
-  const requestPayload = mapProfilePayload(payload);
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
+  const requestPayload = {
+    ...mapProfilePayload(payload),
+    user_id: userId,
+  };
 
   const response = await requestWithFallback(
     [
+      () => httpClient.put("/api/update_user", requestPayload),
       () => httpClient.patch("/api/users/me", requestPayload),
       () => httpClient.put("/api/users/me", requestPayload),
-      () => httpClient.patch("/api/user/profile", requestPayload),
-      () => httpClient.put("/api/user/profile", requestPayload),
     ],
     () => {
       const updated = normalizeProfile({

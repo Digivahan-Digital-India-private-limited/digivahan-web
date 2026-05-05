@@ -1,8 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, MessageSquare, Search, Send, ShieldAlert, Ticket } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import axios from "axios";
+import Cookies from "js-cookie";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 const STORAGE_KEY = "digivahanConcerns";
 
 const formatDate = (value) => {
@@ -12,11 +15,28 @@ const formatDate = (value) => {
 
 const normalizeMessage = (message, index) => {
   const sender = String(message?.sender || "user").toLowerCase();
+  const time = message?.time || message?.sentAt || message?.createdAt || new Date().toISOString();
+  // Create a completely stable ID based on backend data, so React doesn't remount and replay animations
+  const stableId = message?._id || message?.id || `msg-${index}-${new Date(time).getTime()}`;
   return {
-    id: message?.id || `msg-${index}-${Date.now()}`,
+    id: stableId,
     sender,
     text: message?.text || message?.message || "",
-    time: message?.time || message?.sentAt || message?.createdAt || new Date().toISOString(),
+    time,
+  };
+};
+
+const mapApiConcernToUiConcern = (item) => {
+  if (!item) return null;
+  return {
+    id: item._id || item.id || "",
+    name: item.name || "User",
+    contactInfo: item.phoneNumber || "",
+    concernCategory: item.category || "",
+    issueDescription: item.issueDescription || "",
+    status: item.status || "Open",
+    createdAt: item.createdAt,
+    chat: item.conversation || [],
   };
 };
 
@@ -29,18 +49,61 @@ const UserConcernChat = () => {
   const [searchToken, setSearchToken] = useState(tokenId);
   const [concerns, setConcerns] = useState(() => getStoredConcerns());
   const [userMessage, setUserMessage] = useState("");
+  const chatScrollRef = useRef(null);
+  const pollingRef = useRef(null);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
+  // Detect manual scroll to disable/enable auto-scroll
+  const handleScroll = () => {
+    if (chatScrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatScrollRef.current;
+      // If user is within 100px of bottom, keep auto-scroll enabled
+      setIsAutoScrollEnabled(scrollHeight - scrollTop - clientHeight < 100);
+    }
+  };
+
+  // Auto-scroll to bottom when messages change, ONLY if user is already at bottom
   useEffect(() => {
-    const syncConcerns = () => {
-      setConcerns(getStoredConcerns());
+    if (chatScrollRef.current && isAutoScrollEnabled) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [concerns, isAutoScrollEnabled]);
+
+  // Poll API every 4 seconds for this specific concern to get live admin messages
+  useEffect(() => {
+    if (!tokenId) return;
+
+    const fetchConcern = async () => {
+      try {
+        const token = Cookies.get("user_token");
+        const response = await axios.get(`${BASE_URL}/api/concern/detail/${tokenId}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (response?.data?.success && response.data.data) {
+          const updatedConcern = mapApiConcernToUiConcern(response.data.data);
+          setConcerns((prev) => {
+            const exists = prev.some((c) => c.id === updatedConcern.id);
+            const updated = exists
+              ? prev.map((c) => (c.id === updatedConcern.id ? updatedConcern : c))
+              : [...prev, updatedConcern];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            return updated;
+          });
+        }
+      } catch (err) {
+        // Silent fail — don't toast on background polls
+      }
     };
 
-    window.addEventListener("storage", syncConcerns);
+    fetchConcern(); // Immediate first fetch
+    pollingRef.current = setInterval(fetchConcern, 4000);
 
     return () => {
-      window.removeEventListener("storage", syncConcerns);
+      clearInterval(pollingRef.current);
     };
-  }, []);
+  }, [tokenId]);
 
   useEffect(() => {
     setSearchToken(tokenId);
@@ -79,7 +142,7 @@ const UserConcernChat = () => {
     navigate(`/concern-chat-user/${token}`);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!concern) {
       toast.error("Please open a valid token first.");
       return;
@@ -91,25 +154,39 @@ const UserConcernChat = () => {
       return;
     }
 
-    const nextMessage = {
-      id: `msg-${Date.now()}`,
-      sender: "user",
-      text,
-      time: new Date().toISOString(),
-    };
+    try {
+      const token = Cookies.get("user_token");
+      const response = await axios.put(
+        `${BASE_URL}/api/concern/conversation/${concern.id}`,
+        { sender: "user", message: text },
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        }
+      );
 
-    const updatedConcerns = concerns.map((item) =>
-      item.id === concern.id
-        ? {
-            ...item,
-            chat: [...(item.chat || []), nextMessage],
-          }
-        : item,
-    );
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.error || "Failed to send message.");
+      }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedConcerns));
-    setConcerns(updatedConcerns);
-    setUserMessage("");
+      const updatedConcernFromApi = mapApiConcernToUiConcern(response.data.data);
+      if (updatedConcernFromApi) {
+        const updatedConcerns = concerns.map((item) =>
+          item.id === concern.id ? updatedConcernFromApi : item
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedConcerns));
+        setConcerns(updatedConcerns);
+      }
+      
+      setUserMessage("");
+      setIsAutoScrollEnabled(true);
+      setTimeout(() => {
+        if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      }, 50);
+    } catch (error) {
+      toast.error(error.response?.data?.error || error.message || "Failed to send message.");
+    }
   };
 
   return (
@@ -212,7 +289,7 @@ const UserConcernChat = () => {
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-linear-to-b from-slate-50 to-white space-y-3">
+                  <div ref={chatScrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 sm:p-5 bg-linear-to-b from-slate-50 to-white space-y-3">
                     {messages.length === 0 ? (
                       <div className="rounded-lg border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
                         No messages yet. Admin updates will appear here for this concern.
