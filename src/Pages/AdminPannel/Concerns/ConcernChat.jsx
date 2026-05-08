@@ -21,7 +21,7 @@ const mapApiConcernToUiConcern = (item) => {
   const apiStatus = String(item.status || "").toUpperCase();
 
   return {
-    id: item._id,
+    id: item.ticketId || item._id || item.id || "",
     name: item.user_id?.name || item.name || "Unknown User",
     contactInfo: item.user_id?.phoneNumber || item.phoneNumber || "",
     concernCategory: item.category || "",

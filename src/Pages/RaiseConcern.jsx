@@ -16,6 +16,9 @@ const RaiseConcern = () => {
   const [tokenIdInput, setTokenIdInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [supportingFiles, setSupportingFiles] = useState([]);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [submittedTokenId, setSubmittedTokenId] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -80,6 +83,9 @@ const RaiseConcern = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSuccessMsg("");
+    setSubmittedTokenId("");
+    setCopyStatus("");
     const validationErrors = validateForm();
 
     if (Object.keys(validationErrors).length > 0) {
@@ -155,11 +161,24 @@ const RaiseConcern = () => {
       }
 
       setTokenIdInput(tokenId);
-      toast.success(response.data.message || `Concern submitted successfully. Token ID: ${tokenId}`);
+      setSubmittedTokenId(tokenId);
+      setSuccessMsg(response.data.message || "Concern submitted successfully.");
+      // Auto scroll to top of form so user sees the success message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Failed to submit concern.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCopyTokenId = async () => {
+    if (!submittedTokenId) return;
+    try {
+      await navigator.clipboard.writeText(submittedTokenId);
+      setCopyStatus("Copied!");
+    } catch {
+      setCopyStatus("Unable to copy. Please copy manually.");
     }
   };
 
@@ -401,6 +420,38 @@ const RaiseConcern = () => {
                 You can submit your concern by filling out the form below with complete details, including:
               </p>
 
+              {successMsg && (
+                <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 fade-in-up">
+                  <p className="text-sm font-semibold text-green-700">{successMsg}</p>
+                  {submittedTokenId && (
+                    <>
+                      <p className="text-sm text-green-800 mt-1">
+                        Token ID: <span className="font-bold">{submittedTokenId}</span>
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCopyTokenId}
+                          className="px-3 py-2 rounded-lg border border-green-300 bg-white text-green-700 text-sm font-semibold hover:bg-green-100 transition"
+                        >
+                          Copy Token Number
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSuccessMsg(""); setSubmittedTokenId(""); }}
+                          className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition"
+                        >
+                          OK
+                        </button>
+                      </div>
+                      {copyStatus && (
+                        <p className="text-xs text-green-700 mt-2 font-medium">{copyStatus}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               <ul className="space-y-2 text-gray-700 mb-8">
                 <li className="flex items-center gap-3 hover:text-yellow-600 transition-colors duration-300">
                   <span className="text-yellow-500">●</span> Your Name
@@ -531,9 +582,9 @@ const RaiseConcern = () => {
               </div>
 
               <div className="mt-6 p-4 rounded-xl border border-blue-200 bg-linear-to-r from-blue-50/70 to-indigo-50/60">
-                <h4 className="text-lg font-bold text-gray-900 mb-3">Chat with Admin via Token ID</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-3">Chat with Admin via TOKEN ID</h4>
                 <p className="text-sm text-gray-700 mb-3">
-                  Enter your concern token ID to continue chat with admin.
+                  Enter your token ID to continue chat with admin.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-2 mb-3">
@@ -554,7 +605,7 @@ const RaiseConcern = () => {
                 </div>
 
                 <div className="bg-white rounded-lg border border-slate-200 p-3 text-sm text-slate-600">
-                  Enter token ID and click <strong>Open Chat</strong> to continue on the full chat page.
+                  Enter concern ID and click <strong>Open Chat</strong> to continue on the full chat page.
                 </div>
               </div>
             </div>

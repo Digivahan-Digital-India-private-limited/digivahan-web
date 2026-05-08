@@ -29,7 +29,7 @@ const normalizeMessage = (message, index) => {
 const mapApiConcernToUiConcern = (item) => {
   if (!item) return null;
   return {
-    id: item._id || item.id || "",
+    id: item.ticketId || item._id || item.id || "",
     name: item.name || "User",
     contactInfo: item.phoneNumber || "",
     concernCategory: item.category || "",

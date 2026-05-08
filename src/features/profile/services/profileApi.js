@@ -33,10 +33,10 @@ const normalizeProfile = (item) => {
 
   return {
     id: String(item?.id || item?._id || item?.user_id || "u1"),
-    firstName: basic.first_name || item?.firstName || item?.first_name || splitName(item?.name || item?.full_Name || item?.full_name || "").firstName || "",
-    lastName: basic.last_name || item?.lastName || item?.last_name || splitName(item?.name || item?.full_Name || item?.full_name || "").lastName || "",
-    name: item?.name || item?.full_Name || item?.full_name || `${basic.first_name || ""} ${basic.last_name || ""}`.trim() || "User",
-    phone: basic.phone_number || item?.phone || item?.phone_number || "",
+    firstName: basic.first_name || item?.firstName || item?.first_name || item?.first_Name || splitName(item?.name || item?.full_Name || item?.full_name || "").firstName || "",
+    lastName: basic.last_name || item?.lastName || item?.last_name || item?.last_Name || splitName(item?.name || item?.full_Name || item?.full_name || "").lastName || "",
+    name: item?.name || item?.full_Name || item?.full_name || `${basic.first_name || ""} ${basic.last_name || ""}`.trim() || item?.firstName || "User",
+    phone: basic.phone_number || item?.phone || item?.phone_number || item?.mobile || item?.phoneNumber || basic.phone || "",
     email: basic.email || item?.email || "",
     address: publicData.address || item?.address || "",
     occupation: basic.occupation || item?.occupation || "",

@@ -308,12 +308,16 @@ const DataProvider = ({ children }) => {
     try {
       setLoadingOrders(true);
 
+      const token = Cookies.get("admin_token");
       const res = await axios.get(
         `${BASE_URL}/api/admin/all-new-order`,
         {
           params: {
             page: 1,
             limit: 10,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
         },
       );
@@ -554,8 +558,13 @@ const DataProvider = ({ children }) => {
 
   const generateQrByAdmin = async (units) => {
     try {
+      const token = Cookies.get("admin_token");
       const response = await axios.post(`${BASE_URL}/api/generate-qr`, {
         unit: units,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       return response.data;
@@ -567,11 +576,17 @@ const DataProvider = ({ children }) => {
 
   const generateQrtemplateInBulk = async (templatetype) => {
     try {
+      const token = Cookies.get("admin_token");
       const response = await axios.post(
         `${BASE_URL}/api/create/qr-template-in-bluk`,
         {
           template_type: templatetype,
         },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       return response.data;
@@ -583,9 +598,14 @@ const DataProvider = ({ children }) => {
 
   const BlockedQrByAdmin = async (qrinfo) => {
     try {
+      const token = Cookies.get("admin_token");
       const res = await axios.post(`${BASE_URL}/api/admin/qr-blocked`, {
         qr_id: qrinfo.qr_id,
         reason: qrinfo.reason,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       return res.data;
@@ -598,8 +618,14 @@ const DataProvider = ({ children }) => {
 
   const filterQrData = async (qrstatus) => {
     try {
+      const token = Cookies.get("admin_token");
       const res = await axios.get(
         `${BASE_URL}/api/admin/filter-qr-list/${qrstatus}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (res?.data?.success) {

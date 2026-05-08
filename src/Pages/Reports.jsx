@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { 
+  createReportIssue, 
+  getIssueByTicketId, 
+  listReportIssues 
+} from "../features/support/services/reportIssueApi";
+
 const reportHeroImage = "/Report.webp";
 const REPORT_STORAGE_KEY = "digivahanReportedIssues";
-const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
-const REPORT_LIST_ENDPOINTS = [
-  "/api/report-issue/list",
-  "/api/reports-issue/list",
-  "/api/report/list",
-  "/api/reports/list",
-];
 
 const getStoredReports = () => {
   try {
@@ -318,18 +316,18 @@ const Reports = () => {
         payload.append("attachments", file);
       });
 
-      const response = await axios.post(`${BASE_URL}/api/report-issue/create`, payload);
+      const response = await createReportIssue(payload);
 
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.message || "Failed to submit report.");
+      if (!response || !response?.success) {
+        throw new Error(response?.message || "Failed to submit report.");
       }
 
       const generatedTicketId =
+        response?.ticketId ||
         response?.data?.ticketId ||
-        response?.data?.data?.ticketId ||
         `DIGI-REP-${Date.now().toString().slice(-6)}`;
 
-      const apiData = response?.data?.data || {};
+      const apiData = response?.data || {};
       const existingReports = getStoredReports();
       const newReport = {
         _id: apiData._id || `REP-${Date.now()}`,
@@ -351,8 +349,8 @@ const Reports = () => {
       setLatestTicketId(generatedTicketId);
       setSubmittedTicketId(generatedTicketId);
       setSuccess(
-        response?.data?.message
-          ? response.data.message
+        response?.message
+          ? response.message
           : "Your report has been submitted successfully.",
       );
       setReportFormData({
@@ -375,40 +373,7 @@ const Reports = () => {
       const isDuplicateTicketError =
         /E11000/i.test(backendMessage) && /ticketId/i.test(backendMessage);
 
-      if (isDuplicateTicketError) {
-        for (const endpoint of REPORT_LIST_ENDPOINTS) {
-          try {
-            const response = await axios.get(`${BASE_URL}${endpoint}`);
-            const list = Array.isArray(response?.data?.data) ? response.data.data : [];
-            const normalizedReports = list.map(normalizeReportFromApi);
-            const matchedReport = findLatestMatchingUserReport(
-              normalizedReports,
-              registeredUser,
-              reportFormData,
-            );
-
-            if (matchedReport?.ticketId) {
-              setSubmitError("");
-              setSubmittedTicketId(matchedReport.ticketId);
-              setLatestTicketId(matchedReport.ticketId);
-              setSuccess("Report already submitted successfully.");
-              setReportFormData({
-                issueType: "",
-                reportTitle: "",
-                reportDetails: "",
-                email: registeredUser.email || "",
-                phone: registeredUser.phone || "",
-                supportingProof: "",
-              });
-              setSupportingProofFiles([]);
-              return;
-            }
-          } catch {
-            continue;
-          }
-        }
-      }
-
+      // If duplicate or other error, we don't need the fallback loop anymore since we use a standard service
       setSubmitError(backendMessage);
     } finally {
       setLoading(false);
@@ -442,69 +407,59 @@ const Reports = () => {
       return;
     }
 
-    const endpointCandidates = [
-      `/api/report-issue/ticket/${encodeURIComponent(ticket)}`,
-      `/api/report-issue/${encodeURIComponent(ticket)}`,
-      `/api/report/ticket/${encodeURIComponent(ticket)}`,
-    ];
-
-    for (const endpoint of endpointCandidates) {
-      try {
-        const response = await axios.get(`${BASE_URL}${endpoint}`);
-        if (response?.data?.success && response?.data?.data) {
-          const data = normalizeReportFromApi(response.data.data);
-          setTrackedReport({
-            ticketId: data.ticketId || ticket,
-            reportTitle: data.reportTitle || "Reported Issue",
-            reportDetails: data.reportDetails || "-",
-            issueType: data.issueType || "Other",
-            priority: data.priority || "low",
-            status: String(data.status || "pending").toLowerCase(),
-            note: data.note || "",
-            assignedTo: data.assignedTo || { name: "", phone: "" },
-            history: data.history || [],
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-            attachmentLinks: data.attachmentLinks || [],
-          });
-          return;
-        }
-      } catch {
-        continue;
+    try {
+      const response = await getIssueByTicketId(ticket);
+      if (response?.success && response?.data) {
+        const data = normalizeReportFromApi(response.data);
+        setTrackedReport({
+          ticketId: data.ticketId || ticket,
+          reportTitle: data.reportTitle || "Reported Issue",
+          reportDetails: data.reportDetails || "-",
+          issueType: data.issueType || "Other",
+          priority: data.priority || "low",
+          status: String(data.status || "pending").toLowerCase(),
+          note: data.note || "",
+          assignedTo: data.assignedTo || { name: "", phone: "" },
+          history: data.history || [],
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          attachmentLinks: data.attachmentLinks || [],
+        });
+        return;
       }
+    } catch (err) {
+      console.error("Track status error:", err);
     }
 
-    for (const endpoint of REPORT_LIST_ENDPOINTS) {
-      try {
-        const response = await axios.get(`${BASE_URL}${endpoint}`);
-        const list = Array.isArray(response?.data?.data) ? response.data.data : [];
-        const matched = list.find(
-          (item) =>
-            String(item?.ticketId || item?.ticket_id || "").toLowerCase() === ticket.toLowerCase(),
-        );
+    try {
+      const response = await listReportIssues();
+      const list = Array.isArray(response?.data) ? response.data : [];
+      const matched = list.find(
+        (item) =>
+          String(item?.ticketId || item?.ticket_id || "").toLowerCase() === ticket.toLowerCase(),
+      );
 
-        if (matched) {
-          const normalized = normalizeReportFromApi(matched);
-          setTrackedReport({
-            ticketId: normalized.ticketId || ticket,
-            reportTitle: normalized.reportTitle,
-            reportDetails: normalized.reportDetails,
-            issueType: normalized.issueType || "Other",
-            priority: normalized.priority || "low",
-            status: normalized.status,
-            note: normalized.note || "",
-            assignedTo: normalized.assignedTo || { name: "", phone: "" },
-            history: normalized.history || [],
-            createdAt: normalized.createdAt,
-            updatedAt: normalized.updatedAt,
-            supportingProof: normalized.supportingProof || "",
-            attachmentLinks: normalized.attachmentLinks || [],
-          });
-          return;
-        }
-      } catch {
-        continue;
+      if (matched) {
+        const normalized = normalizeReportFromApi(matched);
+        setTrackedReport({
+          ticketId: normalized.ticketId || ticket,
+          reportTitle: normalized.reportTitle,
+          reportDetails: normalized.reportDetails,
+          issueType: normalized.issueType || "Other",
+          priority: normalized.priority || "low",
+          status: normalized.status,
+          note: normalized.note || "",
+          assignedTo: normalized.assignedTo || { name: "", phone: "" },
+          history: normalized.history || [],
+          createdAt: normalized.createdAt,
+          updatedAt: normalized.updatedAt,
+          supportingProof: normalized.supportingProof || "",
+          attachmentLinks: normalized.attachmentLinks || [],
+        });
+        return;
       }
+    } catch (err) {
+      console.error("List reports error:", err);
     }
 
     const report = getStoredReports().find(
@@ -530,28 +485,24 @@ const Reports = () => {
 
   useEffect(() => {
     const syncLatestUserReport = async () => {
-      for (const endpoint of REPORT_LIST_ENDPOINTS) {
-        try {
-          const response = await axios.get(`${BASE_URL}${endpoint}`, {
-            params: { status: "pending" },
-          });
+      try {
+        const response = await listReportIssues({ status: "pending" });
 
-          const list = Array.isArray(response?.data?.data) ? response.data.data : [];
-          const userReports = list
-            .map(normalizeReportFromApi)
-            .filter((item) => isSameRegisteredUserReport(item, registeredUser))
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
-            );
+        const list = Array.isArray(response?.data) ? response.data : [];
+        const userReports = list
+          .map(normalizeReportFromApi)
+          .filter((item) => isSameRegisteredUserReport(item, registeredUser))
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
+          );
 
-          if (userReports.length > 0) {
-            setLatestTicketId(userReports[0].ticketId || "");
-            return;
-          }
-        } catch {
-          continue;
+        if (userReports.length > 0) {
+          setLatestTicketId(userReports[0].ticketId || "");
+          return;
         }
+      } catch (err) {
+        console.error("Sync reports error:", err);
       }
     };
 

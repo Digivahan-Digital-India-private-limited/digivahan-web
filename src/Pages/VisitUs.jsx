@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { FaHandshake, FaBuilding, FaCogs, FaTruck, FaChartLine, FaCalendarCheck } from "react-icons/fa";
 import { MdBusiness, MdEngineering, MdSupportAgent } from "react-icons/md";
 import axios from "axios";
+import { createAppointment, getAppointmentByTicketId } from "../features/support/services/appointmentApi";
+import { FaSearch, FaUserTie, FaPhoneAlt, FaCalendarDay, FaClock } from "react-icons/fa";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
@@ -76,6 +78,12 @@ const VisitUs = () => {
   });
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [submittedTicketId, setSubmittedTicketId] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
+  const [trackingId, setTrackingId] = useState("");
+  const [trackedAppointment, setTrackedAppointment] = useState(null);
+  const [isTracking, setIsTracking] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -97,20 +105,20 @@ const VisitUs = () => {
     try {
       setIsSubmitting(true);
       setSubmitMessage({ type: "", text: "" });
+      setSuccessMsg("");
+      setSubmittedTicketId("");
+      setCopyStatus("");
 
-      const response = await axios.post(`${BASE_URL}/api/appointment/create`, formData);
+      const response = await createAppointment(formData);
 
       const success = response?.data?.success;
       if (!success) {
         throw new Error(response?.data?.message || "Failed to submit appointment request.");
       }
 
-      setSubmitMessage({
-        type: "success",
-        text:
-          response?.data?.message ||
-          "Appointment request submitted successfully. Our team will contact you shortly.",
-      });
+      const ticketId = response.data.ticketId || `APT-${Date.now()}`;
+      setSubmittedTicketId(ticketId);
+      setSuccessMsg(response.data.message || "Appointment request submitted successfully. Our team will contact you shortly.");
 
       setFormData({
         name: "",
@@ -123,6 +131,13 @@ const VisitUs = () => {
         proposalDescription: "",
         requestedDate: "",
       });
+
+      // Auto scroll to success message
+      const element = document.getElementById("appointment-section");
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+
     } catch (error) {
       setSubmitMessage({
         type: "error",
@@ -133,6 +148,53 @@ const VisitUs = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCopyTicketId = async () => {
+    if (!submittedTicketId) return;
+    try {
+      await navigator.clipboard.writeText(submittedTicketId);
+      setCopyStatus("Copied!");
+      setTimeout(() => setCopyStatus(""), 3000);
+    } catch {
+      setCopyStatus("Unable to copy. Please copy manually.");
+    }
+  };
+
+  const handleTrackStatus = async () => {
+    const tid = trackingId.trim();
+    if (!tid) {
+      setSubmitMessage({ type: "error", text: "Please enter a Ticket ID to track." });
+      return;
+    }
+
+    try {
+      setIsTracking(true);
+      setTrackedAppointment(null);
+      const response = await getAppointmentByTicketId(tid);
+      if (response?.data?.success) {
+        setTrackedAppointment(response.data.data);
+        setSubmitMessage({ type: "", text: "" });
+      } else {
+        setSubmitMessage({ type: "error", text: "Appointment not found." });
+      }
+    } catch (error) {
+      setSubmitMessage({
+        type: "error",
+        text: error?.response?.data?.message || "Unable to track appointment."
+      });
+    } finally {
+      setIsTracking(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "approved": return "text-green-600 bg-green-50 border-green-200";
+      case "rejected": return "text-red-600 bg-red-50 border-red-200";
+      case "visited": return "text-indigo-600 bg-indigo-50 border-indigo-200";
+      default: return "text-yellow-600 bg-yellow-50 border-yellow-200";
     }
   };
 
@@ -446,6 +508,45 @@ const VisitUs = () => {
             <p className="text-gray-600 text-sm md:text-base max-w-3xl mx-auto leading-7">
               Share your details for a structured business discussion with the right Digivahan team. Please provide accurate information so we can schedule your meeting smoothly.
             </p>
+
+            {successMsg && (
+              <div className="mt-8 max-w-2xl mx-auto rounded-2xl border border-green-200 bg-green-50 p-6 shadow-lg shadow-green-100/50 vu-fade-up">
+                <div className="flex items-center gap-3 mb-4 justify-center">
+                  <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xl">
+                    ✓
+                  </div>
+                  <h3 className="text-xl font-bold text-green-800">Success!</h3>
+                </div>
+                <p className="text-sm font-medium text-green-700 mb-4">{successMsg}</p>
+                {submittedTicketId && (
+                  <div className="space-y-4">
+                    <div className="bg-white/60 rounded-xl p-4 border border-green-200 inline-block mx-auto min-w-64">
+                      <p className="text-xs text-green-600 font-semibold mb-1">Appointment Ticket ID</p>
+                      <p className="text-2xl font-black text-gray-900 tracking-wider">{submittedTicketId}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCopyTicketId}
+                        className="px-4 py-2 rounded-lg border border-green-300 bg-white text-green-700 text-sm font-bold hover:bg-green-100 transition-colors shadow-sm"
+                      >
+                        Copy Ticket ID
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSuccessMsg(""); setSubmittedTicketId(""); }}
+                        className="px-5 py-2 rounded-lg bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors shadow-md"
+                      >
+                        Got it, Thanks!
+                      </button>
+                    </div>
+                    {copyStatus && (
+                      <p className="text-xs text-green-600 font-bold animate-bounce">{copyStatus}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="vu-form-card rounded-3xl p-6 md:p-10 space-y-6 vu-fade-up">
@@ -525,8 +626,108 @@ const VisitUs = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          Section 5 — Google Maps
+          Section 5 — Track Status (Matched to Image UI)
       ══════════════════════════════════════════ */}
+      <section className="w-full py-12 px-6 bg-white border-t border-gray-100">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl shrink-0">
+                🎫
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 leading-tight">Track Appointment Status</h3>
+                <p className="text-sm text-gray-500 mt-1">Enter your ticket number to check current appointment progress.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                  placeholder="Enter ticket ID (e.g. DIGI-APT-000001)"
+                  className="w-full h-14 rounded-xl border border-gray-200 bg-white px-5 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all"
+                />
+              </div>
+              <button
+                onClick={handleTrackStatus}
+                disabled={isTracking}
+                className="h-14 px-10 rounded-xl bg-blue-600 text-white font-bold text-base hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-200 disabled:bg-gray-400 disabled:shadow-none"
+              >
+                {isTracking ? "Checking..." : "Check Status"}
+              </button>
+            </div>
+
+            {submitMessage.text && submitMessage.type === "error" && (
+              <p className="mt-4 text-sm font-medium text-red-500 px-1">{submitMessage.text}</p>
+            )}
+
+            {trackedAppointment && (
+              <div className="mt-8 pt-8 border-t border-gray-50 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    <p className="text-lg font-bold text-gray-900">Details for {trackedAppointment.ticketId}</p>
+                  </div>
+                  <div className={`px-4 py-1.5 rounded-full border text-xs font-bold capitalize ${getStatusColor(trackedAppointment.status)}`}>
+                    {trackedAppointment.status}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Scheduled Date</p>
+                      <p className="text-sm font-bold text-gray-800">
+                        {trackedAppointment.appointmentDate ? new Date(trackedAppointment.appointmentDate).toLocaleDateString('en-GB') : "Not yet scheduled"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Requested On</p>
+                      <p className="text-sm font-bold text-gray-700">
+                        {new Date(trackedAppointment.requestedDate).toLocaleDateString('en-GB')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {trackedAppointment.status === "approved" && trackedAppointment.agentName && (
+                    <div className="bg-blue-50/30 rounded-2xl p-5 border border-blue-100 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Assigned Executive</p>
+                        <FaUserTie className="text-blue-200 text-xl" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-bold">Name</p>
+                          <p className="text-sm font-bold text-gray-900">{trackedAppointment.agentName}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-bold">Contact</p>
+                          <p className="text-sm font-bold text-gray-900">{trackedAppointment.agentPhone}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {trackedAppointment.status === "pending" && (
+                  <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 text-orange-700 text-xs font-medium flex items-start gap-3">
+                    <span className="text-lg mt-[-2px]">ℹ️</span>
+                    <p>Your request is currently being reviewed. Once approved, scheduling and executive details will appear here.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          Section 6 — Google Maps
+      ══════════════════════════════════════════ */}
+
       <section id="map-section" className="w-full bg-gray-50 py-16 px-6">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}

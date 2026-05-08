@@ -20,6 +20,7 @@ const routeTitles = {
   "/profile/change-password": "Change Password",
   "/profile/emergency-contacts": "Emergency Contacts",
   "/profile/emergency-contacts/add": "Add Emergency Contact",
+  "/Report-page": "Report Issue",
 };
 
 const AppLayout = () => {

@@ -99,7 +99,7 @@ const mapApiConcernToUiConcern = (item) => {
 	const concernCategory = String(item.category || "").toLowerCase();
 
 	return {
-		id: item._id || item.id || "",
+		id: item.ticketId || item._id || item.id || "",
 		name: item.user_id?.name || item.name || "Unknown User",
 		contactInfo: item.user_id?.phoneNumber || item.phoneNumber || "",
 		concernCategory,

@@ -11,7 +11,11 @@ export const httpClient = axios.create({
 
 httpClient.interceptors.request.use((config) => {
   const userToken = Cookies.get("user_token");
-  if (userToken) {
+  const adminToken = Cookies.get("admin_token");
+
+  if (adminToken) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  } else if (userToken) {
     config.headers.Authorization = `Bearer ${userToken}`;
   }
 
