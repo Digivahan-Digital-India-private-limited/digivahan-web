@@ -98,11 +98,8 @@ import ManageConcerns from "./Pages/AdminPannel/Concerns/ManageConcerns";
 import ConcernChat from "./Pages/AdminPannel/Concerns/ConcernChat";
 import DeleteAccountRequests from "./Pages/AdminPannel/DeleteAccountRequests/DeleteAccountRequests";
 import ReportIssueList from "./Pages/AdminPannel/ReportsIssue/ReportIssueList";
-<<<<<<< HEAD
 import ChallanWebhookAdmin from "./Pages/AdminPannel/ChallanWebhook/ChallanWebhookAdmin";
-=======
 import HRManager from "./Pages/AdminPannel/HRManager/HRManager";
->>>>>>> 9caccb3bca26fbf9862c090f82d943db235e9bd0
 
 // Protected Routes
 import ProtectedRoutes from "./ProtectedRoutes/ProtectedRoutes";
@@ -516,11 +513,8 @@ const App = () => {
           />
           <Route path="/report-issues" element={<ReportIssueList />} />
           <Route path="/manage-appointment" element={<ManageAppointment />} />
-<<<<<<< HEAD
           <Route path="/challan-webhook-admin" element={<ChallanWebhookAdmin />} />
-=======
           <Route path="/hr-manager" element={<HRManager />} />
->>>>>>> 9caccb3bca26fbf9862c090f82d943db235e9bd0
           <Route path="/post-faq" element={<PostFAQ />} />
           <Route path="/delete-faq" element={<DeleteFAQ />} />
           <Route path="/update-faq" element={<UpdateFAQ />} />
