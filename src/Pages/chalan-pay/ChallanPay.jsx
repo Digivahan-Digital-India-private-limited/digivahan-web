@@ -662,18 +662,36 @@ const ChallanPay = () => {
                 {(() => {
                   // Process challans into categories
                   const processedChallans = challans.map(challan => {
-                    const isUnderProcess = webhookRecords.some(r => 
-                      r.challanNumber === challan.challanNumber && 
-                      r.isSettled !== false &&  // if isSettled is explicitly false → treat as UNPAID
-                      (r.transactionStatus?.toLowerCase() === 'initiated' || r.transactionStatus?.toLowerCase() === 'pending' || r.ioStatus?.toLowerCase() === 'pending')
-                    );
-                    let category = "UNPAID";
+                    // Find the latest webhook record for this challan (by createdAt)
+                    const matchingRecords = webhookRecords.filter(r =>
+                      r.challanNumber === challan.challanNumber
+                    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                    const latestRecord = matchingRecords[0]; // most recent webhook record
+
+                    let category = "UNPAID"; // default
+
                     if (challan.transactionStatus === 'PAID') {
+                      // Already marked as fully PAID from RTO data
                       category = "PAID";
-                    } else if (isUnderProcess) {
-                      category = "UNDER_PROCESS";
+                    } else if (latestRecord) {
+                      const txStatus = latestRecord.transactionStatus?.toLowerCase();
+                      const ioStatus = latestRecord.ioStatus?.toLowerCase();
+
+                      if (txStatus === 'failed' && ioStatus === 'refund') {
+                        // Payment failed + refund issued → treat as UNPAID again
+                        category = "UNPAID";
+                      } else if (txStatus === 'captured') {
+                        // Payment captured by gateway → under process
+                        category = "UNDER_PROCESS";
+                      } else if (txStatus === 'initiated') {
+                        // Payment initiated but not captured yet → keep as UNPAID
+                        category = "UNPAID";
+                      }
+                      // For any other status (e.g. failed without refund), stays UNPAID
                     }
-                    return { ...challan, category };
+
+                    return { ...challan, category, _webhookRecord: latestRecord };
                   });
 
                   const unpaidCount = processedChallans.filter(c => c.category === 'UNPAID').length;
@@ -778,28 +796,19 @@ const ChallanPay = () => {
                             </button>
                           )}
                           
-                          {challan.category === 'UNDER_PROCESS' && (() => {
-                            // Find the matching webhook record for this challan
-                            const webhookRecord = webhookRecords.find(r =>
-                              r.challanNumber === challan.challanNumber &&
-                              (r.transactionStatus?.toLowerCase() === 'initiated' ||
-                               r.transactionStatus?.toLowerCase() === 'pending' ||
-                               r.ioStatus?.toLowerCase() === 'pending')
-                            );
-                            return (
-                              <div className="space-y-2">
-                                <div className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-blue-100">
-                                  <FaCheckCircle /> Payment Processing (Settlement in 3-4 days)
-                                </div>
-                                <button
-                                  onClick={() => setViewDetailsItem(webhookRecord || { challanNumber: challan.challanNumber, rcNumber: formData.rcNumber, ...challan })}
-                                  className="w-full py-2.5 bg-white text-blue-600 border border-blue-200 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-blue-50 transition-all"
-                                >
-                                  🔍 View Details
-                                </button>
+                          {challan.category === 'UNDER_PROCESS' && (
+                            <div className="space-y-2">
+                              <div className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-blue-100">
+                                <FaCheckCircle /> Payment Processing (Settlement in 3-4 days)
                               </div>
-                            );
-                          })()}
+                              <button
+                                onClick={() => setViewDetailsItem(challan._webhookRecord || { challanNumber: challan.challanNumber, rcNumber: formData.rcNumber, ...challan })}
+                                className="w-full py-2.5 bg-white text-blue-600 border border-blue-200 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-blue-50 transition-all"
+                              >
+                                🔍 View Details
+                              </button>
+                            </div>
+                          )}
 
                           {challan.category === 'PAID' && (
                             <div className="w-full py-3 bg-green-50 text-green-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-green-100">
