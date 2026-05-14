@@ -678,12 +678,18 @@ const ChallanPay = () => {
                       const txStatus = latestRecord.transactionStatus?.toLowerCase();
                       const ioStatus = latestRecord.ioStatus?.toLowerCase();
 
-                      if (txStatus === 'failed' && ioStatus === 'refund') {
+                      if (txStatus === 'success' || txStatus === 'paid') {
+                        category = "PAID";
+                      } else if (txStatus === 'failed' && ioStatus === 'refund') {
                         // Payment failed + refund issued → treat as UNPAID again
                         category = "UNPAID";
                       } else if (txStatus === 'captured') {
-                        // Payment captured by gateway → under process
-                        category = "UNDER_PROCESS";
+                        // Payment captured by gateway: if settled, mark PAID, else UNDER PROCESS
+                        if (latestRecord.isSettled === true) {
+                          category = "PAID";
+                        } else {
+                          category = "UNDER_PROCESS";
+                        }
                       } else if (txStatus === 'initiated') {
                         // Payment initiated but not captured yet → keep as UNPAID
                         category = "UNPAID";
@@ -916,12 +922,12 @@ const ChallanPay = () => {
                                       <span className="font-bold text-slate-800">{item.challanNumber || '—'}</span>
                                     </div>
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                                      item.transactionStatus === 'SUCCESS' || item.transactionStatus === 'PAID' ? 'bg-green-100 text-green-700' :
-                                      item.transactionStatus === 'initiated' ? 'bg-blue-100 text-blue-700' :
+                                      item.transactionStatus === 'SUCCESS' || item.transactionStatus === 'PAID' || (item.transactionStatus?.toLowerCase() === 'captured' && item.isSettled) ? 'bg-green-100 text-green-700' :
+                                      item.transactionStatus?.toLowerCase() === 'initiated' || item.transactionStatus?.toLowerCase() === 'captured' ? 'bg-blue-100 text-blue-700' :
                                       item.transactionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
                                       'bg-slate-100 text-slate-600'
                                     }`}>
-                                      {item.transactionStatus || ''}
+                                      {(item.transactionStatus?.toLowerCase() === 'captured' && item.isSettled) ? 'PAID' : (item.transactionStatus || '')}
                                     </span>
                                   </div>
                                   
@@ -1045,12 +1051,12 @@ const ChallanPay = () => {
               </div>
               <div className="flex items-center gap-3">
                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                  viewDetailsItem.transactionStatus === 'SUCCESS' || viewDetailsItem.transactionStatus === 'PAID' ? 'bg-green-100 text-green-700' :
-                  viewDetailsItem.transactionStatus?.toLowerCase() === 'initiated' ? 'bg-blue-100 text-blue-700' :
+                  viewDetailsItem.transactionStatus === 'SUCCESS' || viewDetailsItem.transactionStatus === 'PAID' || (viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' && viewDetailsItem.isSettled) ? 'bg-green-100 text-green-700' :
+                  viewDetailsItem.transactionStatus?.toLowerCase() === 'initiated' || viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' ? 'bg-blue-100 text-blue-700' :
                   viewDetailsItem.transactionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
                   'bg-slate-100 text-slate-600'
                 }`}>
-                  {viewDetailsItem.transactionStatus || 'Processing'}
+                  {(viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' && viewDetailsItem.isSettled) ? 'PAID' : (viewDetailsItem.transactionStatus || 'Processing')}
                 </span>
                 <button onClick={() => setViewDetailsItem(null)} className="text-slate-400 hover:text-red-500 transition">
                   <FaTimes size={20} />
