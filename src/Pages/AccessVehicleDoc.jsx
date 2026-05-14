@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import calculateAgeFromDate from "../utils/dateUtils";
 import axios from "axios";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 const documents = [
   {
     id: 1,
@@ -50,7 +51,7 @@ const AccessVehicleDoc = () => {
     const fetchUserDetails = async () => {
       try {
         const res = await axios.get(
-          `https://api.digivahan.in/api/user-details/${qr_id}`
+          `${BASE_URL}/api/user-details/${qr_id}`
         );
 
         if (!res.data.success) {

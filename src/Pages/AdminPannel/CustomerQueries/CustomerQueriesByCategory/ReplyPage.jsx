@@ -1,16 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Paperclip, Send } from "lucide-react";
+import { ArrowLeft, Paperclip, Send, X } from "lucide-react";
+import { httpClient } from "../../../../features/shared/api/httpClient";
+import { toast } from "react-toastify";
 
 const ReplyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const query = location.state?.query || {};
   const [replyText, setReplyText] = useState("");
+  const [attachment, setAttachment] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const handleSubmit = () => {
-    console.log("Reply submitted:", replyText);
-    navigate(-1);
+  const customerName = `${query.first_name || ""} ${query.last_name || ""}`.trim();
+  const customerEmail = query.email || "";
+  const customerQuestion = query.query || "";
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setAttachment(e.target.files[0]);
+    }
+  };
+
+  const removeAttachment = () => {
+    setAttachment(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!replyText.trim()) {
+      toast.error("Reply text cannot be empty");
+      return;
+    }
+    if (!customerEmail) {
+      toast.error("Customer email is missing");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const formData = new FormData();
+      formData.append("email", customerEmail);
+      formData.append("replyText", replyText);
+      formData.append("customerName", customerName);
+      if (attachment) {
+        formData.append("attachment", attachment);
+      }
+
+      const response = await httpClient.post("/api/admin/query/reply", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (response.data?.success) {
+        toast.success("Reply sent successfully via email");
+        navigate(-1);
+      } else {
+        toast.error("Failed to send reply");
+      }
+    } catch (error) {
+      console.error("Reply Error:", error);
+      toast.error(error.response?.data?.message || "Something went wrong while sending the reply");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,17 +111,17 @@ const ReplyPage = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
           <input
             type="text"
-            value={query.customerName || ""}
+            value={customerName}
             disabled
             className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Customer ID</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Customer Email (ID)</label>
           <input
             type="text"
-            value={query.customerId || ""}
+            value={customerEmail}
             disabled
             className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
           />
@@ -75,7 +130,7 @@ const ReplyPage = () => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Customer Query</label>
           <textarea
-            value={query.question || ""}
+            value={customerQuestion}
             disabled
             rows="3"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 resize-none"
@@ -97,23 +152,48 @@ const ReplyPage = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Attach Files (Optional)</label>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-            <Paperclip className="w-4 h-4" />
-            Attach File
-          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              <Paperclip className="w-4 h-4" />
+              Choose File
+            </button>
+            {attachment && (
+              <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-100">
+                <span className="text-sm font-medium truncate max-w-xs">{attachment.name}</span>
+                <button onClick={removeAttachment} className="hover:text-red-500 transition">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-4">
           <button
             onClick={handleSubmit}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2"
+            disabled={isSubmitting}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <Send className="w-4 h-4" />
-            Submit Reply
+            {isSubmitting ? (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            {isSubmitting ? "Sending..." : "Submit Reply"}
           </button>
           <button
             onClick={() => navigate(-1)}
-            className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition font-medium"
+            disabled={isSubmitting}
+            className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed"
           >
             Cancel
           </button>

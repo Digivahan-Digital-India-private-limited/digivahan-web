@@ -4,7 +4,9 @@ import { jwtDecode } from "jwt-decode";
 import { io } from "socket.io-client";
 import React, { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+const BASE_URL =
+  import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+const ENABLE_DUMMY_USER_AUTH = false;
 export const MyContext = createContext();
 
 const DataProvider = ({ children }) => {
@@ -15,6 +17,19 @@ const DataProvider = ({ children }) => {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [filterQrlist, setfilterQrlist] = useState([]);
 
+  const postWithFallback = async (endpointList, payload, config = {}) => {
+    let lastError = null;
+
+    for (const endpoint of endpointList) {
+      try {
+        return await axios.post(`${BASE_URL}${endpoint}`, payload, config);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError;
+  };
   const AdminSignInwithOtp = async (phone) => {
     try {
       const response = await axios.post(`${BASE_URL}/api/auth/admin/send-otp`, {
@@ -67,6 +82,109 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const UserSignInwithOtp = async (phone) => {
+    if (ENABLE_DUMMY_USER_AUTH) {
+      return {
+        success: true,
+        message: "Dummy OTP sent successfully",
+        phone,
+      };
+    }
+
+    try {
+      const response = await postWithFallback(
+        [
+          "/api/auth/otp-based-login",
+          "/api/auth/user/send-otp",
+          "/api/auth/send-otp",
+        ],
+        {
+          login_via: "phone",
+          value: phone,
+        },
+      );
+
+      if (response.data) {
+        return response.data;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "User OTP send failed");
+      return null;
+    }
+  };
+
+  const verifyUserOtp = async (userOtp) => {
+    if (ENABLE_DUMMY_USER_AUTH) {
+      const phone = localStorage.getItem("user_login_phone") || "dummy";
+      const token = `dummy_user_${phone}_${userOtp || "otp"}`;
+
+      Cookies.set("user_token", token, {
+        expires: 7,
+        secure: false,
+        sameSite: "Strict",
+      });
+
+      localStorage.setItem(
+        "marketplace_capabilities",
+        JSON.stringify({ canBuy: true, canSell: true }),
+      );
+      localStorage.removeItem("user_login_phone");
+
+      return {
+        success: true,
+        token,
+        mode: "buy_sell",
+        message: "Dummy login successful",
+      };
+    }
+
+    try {
+      const phone = localStorage.getItem("user_login_phone");
+
+      const response = await postWithFallback(
+        [
+          "/api/auth/verify-login-otp",
+          "/api/auth/user/verify-otp",
+          "/api/auth/user/verify-user",
+        ],
+        {
+          login_via: "phone",
+          value: phone,
+          otp: userOtp,
+        },
+      );
+
+      if (response?.data) {
+        const token =
+          response.data.user?.token ||
+          response.data.token ||
+          response.data.accessToken ||
+          response.data?.data?.token ||
+          response.data?.data?.accessToken;
+
+        if (token) {
+          Cookies.set("user_token", token, {
+            expires: 7,
+            secure: false,
+            sameSite: "Strict",
+          });
+        }
+
+        localStorage.setItem(
+          "marketplace_capabilities",
+          JSON.stringify({ canBuy: true, canSell: true }),
+        );
+        localStorage.removeItem("user_login_phone");
+
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "User OTP verification failed");
+      return null;
+    }
+  };
   const LogoutAdmin = async () => {
     try {
       // ✅ get token from cookies
@@ -190,12 +308,16 @@ const DataProvider = ({ children }) => {
     try {
       setLoadingOrders(true);
 
+      const token = Cookies.get("admin_token");
       const res = await axios.get(
         `${BASE_URL}/api/admin/all-new-order`,
         {
           params: {
             page: 1,
             limit: 10,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
         },
       );
@@ -436,12 +558,14 @@ const DataProvider = ({ children }) => {
 
   const generateQrByAdmin = async (units) => {
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/generate-qr`,
-        {
-          unit: units,
+      const token = Cookies.get("admin_token");
+      const response = await axios.post(`${BASE_URL}/api/generate-qr`, {
+        unit: units,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       return response.data;
     } catch (error) {
@@ -452,11 +576,17 @@ const DataProvider = ({ children }) => {
 
   const generateQrtemplateInBulk = async (templatetype) => {
     try {
+      const token = Cookies.get("admin_token");
       const response = await axios.post(
         `${BASE_URL}/api/create/qr-template-in-bluk`,
         {
           template_type: templatetype,
         },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       return response.data;
@@ -468,13 +598,15 @@ const DataProvider = ({ children }) => {
 
   const BlockedQrByAdmin = async (qrinfo) => {
     try {
-      const res = await axios.post(
-        `${BASE_URL}/api/admin/qr-blocked`,
-        {
-          qr_id: qrinfo.qr_id,
-          reason: qrinfo.reason,
+      const token = Cookies.get("admin_token");
+      const res = await axios.post(`${BASE_URL}/api/admin/qr-blocked`, {
+        qr_id: qrinfo.qr_id,
+        reason: qrinfo.reason,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       return res.data;
     } catch (error) {
@@ -486,8 +618,14 @@ const DataProvider = ({ children }) => {
 
   const filterQrData = async (qrstatus) => {
     try {
+      const token = Cookies.get("admin_token");
       const res = await axios.get(
         `${BASE_URL}/api/admin/filter-qr-list/${qrstatus}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (res?.data?.success) {
@@ -549,6 +687,8 @@ const DataProvider = ({ children }) => {
       value={{
         AdminSignInwithOtp,
         verifyAdminOtp,
+        UserSignInwithOtp,
+        verifyUserOtp,
         LogoutAdmin,
         AddDeliveryPartners,
         DeliveryOrders,
@@ -567,7 +707,7 @@ const DataProvider = ({ children }) => {
         loadingOrders,
         BlockedQrByAdmin,
         filterQrData,
-        filterQrlist
+        filterQrlist,
       }}
     >
       {children}
