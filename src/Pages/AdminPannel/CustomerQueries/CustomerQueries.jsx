@@ -1,6 +1,10 @@
 import React from "react";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import Cookies from "js-cookie";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
 const CustomerQueries = () => {
   const navigate = useNavigate();
@@ -38,13 +42,56 @@ const CustomerQueries = () => {
     },
   ];
 
+  const [queries, setQueries] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchQueries = async () => {
+      try {
+        const token = Cookies.get("admin_token");
+        const response = await axios.get(`${BASE_URL}/api/admin/get-all-query`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.data?.success) {
+          setQueries(response.data.data || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch queries:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQueries();
+  }, []);
+
+  const getCount = (title) => {
+    // Map frontend titles to backend query_types
+    // In Contactpage.jsx we send "Contact Form"
+    if (title === "General Information Queries") {
+      return queries.filter(q => q.query_type === "General" || q.query_type === "Contact Form" || !q.query_type).length;
+    }
+    const typeMap = {
+      "Technical Queries": "Technical",
+      "Account Related": "Account",
+      "Payment / Billing": "Payment",
+      "Order / Service Status": "Order Status",
+      "Product / Service Complaints": "Product",
+      "Feedback & Suggestions": "Support", // fallback
+      "Cancellation / Return": "Billing", // fallback
+    };
+    const mappedType = typeMap[title] || title;
+    return queries.filter(q => q.query_type === mappedType).length;
+  };
+
   // Customer Query Categories
   const queryCategories = [
     {
       id: 1,
       title: "General Information Queries",
       description: "Basic questions about services and features",
-      pending: 12,
+      pending: getCount("General Information Queries"),
       bgColor: "bg-blue-50",
       borderColor: "border-blue-300",
       iconBg: "bg-blue-500",
@@ -55,7 +102,7 @@ const CustomerQueries = () => {
       id: 2,
       title: "Technical Queries",
       description: "Technical issues and troubleshooting",
-      pending: 8,
+      pending: getCount("Technical Queries"),
       bgColor: "bg-purple-50",
       borderColor: "border-purple-300",
       iconBg: "bg-purple-500",
@@ -66,7 +113,7 @@ const CustomerQueries = () => {
       id: 3,
       title: "Account Related",
       description: "Profile, settings and account management",
-      pending: 15,
+      pending: getCount("Account Related"),
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-300",
       iconBg: "bg-cyan-500",
@@ -77,7 +124,7 @@ const CustomerQueries = () => {
       id: 4,
       title: "Payment / Billing",
       description: "Payment issues and billing queries",
-      pending: 6,
+      pending: getCount("Payment / Billing"),
       bgColor: "bg-emerald-50",
       borderColor: "border-emerald-300",
       iconBg: "bg-emerald-500",
@@ -88,7 +135,7 @@ const CustomerQueries = () => {
       id: 5,
       title: "Order / Service Status",
       description: "Track orders and service requests",
-      pending: 20,
+      pending: getCount("Order / Service Status"),
       bgColor: "bg-orange-50",
       borderColor: "border-orange-300",
       iconBg: "bg-orange-500",
@@ -99,7 +146,7 @@ const CustomerQueries = () => {
       id: 6,
       title: "Product / Service Complaints",
       description: "Quality issues and complaints",
-      pending: 4,
+      pending: getCount("Product / Service Complaints"),
       bgColor: "bg-red-50",
       borderColor: "border-red-300",
       iconBg: "bg-red-500",
@@ -110,7 +157,7 @@ const CustomerQueries = () => {
       id: 7,
       title: "Feedback & Suggestions",
       description: "Customer feedback and improvement ideas",
-      pending: 9,
+      pending: getCount("Feedback & Suggestions"),
       bgColor: "bg-pink-50",
       borderColor: "border-pink-300",
       iconBg: "bg-pink-500",
@@ -121,7 +168,7 @@ const CustomerQueries = () => {
       id: 8,
       title: "Cancellation / Return",
       description: "Cancellation and return requests",
-      pending: 7,
+      pending: getCount("Cancellation / Return"),
       bgColor: "bg-amber-50",
       borderColor: "border-amber-300",
       iconBg: "bg-amber-500",
@@ -132,7 +179,7 @@ const CustomerQueries = () => {
       id: 9,
       title: "Escalation",
       description: "Escalated issues requiring attention",
-      pending: 3,
+      pending: getCount("Escalation"),
       bgColor: "bg-rose-50",
       borderColor: "border-rose-300",
       iconBg: "bg-rose-600",
@@ -143,7 +190,7 @@ const CustomerQueries = () => {
       id: 10,
       title: "Onboarding / Setup",
       description: "Help with getting started",
-      pending: 11,
+      pending: getCount("Onboarding / Setup"),
       bgColor: "bg-teal-50",
       borderColor: "border-teal-300",
       iconBg: "bg-teal-500",
@@ -154,7 +201,7 @@ const CustomerQueries = () => {
       id: 11,
       title: "Subscription",
       description: "Subscription plans and renewals",
-      pending: 5,
+      pending: getCount("Subscription"),
       bgColor: "bg-indigo-50",
       borderColor: "border-indigo-300",
       iconBg: "bg-indigo-500",
@@ -165,7 +212,7 @@ const CustomerQueries = () => {
       id: 12,
       title: "Verification Queries",
       description: "Identity and account verification",
-      pending: 8,
+      pending: getCount("Verification Queries"),
       bgColor: "bg-lime-50",
       borderColor: "border-lime-300",
       iconBg: "bg-lime-500",

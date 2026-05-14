@@ -29,14 +29,14 @@ const Heropage = () => {
       </Helmet>
 
       <header className="w-full bg-white md:py-10 px-2 md:px-6">
-        <main className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-5">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-5">
           {/* Left Content */}
           <section className="flex-1">
-            <img src={Logo} alt=""  className="md:w-40 w-24 pt-2 object-cover"/>
+            <img src={Logo} alt="DigiVahan logo"  className="md:w-40 w-24 pt-2 object-cover"/>
 
-            <h2 className="text-md sm:text-lg text-gray-700 mt-4">
+            <h1 className="text-md sm:text-lg text-gray-700 mt-4">
               Empowering India with Smart Vehicle Solutions
-            </h2>
+            </h1>
 
             <p className="text-sm sm:text-base text-gray-700 leading-relaxed mt-4">
               Digivahan is India’s trusted digital platform for all your
@@ -61,6 +61,13 @@ const Heropage = () => {
                 aria-label="Download Digivahan App from Play Store"
               >
                 Download Digivahan App
+              </Link>
+              <Link
+                to="/order-qr"
+                className="border-2 border-yellow-500 text-yellow-700 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-50 transition"
+                aria-label="Open vehicle QR order page"
+              >
+                Order Vehicle QR
               </Link>
             </div>
           </section>
@@ -132,7 +139,7 @@ const Heropage = () => {
               </div>
             </div>
           </aside>
-        </main>
+        </div>
       </header>
     </>
   );

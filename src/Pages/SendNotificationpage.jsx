@@ -13,6 +13,8 @@ import AccidentAlert from "../assets/Accident Alert.png";
 import DownloadApptabs from "./Popuptabs/DownloadApptabs";
 import NotAssigned from "./ErrorUIPage/NotAssigned";
 import Undermaintenance from "./ErrorUIPage/Undermaintenance";
+const BASE_URL =
+  import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
 const notificationOptions = {
   vehicle: [
@@ -239,7 +241,7 @@ const SendNotificationpage = () => {
         seen_status: false,
       };
 
-      await axios.post("https://api.digivahan.in/api/notifications/send", payload);
+      await axios.post(`${BASE_URL}/api/notifications/send`, payload);
 
       if (!lockNotifications) {
         setLockNotifications(true); // first successful send ke baad disable

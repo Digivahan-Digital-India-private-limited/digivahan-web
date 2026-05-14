@@ -1,47 +1,56 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageSquare } from "lucide-react";
+import axios from "axios";
+import Cookies from "js-cookie";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
 const GeneralInformationQueries = () => {
   const navigate = useNavigate();
 
-  const queries = [
-    {
-      id: 1,
-      customerName: "Rakesh Kumar",
-      customerId: "CU-5932",
-      question: "App crash ho raha hai jab main payment karta hoon",
-      dateTime: "23 Dec, 3:45 PM",
-    },
-    {
-      id: 2,
-      customerName: "Priya Sharma",
-      customerId: "CU-5845",
-      question: "Mera order kahan hai? Tracking nahi dikh raha",
-      dateTime: "23 Dec, 2:30 PM",
-    },
-    {
-      id: 3,
-      customerName: "Amit Verma",
-      customerId: "CU-5723",
-      question: "Password reset link nahi aa raha email pe",
-      dateTime: "23 Dec, 1:15 PM",
-    },
-    {
-      id: 4,
-      customerName: "Neha Patel",
-      customerId: "CU-5654",
-      question: "Refund kab milega? Already 5 days ho gaye",
-      dateTime: "23 Dec, 11:20 AM",
-    },
-    {
-      id: 5,
-      customerName: "Suresh Reddy",
-      customerId: "CU-5598",
-      question: "Premium subscription activate nahi ho raha",
-      dateTime: "23 Dec, 10:05 AM",
-    },
-  ];
+  const [queries, setQueries] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchQueries = async () => {
+      try {
+        const token = Cookies.get("admin_token");
+        const response = await axios.get(`${BASE_URL}/api/admin/get-all-query`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.data?.success) {
+          const allQueries = response.data.data || [];
+          // Filter for General or Contact Form
+          const filtered = allQueries.filter(q => 
+            q.query_type === "General" || 
+            q.query_type === "Contact Form" || 
+            !q.query_type
+          );
+          setQueries(filtered);
+        }
+      } catch (error) {
+        console.error("Failed to fetch general queries:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQueries();
+  }, []);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
 
   return (
     <main className="w-full min-h-screen overflow-y-auto bg-white md:p-6 p-3">
@@ -112,16 +121,16 @@ const GeneralInformationQueries = () => {
               {queries.map((query) => (
                 <tr key={query.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {query.customerName}
+                    {query.first_name} {query.last_name}
                   </td>
                   <td className="px-6 py-4 text-sm text-blue-600 font-medium">
-                    {query.customerId}
+                    {query.email}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
-                    {query.question}
+                    {query.query}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {query.dateTime}
+                    {formatDate(query.createdAt)}
                   </td>
                   <td className="px-6 py-4">
                     <button 

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { ArrowRight, CheckCircle2, Mail, Phone, RefreshCcw, Search, User2, UserX } from "lucide-react";
+import { httpClient } from "../../../features/shared/api/httpClient";
+import { ArrowRight, CheckCircle2, Mail, Phone, RefreshCcw, Search, User2, UserX, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
@@ -66,6 +67,7 @@ const DeleteAccountRequests = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [updatingRequestId, setUpdatingRequestId] = useState("");
   const [actionOpenRequestId, setActionOpenRequestId] = useState("");
+  const [deletionDays, setDeletionDays] = useState(30);
 
   const fetchDeleteRequests = useCallback(async () => {
     try {
@@ -76,7 +78,7 @@ const DeleteAccountRequests = () => {
         params.status = statusFilter;
       }
 
-      const response = await axios.get(`${BASE_URL}/api/delete-account/list`, { params });
+      const response = await httpClient.get("/api/delete-account/list", { params });
 
       if (!response?.data?.success) {
         throw new Error(response?.data?.message || "Failed to fetch delete account requests.");
@@ -107,8 +109,9 @@ const DeleteAccountRequests = () => {
     try {
       setUpdatingRequestId(request.id);
 
-      const response = await axios.put(`${BASE_URL}/api/delete-account/status/${request.id}`, {
+      const response = await httpClient.put(`/api/delete-account/status/${request.id}`, {
         status: nextStatus,
+        deletion_days: deletionDays
       });
 
       if (!response?.data?.success) {
@@ -135,6 +138,28 @@ const DeleteAccountRequests = () => {
       toast.success(`Request moved to ${toStatusLabel(nextStatus)} successfully.`);
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Failed to update request status.");
+    } finally {
+      setUpdatingRequestId("");
+    }
+  };
+
+  const handleDeleteRequest = async (requestId) => {
+    if (!window.confirm("Are you sure you want to reject and delete this request? The user will be able to submit a new one.")) {
+      return;
+    }
+    try {
+      setUpdatingRequestId(requestId);
+      const response = await httpClient.delete(`/api/delete-account/request/${requestId}`);
+      
+      if (response?.data?.success) {
+        toast.success("Request rejected and deleted successfully.");
+        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+      } else {
+        throw new Error(response?.data?.message || "Failed to delete request.");
+      }
+    } catch (error) {
+      console.error("Delete Action Error:", error);
+      toast.error(error.message || "Something went wrong.");
     } finally {
       setUpdatingRequestId("");
     }
@@ -275,29 +300,72 @@ const DeleteAccountRequests = () => {
 
                 <div className="mt-4">
                   {item.status === "closed" ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold cursor-not-allowed"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Request Closed
-                    </button>
-                  ) : (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() =>
-                          setActionOpenRequestId((prev) => (prev === item.id ? "" : item.id))
-                        }
-                        disabled={updatingRequestId === item.id}
-                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold transition-all duration-300 hover:from-violet-700 hover:to-blue-700 hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold cursor-not-allowed"
                       >
-                        <ArrowRight className={`w-4 h-4 transition-transform ${actionOpenRequestId === item.id ? "rotate-90" : ""}`} />
-                        {actionOpenRequestId === item.id ? "Hide Actions" : "Take Action"}
+                        <CheckCircle2 className="w-4 h-4" /> Request Closed
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRequest(item.id)}
+                        disabled={updatingRequestId === item.id}
+                        className="px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors"
+                        title="Delete Request"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActionOpenRequestId((prev) => (prev === item.id ? "" : item.id))
+                          }
+                          disabled={updatingRequestId === item.id}
+                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold transition-all duration-300 hover:from-violet-700 hover:to-blue-700 hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <ArrowRight className={`w-4 h-4 transition-transform ${actionOpenRequestId === item.id ? "rotate-90" : ""}`} />
+                          {actionOpenRequestId === item.id ? "Hide Actions" : "Take Action"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRequest(item.id)}
+                          disabled={updatingRequestId === item.id}
+                          className="px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors"
+                          title="Delete Request"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
 
                       {actionOpenRequestId === item.id && (
-                        <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 animate-fade-in">
+                        <div className="mt-2.5 p-3 rounded-xl border border-slate-200 bg-white shadow-sm animate-fade-in mb-2">
+                          <div className="mb-3">
+                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 block">
+                              Schedule Deletion (Days)
+                            </label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="number"
+                                min="0"
+                                max="30"
+                                value={deletionDays}
+                                onChange={(e) => setDeletionDays(e.target.value)}
+                                className="w-full sm:w-32 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                                placeholder="30"
+                              />
+                              <span className="text-xs text-slate-500 font-medium">
+                                {deletionDays == 0 ? "(Immediate Deletion)" : `(Account deletes in ${deletionDays} days)`}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {getAllowedNextStatuses(item.status).map((nextStatus) => (
                             <button
                               key={`${item.id}-${nextStatus}`}
@@ -312,6 +380,7 @@ const DeleteAccountRequests = () => {
                                 : `Mark as ${toStatusLabel(nextStatus)}`}
                             </button>
                           ))}
+                          </div>
                         </div>
                       )}
                     </div>

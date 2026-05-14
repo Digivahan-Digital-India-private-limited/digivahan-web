@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { 
+  listReportIssues, 
+  updateReportIssue, 
+  deleteReportIssues 
+} from "../../../features/support/services/reportIssueApi";
 import { AlertTriangle, CalendarClock, Mail, Phone, RefreshCcw, Search, ShieldAlert, Tag, Ticket, Trash2, UserCheck, X } from "lucide-react";
 import { toast } from "react-toastify";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digicapital.co.in";
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -22,30 +24,9 @@ const STATUS_BADGES = {
 
 const PRIORITY_BADGES = {
   high: "bg-rose-100 text-rose-700 border-rose-200",
-  average: "bg-amber-100 text-amber-700 border-amber-200",
+  medium: "bg-amber-100 text-amber-700 border-amber-200",
   low: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
-
-const LIST_ENDPOINTS = [
-  "/api/report/list",
-  "/api/reports/list",
-  "/api/reports-issue/list",
-  "/api/report-issue/list",
-];
-
-const DELETE_ENDPOINTS = [
-  "/api/report-issue/delete",
-  "/api/report/delete",
-  "/api/reports/delete",
-  "/api/reports-issue/delete",
-];
-
-const UPDATE_ENDPOINTS = [
-  "/api/report-issue/update",
-  "/api/reports-issue/update",
-  "/api/report/update",
-  "/api/reports/update",
-];
 
 const toTitleCase = (value) => {
   const text = String(value || "").trim();
@@ -61,7 +42,7 @@ const formatDate = (value) => {
 const normalizePriority = (value) => {
   const key = String(value || "").trim().toLowerCase();
   if (["high", "critical"].includes(key)) return "high";
-  if (["average", "medium", "normal"].includes(key)) return "average";
+  if (["average", "medium", "normal"].includes(key)) return "medium";
   return "low";
 };
 
@@ -172,25 +153,13 @@ const ReportIssueList = () => {
     }
 
     try {
-      let response = null;
-      let lastError = null;
+      const response = await listReportIssues(params);
 
-      for (const endpoint of LIST_ENDPOINTS) {
-        try {
-          response = await axios.get(`${BASE_URL}${endpoint}`, { params });
-          if (response?.data?.success) {
-            break;
-          }
-        } catch (error) {
-          lastError = error;
-        }
+      if (!response || !response?.success) {
+        throw new Error(response?.message || "Failed to fetch report issues.");
       }
 
-      if (!response || !response?.data?.success) {
-        throw lastError || new Error("Failed to fetch report issues.");
-      }
-
-      const mapped = (response?.data?.data || []).map(mapIssue);
+      const mapped = (response?.data || []).map(mapIssue);
       setIssues(mapped);
     } catch (error) {
       setIssues([]);
@@ -213,11 +182,12 @@ const ReportIssueList = () => {
 
   const openTakeActionDialog = (issue) => {
     setActiveIssueId(issue.id);
+    const userData = JSON.parse(localStorage.getItem("user_info") || "{}");
     setActionForm({
       status: String(issue.status || "pending").toLowerCase(),
       note: issue.note || "",
-      updatedByName: issue.updatedByName || issue.name || "",
-      updatedByPhone: issue.updatedByPhone || issue.phone || "",
+      updatedByName: issue.updatedByName || userData.first_name || userData.name || issue.name || "",
+      updatedByPhone: issue.updatedByPhone || userData.phone_number || issue.phone || "",
       agentName: issue.agentName || "",
       agentPhone: issue.agentPhone || "",
     });
@@ -255,7 +225,7 @@ const ReportIssueList = () => {
       return;
     }
 
-    if (!/^\d{10}$/.test(actionForm.agentPhone)) {
+    if (actionForm.agentPhone && !/^\d{10}$/.test(actionForm.agentPhone)) {
       toast.error("Please enter a valid 10-digit agent phone number.");
       return;
     }
@@ -265,7 +235,7 @@ const ReportIssueList = () => {
       return;
     }
 
-    if (!/^\d{10}$/.test(actionForm.updatedByPhone)) {
+    if (actionForm.updatedByPhone && !/^\d{10}$/.test(actionForm.updatedByPhone)) {
       toast.error("Please enter a valid 10-digit updated by phone number.");
       return;
     }
@@ -282,23 +252,13 @@ const ReportIssueList = () => {
         agentPhone: actionForm.agentPhone,
       };
 
-      let response = null;
-      let lastError = null;
+      const response = await updateReportIssue(activeIssueId, payload);
 
-      for (const endpoint of UPDATE_ENDPOINTS) {
-        try {
-          response = await axios.put(`${BASE_URL}${endpoint}/${activeIssueId}`, payload);
-          if (response?.data?.success) break;
-        } catch (error) {
-          lastError = error;
-        }
+      if (!response || !response?.success) {
+        throw new Error(response?.message || "Failed to update issue.");
       }
 
-      if (!response || !response?.data?.success) {
-        throw lastError || new Error("Failed to update issue.");
-      }
-
-      const updatedItem = response?.data?.data ? mapIssue(response.data.data) : null;
+      const updatedItem = response?.data ? mapIssue(response.data) : null;
 
       setIssues((prev) =>
         prev.map((item) =>
@@ -317,7 +277,7 @@ const ReportIssueList = () => {
         ),
       );
 
-      toast.success(response?.data?.message || "Issue status updated successfully.");
+      toast.success(response?.message || "Issue status updated successfully.");
       closeTakeActionDialog();
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Failed to update issue.");
@@ -386,25 +346,10 @@ const ReportIssueList = () => {
     try {
       setIsDeleting(true);
 
-      let response = null;
-      let lastError = null;
+      const response = await deleteReportIssues(payload);
 
-      for (const endpoint of DELETE_ENDPOINTS) {
-        try {
-          response = await axios.delete(`${BASE_URL}${endpoint}`, {
-            data: payload,
-          });
-
-          if (response?.data?.success) {
-            break;
-          }
-        } catch (error) {
-          lastError = error;
-        }
-      }
-
-      if (!response || !response?.data?.success) {
-        throw lastError || new Error("Failed to delete issues.");
+      if (!response || !response?.success) {
+        throw new Error(response?.message || "Failed to delete issues.");
       }
 
       setIssues((prev) =>
@@ -413,7 +358,7 @@ const ReportIssueList = () => {
 
       setSelectedIssueIds([]);
       closeDeleteConfirm();
-      toast.success(response?.data?.message || "Issues deleted successfully.");
+      toast.success(response?.message || "Issues deleted successfully.");
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Failed to delete issues.");
     } finally {
@@ -606,19 +551,34 @@ const ReportIssueList = () => {
                   <p className="text-sm text-slate-700 leading-relaxed">{item.reportDetails}</p>
                   {Array.isArray(item.attachmentLinks) && item.attachmentLinks.length > 0 ? (
                     <div className="text-xs text-indigo-700 mt-2 space-y-1">
-                      <p className="font-semibold">Proof</p>
-                      <div className="flex flex-col gap-1">
-                        {item.attachmentLinks.map((link, index) => (
-                          <a
-                            key={`${item.id || item.ticketId}-proof-${index}`}
-                            href={link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline break-all"
-                          >
-                            Open Proof {index + 1}
-                          </a>
-                        ))}
+                      <p className="font-semibold mb-1.5">Attached Proofs</p>
+                      <div className="flex flex-wrap gap-2">
+                        {item.attachmentLinks.map((link, index) => {
+                          const isImage = /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(link);
+                          return (
+                            <a
+                              key={`${item.id || item.ticketId}-proof-${index}`}
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group relative inline-block overflow-hidden rounded-lg border border-indigo-200 bg-white shadow-sm transition-all hover:border-indigo-400 hover:shadow-md"
+                            >
+                              {isImage ? (
+                                <img
+                                  src={link}
+                                  alt={`Proof ${index + 1}`}
+                                  className="h-14 w-14 object-cover transition-transform duration-300 group-hover:scale-110"
+                                />
+                              ) : (
+                                <div className="flex h-14 w-14 flex-col items-center justify-center p-1 text-center text-[10px] text-indigo-500">
+                                  <FolderOpen className="w-5 h-5 mb-0.5" />
+                                  <span>Doc {index + 1}</span>
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-indigo-600/10 opacity-0 transition-opacity group-hover:opacity-100" />
+                            </a>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : item.supportingProof ? (
@@ -689,6 +649,57 @@ const ReportIssueList = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2 p-3 rounded-xl border border-indigo-50 bg-indigo-50/40">
+                <p className="text-xs text-indigo-700 font-semibold mb-1">Issue Overview</p>
+                <p className="text-sm text-slate-800 font-medium">{issues.find(i => i.id === activeIssueId)?.reportTitle}</p>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed line-clamp-3">
+                  {issues.find(i => i.id === activeIssueId)?.reportDetails}
+                </p>
+                
+                {/* Proof Links in Modal */}
+                {(() => {
+                  const currentIssue = issues.find(i => i.id === activeIssueId);
+                  if (currentIssue?.attachmentLinks?.length > 0) {
+                    return (
+                      <div className="mt-3 pt-3 border-t border-indigo-100">
+                        <p className="text-xs font-semibold text-indigo-700 mb-2">Attached Proofs (Click to view full size):</p>
+                        <div className="flex flex-wrap gap-3">
+                          {currentIssue.attachmentLinks.map((link, idx) => {
+                            const isImg = /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(link);
+                            return (
+                              <a
+                                key={`modal-proof-${idx}`}
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group relative block overflow-hidden rounded-xl border-2 border-indigo-100 bg-white shadow-sm transition-all hover:border-indigo-400 hover:shadow-lg"
+                              >
+                                {isImg ? (
+                                  <img
+                                    src={link}
+                                    alt={`Proof ${idx + 1}`}
+                                    className="h-20 w-20 object-cover transition-transform duration-300 group-hover:scale-110"
+                                  />
+                                ) : (
+                                  <div className="flex h-20 w-20 flex-col items-center justify-center p-2 text-center text-[10px] text-indigo-500">
+                                    <FolderOpen className="w-7 h-7 mb-1" />
+                                    <span>Document {idx + 1}</span>
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+                                  <Search className="w-5 h-5 text-white" />
+                                </div>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status (Admin Editable)</label>
                 <select

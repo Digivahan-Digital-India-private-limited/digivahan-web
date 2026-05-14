@@ -12,6 +12,11 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
+import {
+  getAppointments,
+  updateAppointment,
+  deleteAppointments
+} from "../../../features/support/services/appointmentApi";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
@@ -53,7 +58,7 @@ const toDateOnly = (value) => {
 };
 
 const normalizeAppointment = (appointment, index) => ({
-  id: appointment?._id || appointment?.id || appointment?.appointmentId || `APT-${index + 1}`,
+  id: appointment?.ticketId || appointment?._id || appointment?.id || appointment?.appointmentId || `APT-${index + 1}`,
   backendId: appointment?._id || appointment?.id || appointment?.appointmentId || "",
   name: appointment?.name || "-",
   companyName: appointment?.companyName || "-",
@@ -243,10 +248,7 @@ const ManageAppointment = () => {
       setUpdatingActionId(appointmentId);
       setActionError((prev) => ({ ...prev, [appointmentId]: "" }));
 
-      const response = await axios.put(
-        `${BASE_URL}/api/appointment/update/${targetAppointment.backendId}`,
-        payload
-      );
+      const response = await updateAppointment(targetAppointment.backendId, payload);
 
       if (!response?.data?.success) {
         throw new Error(response?.data?.message || "Failed to update appointment status.");
@@ -304,9 +306,7 @@ const ManageAppointment = () => {
       setIsDeleting(true);
       setDeleteMessage({ type: "", text: "" });
 
-      const response = await axios.delete(`${BASE_URL}/api/appointment/delete`, {
-        data: { ids: selectedForDelete },
-      });
+      const response = await deleteAppointments(selectedForDelete);
 
       if (!response?.data?.success) {
         throw new Error(response?.data?.message || "Failed to delete selected appointments.");
@@ -346,9 +346,7 @@ const ManageAppointment = () => {
       setIsDeleting(true);
       setDeleteMessage({ type: "", text: "" });
 
-      const response = await axios.delete(`${BASE_URL}/api/appointment/delete`, {
-        data: { ids: idsToDelete },
-      });
+      const response = await deleteAppointments(idsToDelete);
 
       if (!response?.data?.success) {
         throw new Error(response?.data?.message || "Failed to delete filtered appointments.");
@@ -392,7 +390,7 @@ const ManageAppointment = () => {
           params.status = STATUS_UI_TO_API[currentFilters.status] || String(currentFilters.status).toLowerCase();
         }
 
-        const response = await axios.get(`${BASE_URL}/api/appointment/list`, { params });
+        const response = await getAppointments(params);
 
         if (!response?.data?.success) {
           throw new Error(response?.data?.message || "Failed to fetch appointments.");

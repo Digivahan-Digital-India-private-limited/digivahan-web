@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { ArrowLeft, MessageSquare, Search, Send, UserRound } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -20,7 +21,7 @@ const mapApiConcernToUiConcern = (item) => {
   const apiStatus = String(item.status || "").toUpperCase();
 
   return {
-    id: item._id,
+    id: item.ticketId || item._id || item.id || "",
     name: item.user_id?.name || item.name || "Unknown User",
     contactInfo: item.user_id?.phoneNumber || item.phoneNumber || "",
     concernCategory: item.category || "",
@@ -49,16 +50,43 @@ const ConcernChat = () => {
   const [chatInput, setChatInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const chatScrollRef = useRef(null);
+  const pollingRef = useRef(null);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
+  // Detect manual scroll to disable/enable auto-scroll
+  const handleScroll = () => {
+    if (chatScrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatScrollRef.current;
+      // If user is within 100px of bottom, keep auto-scroll enabled
+      setIsAutoScrollEnabled(scrollHeight - scrollTop - clientHeight < 100);
+    }
+  };
+
+  // Poll API every 4 seconds to get live messages from users
   useEffect(() => {
-    const syncConcerns = () => {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      setConcerns(stored);
+    const fetchConcerns = async () => {
+      try {
+        const token = Cookies.get("admin_token");
+        const response = await axios.get(`${BASE_URL}/api/concern/list`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (response?.data?.success) {
+          const mapped = (response.data.data || []).map(mapApiConcernToUiConcern);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
+          setConcerns(mapped);
+        }
+      } catch (err) {
+        // Silent fail — don't toast on background polls
+      }
     };
-    window.addEventListener("storage", syncConcerns);
+
+    fetchConcerns(); // Immediate first fetch
+    pollingRef.current = setInterval(fetchConcerns, 4000);
 
     return () => {
-      window.removeEventListener("storage", syncConcerns);
+      clearInterval(pollingRef.current);
     };
   }, []);
 
@@ -86,10 +114,10 @@ const ConcernChat = () => {
   );
 
   useEffect(() => {
-    if (chatScrollRef.current) {
+    if (chatScrollRef.current && isAutoScrollEnabled) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [activeConcern?.id, activeConcern?.chat?.length]);
+  }, [activeConcern?.id, activeConcern?.chat?.length, isAutoScrollEnabled]);
 
   const persistConcerns = (updatedConcerns) => {
     setConcerns(updatedConcerns);
@@ -119,11 +147,17 @@ const ConcernChat = () => {
     try {
       setIsSending(true);
 
+      const token = Cookies.get("admin_token");
       const response = await axios.put(
         `${BASE_URL}/api/concern/conversation/${concernId}`,
         {
           sender: "admin",
           message: text,
+        },
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
         },
       );
 
@@ -154,6 +188,10 @@ const ConcernChat = () => {
 
       persistConcerns(updated);
       setChatInput("");
+      setIsAutoScrollEnabled(true);
+      setTimeout(() => {
+        if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      }, 50);
     } catch (error) {
       toast.error(error.response?.data?.error || error.message || "Failed to send chat message.");
     } finally {
@@ -234,20 +272,21 @@ const ConcernChat = () => {
                   <p className="text-sm text-slate-600 mt-1">User: {activeConcern.name || "Unknown"}</p>
                 </div>
 
-                <div ref={chatScrollRef} className="h-[52vh] overflow-y-auto pr-2 space-y-3">
+                <div ref={chatScrollRef} onScroll={handleScroll} className="h-[52vh] overflow-y-auto pr-2 space-y-3">
                   {(activeConcern.chat || []).length === 0 ? (
                     <p className="text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-300 rounded-lg p-3">
                       No messages yet. User can chat using this token from Raise Concern page.
                     </p>
                   ) : (
-                    activeConcern.chat.map((message) => {
+                    activeConcern.chat.map((message, index) => {
                       const isAdmin = message.sender === "admin";
                       const displayText = message.text || message.message || "";
                       const messageTime = message.sentAt || message.time || message.createdAt;
+                      const stableId = message._id || message.id || `msg-${index}-${new Date(messageTime || 0).getTime()}`;
 
                       return (
                         <div
-                          key={message.id}
+                          key={stableId}
                           className={`max-w-[85%] p-3 rounded-xl border ${
                             isAdmin
                               ? "ml-auto bg-blue-100 border-blue-200 text-blue-900"

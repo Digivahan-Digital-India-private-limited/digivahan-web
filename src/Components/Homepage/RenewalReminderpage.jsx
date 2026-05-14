@@ -25,9 +25,9 @@ const RenewalReminderpage = () => {
       `}</style>
       <div className="flex flex-col md:flex-row items-center gap-4 md:gap-12 p-3 md:p-8 rounded-lg">
         {/* Phone image wrapper — order-first ensures image is above text on mobile; md:order-none restores desktop order */}
-        <div className="shrink-0 relative w-75 md:w-100 h-115 md:h-140 order-first md:order-0 rr-image-container mx-auto md:mx-0">
+        <div className="shrink-0 relative w-[300px] md:w-[400px] h-[460px] md:h-[560px] order-first md:order-none rr-image-container mx-auto md:mx-0">
           {/* Outer green ring — 4 red dots + 3 yellow/green dots, slow anti-clockwise */}
-          <div className="absolute w-72.5 h-72.5 md:w-97.5 md:h-97.5 rounded-full border-2 border-green-500/40 top-21.25 left-4.5 md:top-21.25 md:left-16.25 animate-spin-ccw-slow">
+          <div className="absolute w-[290px] h-[290px] md:w-[390px] md:h-[390px] rounded-full border-[2px] border-green-500/40 top-[85px] left-[18px] md:top-[85px] md:left-[65px] animate-spin-ccw-slow">
             <div className="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-md" style={{ left: 'calc(85.35% - 5px)', top: 'calc(85.35% - 5px)' }}></div>
             <div className="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-md" style={{ left: 'calc(14.65% - 5px)', top: 'calc(85.35% - 5px)' }}></div>
             <div className="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-md" style={{ left: 'calc(14.65% - 5px)', top: 'calc(14.65% - 5px)' }}></div>
@@ -38,7 +38,7 @@ const RenewalReminderpage = () => {
             <div className="absolute w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-md" style={{ left: 'calc(50% - 5px)', top: 'calc(100% - 5px)' }}></div>
           </div>
           {/* Inner green ring — 3 red dots + 3 yellow/green dots, anti-clockwise */}
-          <div className="absolute w-57.5 h-57.5 md:w-77.5 md:h-77.5 rounded-full border-[3px] border-green-500/70 top-28.75 left-12 md:top-31.25 md:left-26.25 animate-spin-ccw">
+          <div className="absolute w-[230px] h-[230px] md:w-[310px] md:h-[310px] rounded-full border-[3px] border-green-500/70 top-[115px] left-[48px] md:top-[125px] md:left-[105px] animate-spin-ccw">
             <div className="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-md" style={{ left: 'calc(100% - 5px)', top: 'calc(50% - 5px)' }}></div>
             <div className="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-md" style={{ left: 'calc(25% - 5px)', top: 'calc(93.3% - 5px)' }}></div>
             <div className="absolute w-2.5 h-2.5 bg-red-500 rounded-full shadow-md" style={{ left: 'calc(25% - 5px)', top: 'calc(6.7% - 5px)' }}></div>
@@ -51,13 +51,13 @@ const RenewalReminderpage = () => {
           <img
             src="/Imp%20Renewal/iPhone.png"
             alt="iPhone Renewal Reminder"
-            className="absolute z-10 w-57.5 md:w-70 h-auto top-0 right-5.5 md:right-0"
+            className="absolute z-10 w-[230px] md:w-[280px] h-auto top-0 right-[22px] md:right-0"
           />
           {/* Bike tab card — overlapping the bottom portion of the phone screen */}
           <img
             src="/Imp%20Renewal/bike%20tab.png"
             alt="Bike Tab Overlay"
-            className="absolute z-20 w-57.5 md:w-70 h-auto bottom-63.75 md:bottom-77.5 left-12 md:left-29.5"
+            className="absolute z-20 w-[230px] md:w-[280px] h-auto bottom-[255px] md:bottom-[310px] left-[48px] md:left-[118px]"
           />
         </div>
         <div className="hidden md:block border-l-[5px] border-yellow-400 h-40 md:h-64 ml-8 md:ml-16"></div>

@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FaTimes, FaTrashAlt } from "react-icons/fa";
+import React, { useState, useEffect, useRef, useContext } from "react";
+import { FaTimes, FaTrashAlt, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
 import axios from "axios";
+import Cookies from "js-cookie";
+import { httpClient } from "../features/shared/api/httpClient";
+import { MyContext } from "../ContextApi/DataProvider";
+import { getProfile } from "../features/profile/services/profileApi";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
@@ -24,7 +28,12 @@ const normalizeReasonForApi = (reason) => {
 };
 
 const DeleteAccountPage = () => {
+  const { UserSignInwithOtp, verifyUserOtp } = useContext(MyContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", ""]);
+  const otpInputsRef = useRef([]);
+
   const [formData, setFormData] = useState({
     full_name: "",
     mobile: "",
@@ -35,9 +44,55 @@ const DeleteAccountPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const [deletionStatus, setDeletionStatus] = useState({ status: "LOADING", daysLeft: 0 });
   const [openFaq, setOpenFaq] = useState(null);
 
   const sectionRefs = useRef({});
+
+  useEffect(() => {
+    // Auto-fill user info from localStorage or API
+    const loadUserInfo = async () => {
+      try {
+        setLoading(true);
+        // Always fetch fresh profile from API (getProfile handles internal fallback)
+        const profile = await getProfile();
+        
+        if (profile) {
+          setFormData((prev) => ({
+            ...prev,
+            full_name: profile.name || `${profile.firstName || ""} ${profile.lastName || ""}`.trim(),
+            mobile: profile.phone || "",
+            email: profile.email || "",
+          }));
+        }
+      } catch (err) {
+        console.error("Error loading user info", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUserInfo();
+    
+    // Check deletion status
+    const checkStatus = async () => {
+      const token = Cookies.get("user_token");
+      if (!token) {
+        setDeletionStatus({ status: "NOT_LOGGED_IN", daysLeft: 0 });
+        return;
+      }
+
+      try {
+        const response = await httpClient.get("/api/delete-account/status");
+        if (response?.data?.success) {
+          setDeletionStatus(response.data.data);
+        }
+      } catch (err) {
+        console.error("Error checking deletion status", err);
+        setDeletionStatus({ status: "NONE", daysLeft: 0 });
+      }
+    };
+    checkStatus();
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -68,6 +123,31 @@ const DeleteAccountPage = () => {
     setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
+  const handleOtpChange = (value, index) => {
+    if (!/^\d?$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 3) {
+      otpInputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpInputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    const pasteData = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (pasteData.length === 4) {
+      const newOtp = pasteData.split("");
+      setOtp(newOtp);
+      otpInputsRef.current[3]?.focus();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.confirm) {
@@ -77,32 +157,60 @@ const DeleteAccountPage = () => {
 
     try {
       setLoading(true);
-
-      const payload = {
-        name: formData.full_name.trim(),
-        phoneNumber: formData.mobile.trim(),
-        email: formData.email.trim(),
-        reason: normalizeReasonForApi(formData.reason),
-        otherReason: formData.description.trim(),
-      };
-
-      const response = await axios.post(`${BASE_URL}/api/delete-account/raise`, payload);
-
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.message || "Failed to submit account deletion request.");
+      const cleanPhone = formData.mobile.trim();
+      localStorage.setItem("user_login_phone", cleanPhone);
+      
+      const res = await UserSignInwithOtp(cleanPhone);
+      if (res) {
+        setIsOtpModalOpen(true);
+        setIsModalOpen(false); // Hide the main form, show OTP modal
       }
-
-      setLoading(false);
-      setSuccess(response?.data?.message || "Your account deletion request has been submitted. Our team will process it within 3–7 working days.");
-      setFormData({ full_name: "", mobile: "", email: "", reason: "", description: "", confirm: false });
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setSuccess("");
-      }, 3000);
     } catch (error) {
+      alert(error.response?.data?.message || "Failed to send OTP.");
+    } finally {
       setLoading(false);
-      setSuccess("");
-      alert(error.response?.data?.message || error.message || "Failed to submit account deletion request.");
+    }
+  };
+
+  const handleVerifyOtpAndSubmit = async (e) => {
+    e.preventDefault();
+    const otpValue = otp.join("");
+    if (otpValue.length !== 4) {
+      alert("Please enter the complete 4-digit OTP");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const verifyRes = await verifyUserOtp(otpValue);
+      if (verifyRes) {
+        // OTP verified successfully, now submit the deletion request
+        const payload = {
+          name: formData.full_name.trim(),
+          phoneNumber: formData.mobile.trim(),
+          email: formData.email.trim(),
+          reason: normalizeReasonForApi(formData.reason),
+          otherReason: formData.description.trim(),
+        };
+
+        const response = await httpClient.post("/api/delete-account/raise", payload);
+
+        if (!response?.data?.success) {
+          throw new Error(response?.data?.message || "Failed to submit account deletion request.");
+        }
+
+        setSuccess(response?.data?.message || "Your account deletion request has been submitted. Our team will process it within 3–7 working days.");
+        setFormData({ ...formData, reason: "", description: "", confirm: false });
+        
+        // Refresh the page after 2.5 seconds to show the new status
+        setTimeout(() => {
+          window.location.reload();
+        }, 2500);
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || "Failed to verify OTP or submit request.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -221,12 +329,51 @@ const DeleteAccountPage = () => {
                 <p>If you're unsure about deleting your account, consider reaching out to our support team first. We may be able to resolve your concern without requiring account deletion.</p>
               </div>
 
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="btn-delete mt-8 bg-linear-to-r from-red-500 to-red-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95"
-              >
-                Request Account Deletion
-              </button>
+              {deletionStatus.status === "LOADING" ? (
+                <div className="mt-8 p-4 bg-slate-100 rounded-xl animate-pulse">
+                  <div className="h-4 bg-slate-200 w-1/2 rounded mx-auto"></div>
+                </div>
+              ) : deletionStatus.status === "IN_PROGRESS" ? (
+                <div className="mt-8 p-6 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-4 shadow-sm">
+                  <div className="w-12 h-12 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center shrink-0">
+                    <FaCheckCircle className="text-2xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-amber-800">Request Submitted</h3>
+                    <p className="text-sm text-amber-700">You already submitted a request for deletion.</p>
+                  </div>
+                </div>
+              ) : deletionStatus.status === "SCHEDULED" ? (
+                <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-xl flex items-center gap-4 shadow-sm">
+                  <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center shrink-0">
+                    <FaTrashAlt className="text-2xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-red-800">Deletion Scheduled</h3>
+                    <p className="text-sm text-red-700">Your account will be permanently deleted in <span className="font-bold">{deletionStatus.daysLeft} days</span>.</p>
+                  </div>
+                </div>
+              ) : deletionStatus.status === "NOT_LOGGED_IN" ? (
+                <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-4 shadow-sm">
+                  <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center shrink-0">
+                    <FaTimes className="text-2xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800">Not Logged In</h3>
+                    <p className="text-sm text-slate-700 mb-3">Please log in to your account to request deletion.</p>
+                    <a href="/user-login-page" className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all">
+                      Login to Continue
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="btn-delete mt-8 bg-linear-to-r from-red-500 to-red-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95"
+                >
+                  Request Account Deletion
+                </button>
+              )}
             </div>
 
             {/* Right image */}
@@ -300,12 +447,14 @@ const DeleteAccountPage = () => {
             </div>
 
             <div ref={setRef("ctaStep")} className="scroll-anim text-center mt-10">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-linear-to-r from-red-500 to-red-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95"
-              >
-                Submit Deletion Request
-              </button>
+              {deletionStatus.status === "NONE" && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-linear-to-r from-red-500 to-red-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95"
+                >
+                  Submit Deletion Request
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -476,7 +625,8 @@ const DeleteAccountPage = () => {
                   onChange={handleChange}
                   placeholder="Enter your full name"
                   required
-                  className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all duration-300 hover:border-red-300"
+                  readOnly
+                  className="w-full mt-1 px-4 py-3 border-2 border-gray-200 bg-gray-100 text-gray-600 rounded-lg focus:outline-none cursor-not-allowed transition-all duration-300"
                 />
               </div>
 
@@ -491,7 +641,8 @@ const DeleteAccountPage = () => {
                     onChange={handleChange}
                     placeholder="Registered mobile number"
                     required
-                    className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all duration-300 hover:border-red-300"
+                    readOnly
+                    className="w-full mt-1 px-4 py-3 border-2 border-gray-200 bg-gray-100 text-gray-600 rounded-lg focus:outline-none cursor-not-allowed transition-all duration-300"
                   />
                 </div>
                 <div className="transform transition-all duration-300 hover:scale-[1.02]">
@@ -503,7 +654,8 @@ const DeleteAccountPage = () => {
                     onChange={handleChange}
                     placeholder="Registered email"
                     required
-                    className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all duration-300 hover:border-red-300"
+                    readOnly
+                    className="w-full mt-1 px-4 py-3 border-2 border-gray-200 bg-gray-100 text-gray-600 rounded-lg focus:outline-none cursor-not-allowed transition-all duration-300"
                   />
                 </div>
               </div>
@@ -574,6 +726,87 @@ const DeleteAccountPage = () => {
                 ) : "Submit Deletion Request"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── OTP VERIFICATION MODAL ─── */}
+      {isOtpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-active"
+            onClick={() => setIsOtpModalOpen(false)}
+          />
+
+          <div className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 sm:p-8 modal-slide-in">
+            {/* Close */}
+            <button
+              onClick={() => setIsOtpModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-2 rounded-full transition-all duration-300"
+            >
+              <FaTimes className="text-2xl" />
+            </button>
+
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 mb-4">
+              <FaCheckCircle />
+              Account Verification
+            </div>
+
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Verify Deletion Request</h1>
+            <p className="text-sm text-slate-600 mb-6">
+              Enter the 4-digit OTP sent to +91 {formData.mobile}.
+              This step is required to securely confirm your account deletion.
+            </p>
+
+            {success && (
+              <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                <p className="text-green-700 font-semibold text-sm">{success}</p>
+              </div>
+            )}
+
+            <form className="space-y-6" onSubmit={handleVerifyOtpAndSubmit}>
+              <div className="flex justify-between gap-2" onPaste={handleOtpPaste}>
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (otpInputsRef.current[index] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(e.target.value, index)}
+                    onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                    className="h-12 w-12 sm:h-14 sm:w-14 text-center text-lg font-semibold border-2 border-red-200 rounded-xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                  />
+                ))}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full rounded-xl py-4 text-white text-base font-semibold transition-all ${
+                  loading
+                    ? "bg-slate-300 cursor-not-allowed"
+                    : "bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-200"
+                }`}
+              >
+                {loading ? "Verifying..." : "Verify and Request Deletion"}
+              </button>
+            </form>
+
+            <div className="mt-5 flex items-center justify-between text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOtpModalOpen(false);
+                  setIsModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 text-red-600 hover:text-red-700"
+              >
+                <FaArrowLeft />
+                Go Back
+              </button>
+            </div>
           </div>
         </div>
       )}

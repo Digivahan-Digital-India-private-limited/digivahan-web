@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 import {
 	AlertTriangle,
 	ArrowLeft,
@@ -98,7 +99,7 @@ const mapApiConcernToUiConcern = (item) => {
 	const concernCategory = String(item.category || "").toLowerCase();
 
 	return {
-		id: item._id || item.id || "",
+		id: item.ticketId || item._id || item.id || "",
 		name: item.user_id?.name || item.name || "Unknown User",
 		contactInfo: item.user_id?.phoneNumber || item.phoneNumber || "",
 		concernCategory,
@@ -129,6 +130,9 @@ const ManageConcerns = () => {
 	const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 	const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
 	const [deletingConcernId, setDeletingConcernId] = useState(null);
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+	const [deleteType, setDeleteType] = useState(null); // 'single' or 'multiple'
+	const [targetId, setTargetId] = useState(null);
 
 	useEffect(() => {
 		let isActive = true;
@@ -145,7 +149,13 @@ const ManageConcerns = () => {
 					params.category = categoryFilter;
 				}
 
-				const response = await axios.get(`${BASE_URL}/api/concern/list`, { params });
+				const token = Cookies.get("admin_token");
+				const response = await axios.get(`${BASE_URL}/api/concern/list`, {
+					params,
+					headers: {
+						...(token ? { Authorization: `Bearer ${token}` } : {}),
+					},
+				});
 
 				if (!response?.data?.success) {
 					throw new Error(response?.data?.error || "Failed to fetch concerns.");
@@ -235,14 +245,31 @@ const ManageConcerns = () => {
 		setCheckedConcernIds(filteredConcerns.map((item) => item.id));
 	};
 
+	const openDeleteConfirmSingle = (e, id) => {
+		e.stopPropagation();
+		setDeleteType("single");
+		setTargetId(id);
+		setIsDeleteModalOpen(true);
+	};
+
+	const openDeleteConfirmMultiple = () => {
+		if (checkedConcernIds.length === 0) return;
+		setDeleteType("multiple");
+		setIsDeleteModalOpen(true);
+	};
+
 	const handleDeleteSingle = async (id) => {
 		if (!id || deletingConcernId === id) return;
 
 		try {
 			setDeletingConcernId(id);
 
+			const token = Cookies.get("admin_token");
 			const response = await axios.delete(`${BASE_URL}/api/concern/delete`, {
 				data: { ids: [id], id },
+				headers: {
+					...(token ? { Authorization: `Bearer ${token}` } : {}),
+				},
 			});
 
 			if (!response?.data?.success) {
@@ -271,8 +298,12 @@ const ManageConcerns = () => {
 		try {
 			setIsDeletingMultiple(true);
 
+			const token = Cookies.get("admin_token");
 			const response = await axios.delete(`${BASE_URL}/api/concern/delete`, {
 				data: { ids: checkedConcernIds },
+				headers: {
+					...(token ? { Authorization: `Bearer ${token}` } : {}),
+				},
 			});
 
 			if (!response?.data?.success) {
@@ -288,6 +319,7 @@ const ManageConcerns = () => {
 			}
 
 			toast.success(response?.data?.message || "Concerns deleted successfully.");
+			setIsDeleteModalOpen(false);
 		} catch (error) {
 			toast.error(error.response?.data?.message || error.message || "Failed to delete concerns.");
 		} finally {
@@ -301,10 +333,16 @@ const ManageConcerns = () => {
 		try {
 			setIsUpdatingStatus(true);
 
+			const token = Cookies.get("admin_token");
 			const response = await axios.put(
 				`${BASE_URL}/api/concern/status/${activeConcern.id}`,
 				{
 					status: UI_TO_API_STATUS_UPDATE[draftStatus] || draftStatus.toLowerCase(),
+				},
+				{
+					headers: {
+						...(token ? { Authorization: `Bearer ${token}` } : {}),
+					},
 				},
 			);
 
@@ -427,7 +465,7 @@ const ManageConcerns = () => {
 
 								<button
 									type="button"
-									onClick={handleDeleteMultiple}
+									onClick={openDeleteConfirmMultiple}
 									disabled={checkedConcernIds.length === 0 || isDeletingMultiple}
 									className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white font-medium disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-red-700 hover:scale-[1.01] transition"
 								>
@@ -504,10 +542,7 @@ const ManageConcerns = () => {
 											<p className="text-xs text-slate-400">{formatDate(item.createdAt)}</p>
 											<button
 												type="button"
-												onClick={(e) => {
-													e.stopPropagation();
-													handleDeleteSingle(item.id);
-												}}
+												onClick={(e) => openDeleteConfirmSingle(e, item.id)}
 												disabled={deletingConcernId === item.id}
 												className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 disabled:text-slate-400 disabled:cursor-not-allowed"
 											>
@@ -572,9 +607,43 @@ const ManageConcerns = () => {
 								</div>
 
 								<div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-									<p className="text-xs text-slate-500 mb-1">Issue Description</p>
-									<p className="text-sm text-slate-700 leading-relaxed">{activeConcern.issueDescription || "-"}</p>
-									<p className="text-xs text-slate-500 mt-3">Support Doc: {activeConcern.supportingDocs || "N/A"}</p>
+									<p className="text-xs text-slate-500 mb-2 font-medium">Issue Description</p>
+									<p className="text-s font-semibold text-slate-900 leading-relaxed">{activeConcern.issueDescription || "-"}</p>
+									
+									{activeConcern.supportingDocs && activeConcern.supportingDocs.trim() !== "N/A" && (
+										<div className="mt-4">
+											<p className="text-xs text-slate-500 mb-2 font-medium">Support Documents</p>
+											<div className="flex flex-wrap gap-3">
+												{activeConcern.supportingDocs.split(",").map((url, idx) => {
+													const trimmedUrl = url.trim();
+													if (!trimmedUrl || trimmedUrl === "N/A") return null;
+													return (
+														<a 
+															key={idx} 
+															href={trimmedUrl} 
+															target="_blank" 
+															rel="noopener noreferrer"
+															title="Click to view full image"
+															className="relative group block w-18 h-18 sm:w-22 sm:h-22 rounded-lg overflow-hidden border border-slate-300 bg-white hover:border-blue-500 transition shadow-sm hover:shadow-md"
+														>
+															<img 
+																src={trimmedUrl} 
+																alt={`Supporting Document ${idx + 1}`}
+																className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+																onError={(e) => {
+																	e.target.style.display = 'none';
+																	if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+																}}
+															/>
+															<div className="hidden absolute inset-0 items-center justify-center bg-slate-50 text-slate-400 text-[10px] text-center p-2 leading-tight">
+																File Preview Not Available
+															</div>
+														</a>
+													);
+												})}
+											</div>
+										</div>
+									)}
 								</div>
 
 								<div className="p-4 rounded-lg border border-slate-200 bg-slate-50">
@@ -619,6 +688,58 @@ const ManageConcerns = () => {
 					</div>
 				)}
 			</div>
+
+			{/* Deletion Confirmation Modal */}
+			{isDeleteModalOpen && (
+				<div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+					<div 
+						className="absolute inset-0 bg-black/45 backdrop-blur-sm"
+						onClick={() => !deletingConcernId && !isDeletingMultiple && setIsDeleteModalOpen(false)}
+					/>
+					<div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-md w-full animate-fade-in">
+						<div className="flex items-center gap-3 mb-4 text-red-600">
+							<div className="p-2 bg-red-50 rounded-full">
+								<AlertTriangle className="w-6 h-6" />
+							</div>
+							<h3 className="text-xl font-bold text-slate-800">Confirm Deletion</h3>
+						</div>
+						
+						<p className="text-slate-800 mb-6 leading-relaxed">
+							{deleteType === "single" 
+								? "Are you sure you want to delete this concern? This action cannot be undone."
+								: `Are you sure you want to delete ${checkedConcernIds.length} selected concerns? This action cannot be undone.`
+							}
+						</p>
+						
+						<div className="flex items-center justify-end gap-3">
+							<button
+								type="button"
+								onClick={() => setIsDeleteModalOpen(false)}
+								disabled={deletingConcernId || isDeletingMultiple}
+								className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={async () => {
+									if (deleteType === "single") {
+										await handleDeleteSingle(targetId);
+										setIsDeleteModalOpen(false);
+									} else {
+										await handleDeleteMultiple();
+										// Modal closing is handled inside handleDeleteMultiple for consistency
+									}
+								}}
+								disabled={deletingConcernId || isDeletingMultiple}
+								className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition shadow-md shadow-red-100 disabled:bg-slate-400"
+							>
+								{deletingConcernId || isDeletingMultiple ? "Deleting..." : "Yes, Delete"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</section>
 	);
 };
