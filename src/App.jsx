@@ -282,6 +282,7 @@ const App = () => {
           />
         </Route>
 
+        {/* MARKETPLACE ROUTES HIDDEN TEMPORARILY
         <Route
           element={
             <UserProtectedRoute>
@@ -306,6 +307,7 @@ const App = () => {
           <Route path="/buy-cars" element={<Navigate to="/marketplace/buy" replace />} />
           <Route path="/sell-cars" element={<Navigate to="/marketplace/sell" replace />} />
         </Route>
+        */}
         <Route element={<Layout />}>
           <Route path="/" element={<Homepage />} />
 

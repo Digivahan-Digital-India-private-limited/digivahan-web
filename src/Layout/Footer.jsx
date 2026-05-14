@@ -59,36 +59,21 @@ export const Footer = () => {
           </ul>
         </div>
 
-        {/* Marketplace */}
+        {/* MARKETPLACE HIDDEN TEMPORARILY
         <div>
           <ul className="flex flex-col gap-2 text-sm">
             <li className="text-gray-600 font-bold">Marketplace</li>
-            <li>
-              <Link to="/marketplace">Marketplace Home</Link>
-            </li>
-            <li>
-              <Link to="/marketplace/buy">Buy Cars</Link>
-            </li>
-            <li>
-              <Link to="/marketplace/sell">Sell Cars</Link>
-            </li>
-            <li>
-              <Link to="/marketplace/trust">Trust Center</Link>
-            </li>
-            <li>
-              <Link to="/marketplace/reviews">Customer Reviews</Link>
-            </li>
-            <li>
-              <Link to="/marketplace/support">Marketplace Support</Link>
-            </li>
-            <li>
-              <Link to="/marketplace/tools/emi">EMI Calculator</Link>
-            </li>
-            <li>
-              <Link to="/marketplace/tools/service-cost">Service Cost Calculator</Link>
-            </li>
+            <li><Link to="/marketplace">Marketplace Home</Link></li>
+            <li><Link to="/marketplace/buy">Buy Cars</Link></li>
+            <li><Link to="/marketplace/sell">Sell Cars</Link></li>
+            <li><Link to="/marketplace/trust">Trust Center</Link></li>
+            <li><Link to="/marketplace/reviews">Customer Reviews</Link></li>
+            <li><Link to="/marketplace/support">Marketplace Support</Link></li>
+            <li><Link to="/marketplace/tools/emi">EMI Calculator</Link></li>
+            <li><Link to="/marketplace/tools/service-cost">Service Cost Calculator</Link></li>
           </ul>
         </div>
+        */}
 
         {/* My Account */}
         <div>

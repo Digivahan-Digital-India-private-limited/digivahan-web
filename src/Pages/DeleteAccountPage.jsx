@@ -31,7 +31,7 @@ const DeleteAccountPage = () => {
   const { UserSignInwithOtp, verifyUserOtp } = useContext(MyContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", ""]);
   const otpInputsRef = useRef([]);
 
   const [formData, setFormData] = useState({
@@ -128,7 +128,7 @@ const DeleteAccountPage = () => {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    if (value && index < 5) {
+    if (value && index < 3) {
       otpInputsRef.current[index + 1]?.focus();
     }
   };
@@ -141,10 +141,10 @@ const DeleteAccountPage = () => {
 
   const handleOtpPaste = (e) => {
     const pasteData = e.clipboardData.getData("text").replace(/\D/g, "");
-    if (pasteData.length === 6) {
+    if (pasteData.length === 4) {
       const newOtp = pasteData.split("");
       setOtp(newOtp);
-      otpInputsRef.current[5]?.focus();
+      otpInputsRef.current[3]?.focus();
     }
   };
 
@@ -175,8 +175,8 @@ const DeleteAccountPage = () => {
   const handleVerifyOtpAndSubmit = async (e) => {
     e.preventDefault();
     const otpValue = otp.join("");
-    if (otpValue.length !== 6) {
-      alert("Please enter the complete 6-digit OTP");
+    if (otpValue.length !== 4) {
+      alert("Please enter the complete 4-digit OTP");
       return;
     }
 
@@ -754,7 +754,7 @@ const DeleteAccountPage = () => {
 
             <h1 className="text-2xl font-bold text-slate-900 mb-2">Verify Deletion Request</h1>
             <p className="text-sm text-slate-600 mb-6">
-              Enter the 6-digit OTP sent to +91 {formData.mobile}.
+              Enter the 4-digit OTP sent to +91 {formData.mobile}.
               This step is required to securely confirm your account deletion.
             </p>
 

@@ -80,10 +80,6 @@ const AppLayout = () => {
           <Header
             onOpenSidebar={() => setSidebarOpen(true)}
             title={title}
-            actionButton={{
-              to: "/marketplace",
-              label: "Open Marketplace",
-            }}
           />
 
           <main className="flex-1 overflow-y-auto px-4 pb-24 pt-4 sm:px-6 lg:pb-8">

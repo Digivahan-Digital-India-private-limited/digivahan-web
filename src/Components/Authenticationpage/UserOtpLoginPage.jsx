@@ -9,7 +9,7 @@ const UserOtpLoginPage = () => {
   const location = useLocation();
   const { verifyUserOtp } = useContext(MyContext);
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const inputsRef = useRef([]);
 
@@ -28,7 +28,7 @@ const UserOtpLoginPage = () => {
     nextOtp[index] = value;
     setOtp(nextOtp);
 
-    if (value && index < 5) {
+    if (value && index < 3) {
       inputsRef.current[index + 1]?.focus();
     }
   };
@@ -41,10 +41,10 @@ const UserOtpLoginPage = () => {
 
   const handlePaste = (event) => {
     const text = event.clipboardData.getData("text").replace(/\D/g, "");
-    if (text.length === 6) {
+    if (text.length === 4) {
       const digits = text.split("");
       setOtp(digits);
-      inputsRef.current[5]?.focus();
+      inputsRef.current[3]?.focus();
     }
   };
 
@@ -82,7 +82,7 @@ const UserOtpLoginPage = () => {
 
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Verify OTP</h1>
         <p className="text-sm text-slate-600 mb-6">
-          Enter the 6-digit OTP sent to {phone ? `+91 ${phone}` : "your phone"}.
+          Enter the 4-digit OTP sent to {phone ? `+91 ${phone}` : "your phone"}.
           This login gives one account access to both buying and selling cars. Dummy mode accepts any OTP.
         </p>
 

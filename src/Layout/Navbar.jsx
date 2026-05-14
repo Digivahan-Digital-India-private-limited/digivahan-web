@@ -168,6 +168,7 @@ const Navbar = () => {
               </>
             )}
 
+            {/* MARKETPLACE HIDDEN TEMPORARILY
             <Link
               to="/marketplace"
               onClick={() => setIsOpen(false)}
@@ -176,6 +177,7 @@ const Navbar = () => {
               <FaStore className="text-[13px]" />
               <span>Open Marketplace</span>
             </Link>
+            */}
           </div>
         </div>
       )}
