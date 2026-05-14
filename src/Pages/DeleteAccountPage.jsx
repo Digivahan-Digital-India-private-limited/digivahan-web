@@ -392,9 +392,7 @@ const DeleteAccountPage = () => {
                   <div>
                     <h3 className="text-lg font-bold text-slate-800">Not Logged In</h3>
                     <p className="text-sm text-slate-700 mb-3">Please log in to your account to request deletion.</p>
-                    <a href="/user-login-page" className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all">
-                      Login to Continue
-                    </a>
+                   
                   </div>
                 </div>
               ) : (
