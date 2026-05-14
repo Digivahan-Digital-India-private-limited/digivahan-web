@@ -664,6 +664,7 @@ const ChallanPay = () => {
                   const processedChallans = challans.map(challan => {
                     const isUnderProcess = webhookRecords.some(r => 
                       r.challanNumber === challan.challanNumber && 
+                      r.isSettled !== false &&  // if isSettled is explicitly false → treat as UNPAID
                       (r.transactionStatus?.toLowerCase() === 'initiated' || r.transactionStatus?.toLowerCase() === 'pending' || r.ioStatus?.toLowerCase() === 'pending')
                     );
                     let category = "UNPAID";
