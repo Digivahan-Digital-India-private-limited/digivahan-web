@@ -84,11 +84,34 @@ export const getChallanPaymentUrl = async (vehicleNumber, challanNumbers) => {
   }
 };
 
+export const refreshChallanData = async (rcNumber) => {
+  try {
+    const token = Cookies.get("token");
+    if (!token) {
+      throw new Error("User is not authenticated");
+    }
+
+    const response = await axios.post(
+      `${BASE_URL}/challan-flow/refresh`,
+      { rcNumber },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || error.message || "Failed to refresh challans";
+  }
+};
+
 const challanService = {
   initChallanFlow,
   verifyChallanOtp,
   getChallanHistory,
   getChallanPaymentUrl,
+  refreshChallanData,
 };
 
 export default challanService;

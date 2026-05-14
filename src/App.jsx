@@ -96,6 +96,7 @@ import ManageConcerns from "./Pages/AdminPannel/Concerns/ManageConcerns";
 import ConcernChat from "./Pages/AdminPannel/Concerns/ConcernChat";
 import DeleteAccountRequests from "./Pages/AdminPannel/DeleteAccountRequests/DeleteAccountRequests";
 import ReportIssueList from "./Pages/AdminPannel/ReportsIssue/ReportIssueList";
+import ChallanWebhookAdmin from "./Pages/AdminPannel/ChallanWebhook/ChallanWebhookAdmin";
 
 // Protected Routes
 import ProtectedRoutes from "./ProtectedRoutes/ProtectedRoutes";
@@ -352,6 +353,7 @@ const App = () => {
           />
           <Route path="/report-issues" element={<ReportIssueList />} />
           <Route path="/manage-appointment" element={<ManageAppointment />} />
+          <Route path="/challan-webhook-admin" element={<ChallanWebhookAdmin />} />
           <Route path="/post-faq" element={<PostFAQ />} />
           <Route path="/delete-faq" element={<DeleteFAQ />} />
           <Route path="/update-faq" element={<UpdateFAQ />} />

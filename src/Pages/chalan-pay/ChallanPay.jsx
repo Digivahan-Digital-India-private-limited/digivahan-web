@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { FaChevronRight, FaCheckCircle, FaExclamationTriangle, FaExternalLinkAlt, FaHistory, FaTimes } from "react-icons/fa";
-import { initChallanFlow, verifyChallanOtp, getChallanHistory, getChallanPaymentUrl } from "../../utils/challanService";
+import { initChallanFlow, verifyChallanOtp, getChallanHistory, getChallanPaymentUrl, refreshChallanData } from "../../utils/challanService";
 
 const ChallanPay = () => {
   const navigate = useNavigate();
@@ -29,6 +29,41 @@ const ChallanPay = () => {
   const [historyData, setHistoryData] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [expandedRc, setExpandedRc] = useState(null);
+
+  // Refresh State
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshData = async () => {
+    if (!formData.rcNumber) return;
+    setIsRefreshing(true);
+    try {
+      const token = Cookies.get("token");
+      if (token) {
+        // Fetch webhooks
+        const historyRes = await getChallanHistory();
+        if (historyRes.status && historyRes.history) {
+          setWebhookRecords(historyRes.history);
+          const savedState = JSON.parse(localStorage.getItem("challan_pay_state") || "{}");
+          savedState.webhookRecords = historyRes.history;
+          localStorage.setItem("challan_pay_state", JSON.stringify(savedState));
+        }
+      }
+      // Fetch challans
+      const challanRes = await refreshChallanData(formData.rcNumber);
+      if (challanRes.status && challanRes.challans) {
+        setChallans(challanRes.challans);
+        const savedState = JSON.parse(localStorage.getItem("challan_pay_state") || "{}");
+        savedState.challans = challanRes.challans;
+        localStorage.setItem("challan_pay_state", JSON.stringify(savedState));
+      }
+      toast.success("Data refreshed successfully");
+    } catch (error) {
+      console.error("Refresh error:", error);
+      toast.error("Failed to refresh data");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // View Details Modal State
   const [viewDetailsItem, setViewDetailsItem] = useState(null);
@@ -700,6 +735,60 @@ const ChallanPay = () => {
                     return { ...challan, category, _webhookRecord: latestRecord };
                   });
 
+                  // Add orphaned webhook records (challans paid but no longer returned by RTO API)
+                  const isMatchingRc = (webhookRc, actualRc) => {
+                    if (!webhookRc || !actualRc) return false;
+                    const cleanActual = actualRc.replace(/[^A-Z0-9]/ig, '').toUpperCase();
+                    const cleanWebhook = webhookRc.toUpperCase();
+                    if (cleanWebhook.includes('*')) {
+                      const visiblePart = cleanWebhook.replace(/\*/g, '');
+                      return visiblePart.length > 0 && cleanActual.endsWith(visiblePart);
+                    }
+                    return cleanWebhook === cleanActual;
+                  };
+
+                  const currentVehicleWebhooks = webhookRecords.filter(r => 
+                    r.transactionStatus !== 'SEARCHED' && isMatchingRc(r.rcNumber, formData.rcNumber)
+                  );
+
+                  const latestWebhooksByChallan = {};
+                  currentVehicleWebhooks.forEach(r => {
+                    if (!r.challanNumber) return;
+                    if (!latestWebhooksByChallan[r.challanNumber] || new Date(r.createdAt) > new Date(latestWebhooksByChallan[r.challanNumber].createdAt)) {
+                      latestWebhooksByChallan[r.challanNumber] = r;
+                    }
+                  });
+
+                  Object.values(latestWebhooksByChallan).forEach(wh => {
+                    const exists = processedChallans.find(c => c.challanNumber === wh.challanNumber);
+                    if (!exists) {
+                      let category = "UNPAID";
+                      const txStatus = wh.transactionStatus?.toLowerCase();
+                      const ioStatus = wh.ioStatus?.toLowerCase();
+
+                      if (txStatus === 'success' || txStatus === 'paid') category = "PAID";
+                      else if (txStatus === 'failed' && ioStatus === 'refund') category = "UNPAID";
+                      else if (txStatus === 'captured') {
+                        if (wh.isSettled === true) category = "PAID";
+                        else category = "UNDER_PROCESS";
+                      } else if (txStatus === 'initiated') category = "UNPAID";
+
+                      // If it's a paid or under process record, we definitely want to show it
+                      if (category === "PAID" || category === "UNDER_PROCESS" || wh.isSettled) {
+                        processedChallans.push({
+                          challanNumber: wh.challanNumber,
+                          offence: "Traffic Violation", // Default fallback since RTO deleted it
+                          amountSettledAt: wh.amountSettledAt || 0,
+                          transactionStatus: category,
+                          location: "Not available",
+                          createdAt: wh.createdAt,
+                          category: category,
+                          _webhookRecord: wh
+                        });
+                      }
+                    }
+                  });
+
                   const unpaidCount = processedChallans.filter(c => c.category === 'UNPAID').length;
                   const displayChallans = processedChallans.filter(c => c.category === activeTab);
 
@@ -708,7 +797,16 @@ const ChallanPay = () => {
                       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
                         <div>
                           <div className="text-slate-500 text-xs font-bold uppercase tracking-wider">Vehicle Number</div>
-                          <div className="text-slate-900 font-black text-xl">{formData.rcNumber}</div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-slate-900 font-black text-xl">{formData.rcNumber}</div>
+                            <button 
+                              onClick={handleRefreshData} 
+                              disabled={isRefreshing}
+                              className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded hover:bg-indigo-100 font-bold transition disabled:opacity-50"
+                            >
+                              {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+                            </button>
+                          </div>
                         </div>
                         <div className={`px-4 py-2 rounded-full font-extrabold text-xs ${unpaidCount > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
                           {unpaidCount} {unpaidCount === 1 ? 'Pending Challan' : 'Pending Challans'}
@@ -807,20 +905,141 @@ const ChallanPay = () => {
                               <div className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-blue-100">
                                 <FaCheckCircle /> Payment Processing (Settlement in 3-4 days)
                               </div>
-                              <button
-                                onClick={() => setViewDetailsItem(challan._webhookRecord || { challanNumber: challan.challanNumber, rcNumber: formData.rcNumber, ...challan })}
-                                className="w-full py-2.5 bg-white text-blue-600 border border-blue-200 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-blue-50 transition-all"
-                              >
-                                🔍 View Details
-                              </button>
+                              {challan._webhookRecord ? (
+                                <div className="mt-3 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                                  <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                                    {challan._webhookRecord.requestId && (
+                                      <div className="col-span-2">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Request ID</span>
+                                        <span className="text-xs font-semibold text-slate-700 break-all">{challan._webhookRecord.requestId}</span>
+                                      </div>
+                                    )}
+                                    {challan._webhookRecord.ioStatus && (
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">IO Status</span>
+                                        <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
+                                      </div>
+                                    )}
+                                    {challan._webhookRecord.isSettled !== undefined && (
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
+                                        <span className={`text-xs font-semibold ${challan._webhookRecord.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
+                                          {challan._webhookRecord.isSettled ? 'Yes' : 'No'}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {challan._webhookRecord.convenienceFee ? (
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Conv. Fee</span>
+                                        <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.convenienceFee}</span>
+                                      </div>
+                                    ) : null}
+                                    {challan._webhookRecord.paymentGatewayFee ? (
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">PG Fee</span>
+                                        <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
+                                      </div>
+                                    ) : null}
+                                    {challan._webhookRecord.receiptFile && (
+                                      <div className="col-span-2">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt File</span>
+                                        <a href={challan._webhookRecord.receiptFile} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+                                          Download File <FaExternalLinkAlt size={10} />
+                                        </a>
+                                      </div>
+                                    )}
+                                    {challan._webhookRecord.receiptNumber && (
+                                      <div className="col-span-2">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Number</span>
+                                        <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.receiptNumber}</span>
+                                      </div>
+                                    )}
+                                    {challan._webhookRecord.refundAmount && (challan._webhookRecord.refundAmount !== "0" && challan._webhookRecord.refundAmount !== 0) && (
+                                      <div>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Refund</span>
+                                        <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.refundAmount}</span>
+                                      </div>
+                                    )}
+                                    {challan._webhookRecord.comment && (
+                                      <div className="col-span-2">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Comment</span>
+                                        <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.comment}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
                           )}
 
-                          {challan.category === 'PAID' && (
+                          {challan.category === 'PAID' && challan._webhookRecord ? (
+                            <div className="mt-3 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                              <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                                {challan._webhookRecord.requestId && (
+                                  <div className="col-span-2">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Request ID</span>
+                                    <span className="text-xs font-semibold text-slate-700 break-all">{challan._webhookRecord.requestId}</span>
+                                  </div>
+                                )}
+                                {challan._webhookRecord.ioStatus && (
+                                  <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">IO Status</span>
+                                    <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
+                                  </div>
+                                )}
+                                {challan._webhookRecord.isSettled !== undefined && (
+                                  <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
+                                    <span className={`text-xs font-semibold ${challan._webhookRecord.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
+                                      {challan._webhookRecord.isSettled ? 'Yes' : 'No'}
+                                    </span>
+                                  </div>
+                                )}
+                                {challan._webhookRecord.convenienceFee ? (
+                                  <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Conv. Fee</span>
+                                    <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.convenienceFee}</span>
+                                  </div>
+                                ) : null}
+                                {challan._webhookRecord.paymentGatewayFee ? (
+                                  <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">PG Fee</span>
+                                    <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
+                                  </div>
+                                ) : null}
+                                {challan._webhookRecord.receiptFile && (
+                                  <div className="col-span-2">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt File</span>
+                                    <a href={challan._webhookRecord.receiptFile} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+                                      Download File <FaExternalLinkAlt size={10} />
+                                    </a>
+                                  </div>
+                                )}
+                                {challan._webhookRecord.receiptNumber && (
+                                  <div className="col-span-2">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Number</span>
+                                    <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.receiptNumber}</span>
+                                  </div>
+                                )}
+                                {challan._webhookRecord.refundAmount && (challan._webhookRecord.refundAmount !== "0" && challan._webhookRecord.refundAmount !== 0) && (
+                                  <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Refund</span>
+                                    <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.refundAmount}</span>
+                                  </div>
+                                )}
+                                {challan._webhookRecord.comment && (
+                                  <div className="col-span-2">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Comment</span>
+                                    <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.comment}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : challan.category === 'PAID' ? (
                             <div className="w-full py-3 bg-green-50 text-green-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-green-100">
                                <FaCheckCircle /> Payment Completed
                             </div>
-                          )}
+                          ) : null}
                         </div>
                       );
                     })}

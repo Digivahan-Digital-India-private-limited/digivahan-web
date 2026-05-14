@@ -18,6 +18,7 @@ import {
   Smartphone,
   CalendarDays,
   UserX,
+  Webhook,
 } from "lucide-react";
 
 const menuItems = [
@@ -29,6 +30,7 @@ const menuItems = [
   { name: "Delete Account Request", icon: UserX, link: "/delete-account-requests" },
   { name: "Report Issue", icon: FileText, link: "/report-issues" },
   { name: "Manage Appointment", icon: CalendarDays, link: "/manage-appointment" },
+  { name: "Challan Webhook", icon: Webhook, link: "/challan-webhook-admin" },
   // { name: "Reviews", icon: Star, link: "/admin/reviews" },
   // { name: "Issues / Priority", icon: AlertTriangle, link: "/admin/issues" },
   // { name: "Reports", icon: FileText, link: "/admin/reports" },
