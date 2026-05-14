@@ -25,6 +25,7 @@ import ConnectTabs from "./Pages/ConnectTabs";
 import AccidentNotification from "./Pages/AccidentNotification";
 import EmergencyContactUspage from "./Pages/EmergencyContactUspage";
 import AccessVehicleDoc from "./Pages/AccessVehicleDoc";
+import ChallanPay from "./Pages/chalan-pay/ChallanPay";
 
 // Admin Pannel
 import AdminPannel from "./Pages/AdminPannel/AdminPannel";
@@ -169,6 +170,7 @@ const App = () => {
             element={<UserConcernChat />}
           />
           <Route path="/visit-us-page" element={<VisitUs />} />
+          <Route path="/pay-challan" element={<ChallanPay />} />
           <Route path="/Report-page" element={<Reports />} />
           <Route path="/explore-page" element={<Explorepage />} />
           <Route path="/delete-account" element={<DeleteAccountPage />} />

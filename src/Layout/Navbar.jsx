@@ -28,6 +28,9 @@ const Navbar = () => {
               <Link to="/">Home</Link>
             </li>
             <li>
+              <Link to="/pay-challan">Pay Challan</Link>
+            </li>
+            <li>
               <Link to="/visit-us-page">Visit Us</Link>
             </li>
             <li>
@@ -77,6 +80,11 @@ const Navbar = () => {
             <li>
               <Link to="/" onClick={() => setIsOpen(false)}>
                 Home
+              </Link>
+            </li>
+            <li>
+              <Link to="/pay-challan" onClick={() => setIsOpen(false)}>
+                Pay Challan
               </Link>
             </li>
             <li>
