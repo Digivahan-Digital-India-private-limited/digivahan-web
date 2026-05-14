@@ -85,10 +85,16 @@ const DeleteAccountPage = () => {
         const response = await httpClient.get("/api/delete-account/status");
         if (response?.data?.success) {
           setDeletionStatus(response.data.data);
+        } else {
+          setDeletionStatus({ status: "NONE", daysLeft: 0 });
         }
       } catch (err) {
-        console.error("Error checking deletion status", err);
-        setDeletionStatus({ status: "NONE", daysLeft: 0 });
+        console.error("Error checking deletion status", err?.response?.data || err.message);
+        if (err?.response?.status === 401 || err?.response?.status === 403) {
+          setDeletionStatus({ status: "NOT_LOGGED_IN", daysLeft: 0 });
+        } else {
+          setDeletionStatus({ status: "NONE", daysLeft: 0 });
+        }
       }
     };
     checkStatus();
@@ -334,23 +340,48 @@ const DeleteAccountPage = () => {
                   <div className="h-4 bg-slate-200 w-1/2 rounded mx-auto"></div>
                 </div>
               ) : deletionStatus.status === "IN_PROGRESS" ? (
-                <div className="mt-8 p-6 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-4 shadow-sm">
-                  <div className="w-12 h-12 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center shrink-0">
-                    <FaCheckCircle className="text-2xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-amber-800">Request Submitted</h3>
-                    <p className="text-sm text-amber-700">You already submitted a request for deletion.</p>
+                <div className="mt-8 p-6 bg-amber-50 border-2 border-amber-300 rounded-xl shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                      <FaCheckCircle className="text-2xl" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-amber-800">✅ Request Submitted</h3>
+                      <p className="text-sm text-amber-700 mt-1">
+                        You already submitted for deleting account.
+                        Your request is under review by our admin team.
+                      </p>
+                      <p className="text-xs text-amber-500 mt-2 font-semibold">
+                        You will be notified once the process is complete.
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : deletionStatus.status === "SCHEDULED" ? (
-                <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-xl flex items-center gap-4 shadow-sm">
-                  <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center shrink-0">
-                    <FaTrashAlt className="text-2xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-red-800">Deletion Scheduled</h3>
-                    <p className="text-sm text-red-700">Your account will be permanently deleted in <span className="font-bold">{deletionStatus.daysLeft} days</span>.</p>
+                <div className="mt-8 p-6 bg-red-50 border-2 border-red-300 rounded-xl shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                      <FaTrashAlt className="text-2xl" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-red-800">⏳ Deletion Scheduled</h3>
+                      <p className="text-sm text-red-700 mt-1">
+                        Your account will be permanently deleted on{" "}
+                        <span className="font-black text-red-900">
+                          {deletionStatus.deletionDate
+                            ? new Date(deletionStatus.deletionDate).toLocaleDateString("en-IN", {
+                                day: "numeric", month: "long", year: "numeric",
+                              })
+                            : `${deletionStatus.daysLeft} day(s) from today`}
+                        </span>.
+                      </p>
+                      {deletionStatus.daysLeft > 0 && (
+                        <p className="text-xs text-red-500 mt-1 font-semibold">
+                          {deletionStatus.daysLeft} day{deletionStatus.daysLeft !== 1 ? "s" : ""} remaining
+                        </p>
+                      )}
+                      <p className="text-xs text-red-400 mt-2">Contact support if you wish to cancel this request.</p>
+                    </div>
                   </div>
                 </div>
               ) : deletionStatus.status === "NOT_LOGGED_IN" ? (
@@ -566,12 +597,29 @@ const DeleteAccountPage = () => {
           <div className="max-w-2xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-white mb-3">Ready to Delete Your Account?</h2>
             <p className="text-red-100 mb-7">This action is permanent and cannot be undone. Please make sure you've read all the information above before proceeding.</p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-white text-red-600 font-bold px-10 py-4 rounded-xl hover:bg-red-50 transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
-            >
-              Request Account Deletion
-            </button>
+            {deletionStatus.status === "NONE" ? (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-white text-red-600 font-bold px-10 py-4 rounded-xl hover:bg-red-50 transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
+              >
+                Request Account Deletion
+              </button>
+            ) : deletionStatus.status === "IN_PROGRESS" ? (
+              <div className="inline-block bg-white/20 border border-white/40 text-white px-8 py-4 rounded-xl font-semibold text-base">
+                ✅ Your deletion request is under review by admin.
+              </div>
+            ) : deletionStatus.status === "SCHEDULED" ? (
+              <div className="inline-block bg-white/20 border border-white/40 text-white px-8 py-4 rounded-xl font-semibold text-base">
+                ⏳ Account will be deleted on{" "}
+                <span className="font-black">
+                  {deletionStatus.deletionDate
+                    ? new Date(deletionStatus.deletionDate).toLocaleDateString("en-IN", {
+                        day: "numeric", month: "long", year: "numeric",
+                      })
+                    : `${deletionStatus.daysLeft} day(s) from now`}
+                </span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
