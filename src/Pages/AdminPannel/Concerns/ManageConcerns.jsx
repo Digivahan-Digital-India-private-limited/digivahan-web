@@ -130,6 +130,9 @@ const ManageConcerns = () => {
 	const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 	const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
 	const [deletingConcernId, setDeletingConcernId] = useState(null);
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+	const [deleteType, setDeleteType] = useState(null); // 'single' or 'multiple'
+	const [targetId, setTargetId] = useState(null);
 
 	useEffect(() => {
 		let isActive = true;
@@ -242,6 +245,19 @@ const ManageConcerns = () => {
 		setCheckedConcernIds(filteredConcerns.map((item) => item.id));
 	};
 
+	const openDeleteConfirmSingle = (e, id) => {
+		e.stopPropagation();
+		setDeleteType("single");
+		setTargetId(id);
+		setIsDeleteModalOpen(true);
+	};
+
+	const openDeleteConfirmMultiple = () => {
+		if (checkedConcernIds.length === 0) return;
+		setDeleteType("multiple");
+		setIsDeleteModalOpen(true);
+	};
+
 	const handleDeleteSingle = async (id) => {
 		if (!id || deletingConcernId === id) return;
 
@@ -303,6 +319,7 @@ const ManageConcerns = () => {
 			}
 
 			toast.success(response?.data?.message || "Concerns deleted successfully.");
+			setIsDeleteModalOpen(false);
 		} catch (error) {
 			toast.error(error.response?.data?.message || error.message || "Failed to delete concerns.");
 		} finally {
@@ -448,7 +465,7 @@ const ManageConcerns = () => {
 
 								<button
 									type="button"
-									onClick={handleDeleteMultiple}
+									onClick={openDeleteConfirmMultiple}
 									disabled={checkedConcernIds.length === 0 || isDeletingMultiple}
 									className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white font-medium disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-red-700 hover:scale-[1.01] transition"
 								>
@@ -525,10 +542,7 @@ const ManageConcerns = () => {
 											<p className="text-xs text-slate-400">{formatDate(item.createdAt)}</p>
 											<button
 												type="button"
-												onClick={(e) => {
-													e.stopPropagation();
-													handleDeleteSingle(item.id);
-												}}
+												onClick={(e) => openDeleteConfirmSingle(e, item.id)}
 												disabled={deletingConcernId === item.id}
 												className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 disabled:text-slate-400 disabled:cursor-not-allowed"
 											>
@@ -674,6 +688,58 @@ const ManageConcerns = () => {
 					</div>
 				)}
 			</div>
+
+			{/* Deletion Confirmation Modal */}
+			{isDeleteModalOpen && (
+				<div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+					<div 
+						className="absolute inset-0 bg-black/45 backdrop-blur-sm"
+						onClick={() => !deletingConcernId && !isDeletingMultiple && setIsDeleteModalOpen(false)}
+					/>
+					<div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-md w-full animate-fade-in">
+						<div className="flex items-center gap-3 mb-4 text-red-600">
+							<div className="p-2 bg-red-50 rounded-full">
+								<AlertTriangle className="w-6 h-6" />
+							</div>
+							<h3 className="text-xl font-bold text-slate-800">Confirm Deletion</h3>
+						</div>
+						
+						<p className="text-slate-800 mb-6 leading-relaxed">
+							{deleteType === "single" 
+								? "Are you sure you want to delete this concern? This action cannot be undone."
+								: `Are you sure you want to delete ${checkedConcernIds.length} selected concerns? This action cannot be undone.`
+							}
+						</p>
+						
+						<div className="flex items-center justify-end gap-3">
+							<button
+								type="button"
+								onClick={() => setIsDeleteModalOpen(false)}
+								disabled={deletingConcernId || isDeletingMultiple}
+								className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={async () => {
+									if (deleteType === "single") {
+										await handleDeleteSingle(targetId);
+										setIsDeleteModalOpen(false);
+									} else {
+										await handleDeleteMultiple();
+										// Modal closing is handled inside handleDeleteMultiple for consistency
+									}
+								}}
+								disabled={deletingConcernId || isDeletingMultiple}
+								className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition shadow-md shadow-red-100 disabled:bg-slate-400"
+							>
+								{deletingConcernId || isDeletingMultiple ? "Deleting..." : "Yes, Delete"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</section>
 	);
 };
