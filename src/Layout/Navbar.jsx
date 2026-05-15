@@ -49,9 +49,9 @@ const Navbar = () => {
             <li>
               <Link to="/pay-challan">Pay Challan</Link>
             </li>
-            <li>
+            {/* <li>
               <Link to="/order-qr">Order QR</Link>
-            </li>
+            </li> */}
             <li>
               <Link to="/visit-us-page">Visit Us</Link>
             </li>
