@@ -3,11 +3,29 @@ import logo from "../assets/Group 8.png";
 import { Link } from "react-router-dom";
 import { FaBars, FaStore, FaTimes } from "react-icons/fa";
 import Cookies from "js-cookie";
+import { MyContext } from "../ContextApi/DataProvider";
+import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { LogoutAdmin, LogoutUser } = useContext(MyContext);
+  const navigate = useNavigate();
+
   const adminToken = Cookies.get("admin_token");
   const userToken = Cookies.get("user_token");
+
+  const handleAdminLogout = async () => {
+    await LogoutAdmin();
+    setIsOpen(false);
+    navigate("/login-page");
+  };
+
+  const handleUserLogout = async () => {
+    await LogoutUser();
+    setIsOpen(false);
+    navigate("/login");
+  };
 
   return (
     <header className="w-full bg-white shadow-lg mb-1 z-50">
@@ -46,19 +64,19 @@ const Navbar = () => {
         {/* Right Side Buttons */}
         <div className="hidden md:flex items-center gap-4">
           {adminToken ? (
-            <Link
-              to="/admin-panel"
-              className="text-yellow-500 font-semibold hover:text-yellow-600 transition"
+            <button
+              onClick={handleAdminLogout}
+              className="text-yellow-500 font-semibold hover:text-yellow-600 transition cursor-pointer"
             >
-              Dashboard
-            </Link>
+              Logout
+            </button>
           ) : userToken ? (
-            <Link
-              to="/dashboard"
-              className="text-sky-600 font-semibold hover:text-sky-700 transition"
+            <button
+              onClick={handleUserLogout}
+              className="text-sky-600 font-semibold hover:text-sky-700 transition cursor-pointer"
             >
-              My Account
-            </Link>
+              Logout
+            </button>
           ) : (
             <Link
               to="/login"
@@ -127,21 +145,19 @@ const Navbar = () => {
 
           <div className="flex flex-col gap-4">
             {adminToken ? (
-              <Link
-                to="/admin-panel"
-                onClick={() => setIsOpen(false)}
-                className="text-yellow-500 font-semibold text-center hover:text-yellow-600 transition"
+              <button
+                onClick={handleAdminLogout}
+                className="text-yellow-500 font-semibold text-center hover:text-yellow-600 transition cursor-pointer"
               >
-                Dashboard
-              </Link>
+                Logout
+              </button>
             ) : userToken ? (
-              <Link
-                to="/dashboard"
-                onClick={() => setIsOpen(false)}
-                className="text-sky-600 font-semibold text-center hover:text-sky-700 transition"
+              <button
+                onClick={handleUserLogout}
+                className="text-sky-600 font-semibold text-center hover:text-sky-700 transition cursor-pointer"
               >
-                My Account
-              </Link>
+                Logout
+              </button>
             ) : (
               <>
                 <Link

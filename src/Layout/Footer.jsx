@@ -11,7 +11,28 @@ import Digismalimg from "../assets/Group 8.png";
 import { Link } from "react-router-dom";
 import Playstore from "../assets/play-store.png";
 import Applestore from "../assets/Apple-store.png";
+import Cookies from "js-cookie";
+import { MyContext } from "../ContextApi/DataProvider";
+import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
+
 export const Footer = () => {
+  const { LogoutAdmin, LogoutUser } = useContext(MyContext);
+  const navigate = useNavigate();
+
+  const adminToken = Cookies.get("admin_token");
+  const userToken = Cookies.get("user_token");
+
+  const handleAdminLogout = async () => {
+    await LogoutAdmin();
+    navigate("/login-page");
+  };
+
+  const handleUserLogout = async () => {
+    await LogoutUser();
+    navigate("/login");
+  };
+
   return (
     <footer className="bg-white border-t border-gray-200">
       {/* Top section */}
@@ -79,27 +100,34 @@ export const Footer = () => {
         <div>
           <ul className="flex flex-col gap-2 text-sm">
             <li className="text-gray-600 font-bold">My Account</li>
-            {/* <li>
-              <Link to="/dashboard">My Account</Link>
-            </li> */}
-            {/* <li>
-              <Link to="/orders">My Orders</Link>
-            </li>
-            <li>
-              <Link to="/virtual-qr">My Virtual QRs</Link>
-            </li>
-            <li>
-              <Link to="/document-vault">Document Vault</Link>
-            </li>
-            <li>
-              <Link to="/profile/update">Update Profile</Link>
-            </li> */}
-            <li>
-              <Link to="/login">User Login</Link>
-            </li>
-            <li>
-              <Link to="/login-page">Admin Login</Link>
-            </li>
+            {adminToken ? (
+              <li>
+                <button
+                  onClick={handleAdminLogout}
+                  className="cursor-pointer hover:text-gray-900 transition-colors"
+                >
+                  Logout
+                </button>
+              </li>
+            ) : userToken ? (
+              <li>
+                <button
+                  onClick={handleUserLogout}
+                  className="cursor-pointer hover:text-gray-900 transition-colors"
+                >
+                  Logout
+                </button>
+              </li>
+            ) : (
+              <>
+                <li>
+                  <Link to="/login">User Login</Link>
+                </li>
+                <li>
+                  <Link to="/login-page">Admin Login</Link>
+                </li>
+              </>
+            )}
             <li>
               <Link to="/delete-account" className="text-red-500 font-medium hover:text-red-600 transition-colors">Delete Account</Link>
             </li>

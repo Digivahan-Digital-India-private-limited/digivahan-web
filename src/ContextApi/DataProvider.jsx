@@ -227,6 +227,41 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const LogoutUser = async () => {
+    try {
+      const token = Cookies.get("user_token");
+
+      if (!token) {
+        toast.error("No active session found");
+        return null;
+      }
+
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/logout-user`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.data) {
+        Cookies.remove("user_token");
+        toast.success("Logged out successfully");
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      console.log("User logout error:", error);
+      // Even if API fails, remove cookie for better UX
+      Cookies.remove("user_token");
+      toast.success("Logged out");
+      return null;
+    }
+  };
+
   const AddDeliveryPartners = async (partnername) => {
     try {
       const token = Cookies.get("admin_token");
@@ -690,6 +725,7 @@ const DataProvider = ({ children }) => {
         UserSignInwithOtp,
         verifyUserOtp,
         LogoutAdmin,
+        LogoutUser,
         AddDeliveryPartners,
         DeliveryOrders,
         ShiprocketOrders,
