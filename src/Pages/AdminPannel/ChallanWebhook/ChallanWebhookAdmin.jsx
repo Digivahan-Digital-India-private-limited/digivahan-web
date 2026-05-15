@@ -62,7 +62,12 @@ const ChallanWebhookAdmin = () => {
     try {
       setLoading(true);
       const res = await getAllWebhooks();
-      setRecords(Array.isArray(res?.data) ? res.data : []);
+      const allData = Array.isArray(res?.data) ? res.data : [];
+      // ✅ Filter out 'SEARCHED' records as requested
+      const filteredData = allData.filter(
+        (r) => r.transactionStatus?.toLowerCase() !== "searched"
+      );
+      setRecords(filteredData);
     } catch {
       toast.error("Failed to fetch records.");
       setRecords([]);
