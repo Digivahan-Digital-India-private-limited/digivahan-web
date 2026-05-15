@@ -79,10 +79,10 @@ export const Footer = () => {
         <div>
           <ul className="flex flex-col gap-2 text-sm">
             <li className="text-gray-600 font-bold">My Account</li>
-            <li>
+            {/* <li>
               <Link to="/dashboard">My Account</Link>
-            </li>
-            <li>
+            </li> */}
+            {/* <li>
               <Link to="/orders">My Orders</Link>
             </li>
             <li>
@@ -93,7 +93,7 @@ export const Footer = () => {
             </li>
             <li>
               <Link to="/profile/update">Update Profile</Link>
-            </li>
+            </li> */}
             <li>
               <Link to="/login">User Login</Link>
             </li>
