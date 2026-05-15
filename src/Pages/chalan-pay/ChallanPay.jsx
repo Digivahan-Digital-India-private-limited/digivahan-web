@@ -716,11 +716,14 @@ const ChallanPay = () => {
                       if (txStatus === 'success' || txStatus === 'paid') {
                         category = "PAID";
                       } else if (txStatus === 'failed' && ioStatus === 'refund') {
-                        // Payment failed + refund issued → treat as UNPAID again
-                        category = "UNPAID";
+                        // Payment failed + refund issued → treat as FAILED (hide)
+                        category = "FAILED";
                       } else if (txStatus === 'captured') {
-                        // Payment captured by gateway: if settled, mark PAID, else UNDER PROCESS
-                        if (latestRecord.isSettled === true) {
+                        // Payment captured by gateway: if refunded, treat as FAILED (hide)
+                        // If settled, mark PAID, else UNDER PROCESS
+                        if (ioStatus === 'refund') {
+                          category = "FAILED";
+                        } else if (latestRecord.isSettled === true) {
                           category = "PAID";
                         } else {
                           category = "UNDER_PROCESS";
@@ -767,9 +770,10 @@ const ChallanPay = () => {
                       const ioStatus = wh.ioStatus?.toLowerCase();
 
                       if (txStatus === 'success' || txStatus === 'paid') category = "PAID";
-                      else if (txStatus === 'failed' && ioStatus === 'refund') category = "UNPAID";
+                      else if (txStatus === 'failed' && ioStatus === 'refund') category = "FAILED";
                       else if (txStatus === 'captured') {
-                        if (wh.isSettled === true) category = "PAID";
+                        if (ioStatus === 'refund') category = "FAILED";
+                        else if (wh.isSettled === true) category = "PAID";
                         else category = "UNDER_PROCESS";
                       } else if (txStatus === 'initiated') category = "UNPAID";
 

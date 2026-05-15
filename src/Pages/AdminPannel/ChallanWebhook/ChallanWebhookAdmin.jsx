@@ -27,10 +27,14 @@ const fmt = (v) => {
   });
 };
 
-const getStatusMeta = (tx, isSettled) => {
+const getStatusMeta = (tx, isSettled, ioStatus) => {
   const s = (tx || "").toLowerCase();
+  const io = (ioStatus || "").toLowerCase();
+  
   if ((s === "captured" && isSettled) || s === "success" || s === "paid")
     return { label: "Paid",         cls: "bg-emerald-100 text-emerald-700 border-emerald-200" };
+  if (s === "captured" && io === "refund")
+    return { label: "Failed (Refund)", cls: "bg-red-100 text-red-700 border-red-200" };
   if (s === "captured")
     return { label: "Under Process",cls: "bg-blue-100 text-blue-700 border-blue-200" };
   if (s === "initiated")
@@ -110,10 +114,14 @@ const ChallanWebhookAdmin = () => {
       return (s === "captured" && r.isSettled) || s === "success" || s === "paid";
     }).length;
     const underProcess = records.filter(
-      (r) => r.transactionStatus?.toLowerCase() === "captured" && !r.isSettled
+      (r) => r.transactionStatus?.toLowerCase() === "captured" && !r.isSettled && r.ioStatus?.toLowerCase() !== "refund"
     ).length;
     const failed = records.filter(
-      (r) => r.transactionStatus?.toLowerCase() === "failed"
+      (r) => {
+        const s = r.transactionStatus?.toLowerCase();
+        const io = r.ioStatus?.toLowerCase();
+        return s === "failed" || (s === "captured" && io === "refund");
+      }
     ).length;
     return { total: records.length, paid, underProcess, failed };
   }, [records]);
@@ -132,9 +140,10 @@ const ChallanWebhookAdmin = () => {
     if (statusFilter !== "all") {
       list = list.filter((r) => {
         const s = r.transactionStatus?.toLowerCase();
+        const io = r.ioStatus?.toLowerCase();
         if (statusFilter === "paid")          return (s === "captured" && r.isSettled) || s === "success" || s === "paid";
-        if (statusFilter === "under_process") return s === "captured" && !r.isSettled;
-        if (statusFilter === "failed")        return s === "failed";
+        if (statusFilter === "under_process") return s === "captured" && !r.isSettled && io !== "refund";
+        if (statusFilter === "failed")        return s === "failed" || (s === "captured" && io === "refund");
         return true;
       });
     }
@@ -291,7 +300,7 @@ const ChallanWebhookAdmin = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filtered.map((rec, idx) => {
-              const { label, cls } = getStatusMeta(rec.transactionStatus, rec.isSettled);
+              const { label, cls } = getStatusMeta(rec.transactionStatus, rec.isSettled, rec.ioStatus);
               const isExpanded     = expandedId === rec._id;
               const isSelected     = selectedIds.includes(rec._id);
 
