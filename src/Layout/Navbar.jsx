@@ -82,15 +82,7 @@ const Navbar = () => {
               to="/login"
               className="text-sky-600 font-semibold hover:text-sky-700 transition"
             >
-              User Login
-            </Link>
-          )}
-          {!adminToken && !userToken && (
-            <Link
-              to="/login-page"
-              className="text-yellow-500 font-semibold hover:text-yellow-600 transition"
-            >
-              Admin Login
+              Login
             </Link>
           )}
 
@@ -165,14 +157,7 @@ const Navbar = () => {
                   onClick={() => setIsOpen(false)}
                   className="text-sky-600 font-semibold text-center hover:text-sky-700 transition"
                 >
-                  User Login
-                </Link>
-                <Link
-                  to="/login-page"
-                  onClick={() => setIsOpen(false)}
-                  className="text-yellow-500 font-semibold text-center hover:text-yellow-600 transition"
-                >
-                  Admin Login
+                  Login
                 </Link>
                 <Link
                   to="/visit-us-page"

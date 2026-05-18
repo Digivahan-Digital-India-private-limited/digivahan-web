@@ -119,14 +119,9 @@ export const Footer = () => {
                 </button>
               </li>
             ) : (
-              <>
-                <li>
-                  <Link to="/login">User Login</Link>
-                </li>
-                <li>
-                  <Link to="/login-page">Admin Login</Link>
-                </li>
-              </>
+              <li>
+                <Link to="/login">Login</Link>
+              </li>
             )}
             <li>
               <Link to="/delete-account" className="text-red-500 font-medium hover:text-red-600 transition-colors">Delete Account</Link>

@@ -113,6 +113,12 @@ const UpdateProfilePage = () => {
     }
   };
 
+  const getInitials = () => {
+    const f = formData.firstName ? formData.firstName.trim().charAt(0).toUpperCase() : "";
+    const l = formData.lastName ? formData.lastName.trim().charAt(0).toUpperCase() : "";
+    return (f + l) || "U";
+  };
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -125,11 +131,17 @@ const UpdateProfilePage = () => {
       <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex justify-center">
           <div className="relative">
-            <img
-              src={formData.avatar || "https://randomuser.me/api/portraits/men/75.jpg"}
-              alt="Profile"
-              className="h-32 w-32 rounded-full border-4 border-emerald-500 object-cover"
-            />
+            {formData.avatar ? (
+              <img
+                src={formData.avatar}
+                alt="Profile"
+                className="h-32 w-32 rounded-full border-4 border-emerald-500 object-cover"
+              />
+            ) : (
+              <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-emerald-500 bg-emerald-100 text-3xl font-bold text-emerald-700">
+                {getInitials()}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -192,7 +204,6 @@ const UpdateProfilePage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full bg-transparent text-sm outline-none"
-                  required
                 />
               </div>
             </label>

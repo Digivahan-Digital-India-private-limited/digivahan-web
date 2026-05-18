@@ -13,16 +13,17 @@ const DELETED_IDS_KEY = "dv_user_vehicles_deleted_ids";
 
 const normalizeVehicle = (item) => ({
   id: String(item?.id || item?._id || item?.vehicle_id || item?.vehicleId || ""),
-  name: item?.name || item?.vehicle_name || item?.vehicleName || "Vehicle",
-  type: item?.type || item?.vehicle_type || item?.vehicleType || "Car",
-  plate: item?.plate || item?.rc_number || item?.registrationNumber || "N/A",
-  fuel: item?.fuel || item?.fuel_type || item?.fuelType || "Petrol",
-  year: String(item?.year || item?.model_year || item?.modelYear || "2024"),
-  ownership: item?.ownership || item?.ownership_type || "First Owner",
-  insuranceStatus: item?.insuranceStatus || item?.insurance_status || "Active",
+  name: item?.name || item?.vehicle_name || item?.vehicleName || item?.api_data?.custom_vehicle_info?.vehicle_name || "Vehicle",
+  type: item?.type || item?.vehicle_type || item?.vehicleType || item?.api_data?.custom_vehicle_info?.vehicle_class || "Car",
+  plate: item?.plate || item?.rc_number || item?.registrationNumber || item?.vehicle_id || "N/A",
+  fuel: item?.fuel || item?.fuel_type || item?.fuelType || item?.api_data?.custom_vehicle_info?.fuel_type || "Petrol",
+  year: String(item?.year || item?.model_year || item?.modelYear || (item?.api_data?.custom_vehicle_info?.vehicle_age ? (new Date().getFullYear() - item.api_data.custom_vehicle_info.vehicle_age) : "2024")),
+  ownership: item?.ownership || item?.ownership_type || item?.api_data?.custom_vehicle_info?.ownership_details || "First Owner",
+  insuranceStatus: item?.insuranceStatus || item?.insurance_status || item?.api_data?.custom_vehicle_info?.rc_status || "Active",
   pucStatus: item?.pucStatus || item?.puc_status || "Active",
   image: item?.image || item?.vehicle_image || "/Car Image.png",
   qrId: item?.qrId || item?.qr_id || item?.qrCode || "QR-DV-0000",
+  vehicle_doc: item?.vehicle_doc || { security_code: "", documents: [] }
 });
 
 const getLocalVehicles = () => {

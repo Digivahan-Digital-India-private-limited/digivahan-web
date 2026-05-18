@@ -122,28 +122,27 @@ export const getProfile = async () => {
 };
 
 export const listEmergencyContacts = async () => {
-  const localContacts = getLocalEmergencyContacts();
-
-  if (localContacts.length) {
-    return localContacts;
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
   }
 
   const response = await requestWithFallback(
     [
-      () => httpClient.get("/api/users/emergency-contacts"),
-      () => httpClient.get("/api/user/emergency-contacts"),
-      () => httpClient.get("/api/users/me"),
+      () => userId ? httpClient.post("/api/get_user_details", { user_id: userId, details_type: "emergency_contacts" }) : Promise.reject("No User ID"),
     ],
-    () => ({ data: mockEmergencyContacts }),
+    () => ({ data: getLocalEmergencyContacts() || mockEmergencyContacts }),
   );
 
   const body = unwrapObject(response);
-
-  if (Array.isArray(body?.emergency_contacts)) {
-    return body.emergency_contacts.map(normalizeEmergencyContact);
-  }
-
-  return unwrapCollection(response).map(normalizeEmergencyContact);
+  const contacts = Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []);
+  return contacts.map(normalizeEmergencyContact);
 };
 
 export const updateProfile = async (payload) => {
@@ -183,17 +182,30 @@ export const updateProfile = async (payload) => {
 };
 
 export const createEmergencyContact = async (payload) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
+  const { firstName, lastName } = splitName(payload.name);
   const requestPayload = {
-    name: payload.name,
+    user_id: userId,
+    first_name: firstName,
+    last_name: lastName,
     relation: payload.relation,
-    phone: payload.phone,
+    phone_number: payload.phone,
+    email: "",
   };
 
   const response = await requestWithFallback(
     [
-      () => httpClient.post("/api/users/emergency-contacts", requestPayload),
-      () => httpClient.post("/api/user/emergency-contacts", requestPayload),
-      () => httpClient.post("/api/emergency-contacts", requestPayload),
+      () => httpClient.post("/api/v1/add/emergency-contact", requestPayload),
     ],
     () => {
       const existing = getLocalEmergencyContacts();
@@ -211,11 +223,25 @@ export const createEmergencyContact = async (payload) => {
 };
 
 export const deleteEmergencyContact = async (contactId) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
+  const requestPayload = {
+    user_id: userId,
+    contact_id: contactId,
+  };
+
   await requestWithFallback(
     [
-      () => httpClient.delete(`/api/users/emergency-contacts/${contactId}`),
-      () => httpClient.delete(`/api/user/emergency-contacts/${contactId}`),
-      () => httpClient.delete(`/api/emergency-contacts/${contactId}`),
+      () => httpClient.post("/api/v1/delete/emergency-contact", requestPayload),
     ],
     () => {
       const existing = getLocalEmergencyContacts();
@@ -229,18 +255,31 @@ export const deleteEmergencyContact = async (contactId) => {
 };
 
 export const updateEmergencyContact = async (contactId, payload) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
+  const { firstName, lastName } = splitName(payload.name);
   const requestPayload = {
-    name: payload.name,
+    user_id: userId,
+    contact_id: contactId,
+    first_name: firstName,
+    last_name: lastName,
     relation: payload.relation,
-    phone: payload.phone,
+    phone_number: payload.phone,
+    email: "",
   };
 
   const response = await requestWithFallback(
     [
-      () => httpClient.patch(`/api/users/emergency-contacts/${contactId}`, requestPayload),
-      () => httpClient.put(`/api/users/emergency-contacts/${contactId}`, requestPayload),
-      () => httpClient.patch(`/api/user/emergency-contacts/${contactId}`, requestPayload),
-      () => httpClient.put(`/api/user/emergency-contacts/${contactId}`, requestPayload),
+      () => httpClient.put("/api/v1/update/emergency-contact", requestPayload),
     ],
     () => {
       const existing = getLocalEmergencyContacts();
@@ -263,3 +302,44 @@ export const updateEmergencyContact = async (contactId, payload) => {
 
   return normalizeEmergencyContact(unwrapObject(response));
 };
+
+export const changePassword = async (payload) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
+  const requestPayload = {
+    user_id: userId,
+    old_password: payload.currentPassword,
+    new_password: payload.newPassword,
+  };
+
+  const response = await httpClient.post("/api/auth/change-password", requestPayload);
+  return response.data;
+};
+
+export const requestPasswordReset = async (phone) => {
+  const response = await httpClient.post("/api/auth/request-reset-password", {
+    forget_with: phone,
+    otp_channel: "PHONE",
+  });
+  return response.data;
+};
+
+export const verifyPasswordResetOtp = async (payload) => {
+  const response = await httpClient.post("/api/auth/verify-reset-otp-change-password", {
+    forget_with: payload.phone,
+    otp_channel: "PHONE",
+    otp: payload.otp,
+    new_password: payload.newPassword,
+  });
+  return response.data;
+};
+

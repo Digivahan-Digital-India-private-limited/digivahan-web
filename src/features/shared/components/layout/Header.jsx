@@ -88,11 +88,24 @@ const Header = ({
           </button>
 
           <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5">
-            <img
-              src={displayAvatar}
-              alt={displayName}
-              className="h-8 w-8 rounded-full border border-slate-200 object-cover"
-            />
+            {profile?.avatar ? (
+              <img
+                src={profile.avatar}
+                alt={displayName}
+                className="h-8 w-8 rounded-full border border-slate-200 object-cover"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                {(() => {
+                  if (!displayName) return "U";
+                  const parts = displayName.trim().split(" ");
+                  if (parts.length >= 2) {
+                    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+                  }
+                  return parts[0].charAt(0).toUpperCase();
+                })()}
+              </div>
+            )}
             <div className="hidden pr-1 sm:block">
               <p className="text-xs font-medium text-slate-500">Welcome</p>
               <p className="text-sm font-semibold text-slate-900 leading-none">{displayName}</p>
