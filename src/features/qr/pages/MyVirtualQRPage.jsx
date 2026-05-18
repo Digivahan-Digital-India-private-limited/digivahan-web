@@ -5,6 +5,8 @@ import QRCodeViewer from "../components/QRCodeViewer";
 import { getVehicleById } from "../../vehicles/services/vehiclesApi";
 import { getVehicleQr } from "../services/qrApi";
 
+const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
+
 const MyVirtualQRPage = () => {
   const { id } = useParams();
 
@@ -14,10 +16,12 @@ const MyVirtualQRPage = () => {
     enabled: Boolean(id),
   });
 
+  const qrId = vehicle?.qrId !== "QR-DV-0000" ? vehicle?.qrId : id;
+
   const { data: qrData, isLoading: isQrLoading } = useQuery({
-    queryKey: ["vehicle-qr", id],
-    queryFn: () => getVehicleQr(id),
-    enabled: Boolean(id),
+    queryKey: ["vehicle-qr", qrId],
+    queryFn: () => getVehicleQr(qrId),
+    enabled: Boolean(qrId) && !!vehicle,
   });
 
   if (isVehicleLoading || isQrLoading || !vehicle || !qrData) {
@@ -35,7 +39,7 @@ const MyVirtualQRPage = () => {
         <p className="text-sm text-slate-500">{vehicle.name} • {vehicle.plate}</p>
       </section>
 
-      <QRCodeViewer value={qrData.value || `${vehicle.qrId}:${vehicle.plate}`} label="Vehicle QR" />
+      <QRCodeViewer value={qrData.value || `${APP_URL}/send-notification/${qrId}`} label="Vehicle QR" imageUrl={qrData.imageUrl} />
     </div>
   );
 };

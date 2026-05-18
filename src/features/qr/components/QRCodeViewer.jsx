@@ -1,12 +1,16 @@
 import React from "react";
 import { QRCodeCanvas } from "qrcode.react";
 
-const QRCodeViewer = ({ value, label }) => {
+const QRCodeViewer = ({ value, label, imageUrl }) => {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col items-center gap-4">
         <div className="rounded-2xl border border-slate-200 p-4">
-          <QRCodeCanvas value={value} size={220} includeMargin />
+          {imageUrl ? (
+            <img src={imageUrl} alt="QR Code" className="w-56 h-56 object-contain" />
+          ) : (
+            <QRCodeCanvas value={value} size={220} includeMargin />
+          )}
         </div>
         <div className="text-center">
           <h2 className="text-base font-semibold text-slate-900">{label}</h2>

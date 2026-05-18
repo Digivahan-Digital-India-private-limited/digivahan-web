@@ -62,6 +62,8 @@ const AccessVehicleDoc = () => {
 
           setUser({
             ...userData,
+            full_Name: userData.full_name || userData.full_Name || "",
+            fullName: userData.full_name || userData.full_Name || "",
             age: ageInYears,
           });
         }

@@ -22,7 +22,8 @@ const normalizeVehicle = (item) => ({
   insuranceStatus: item?.insuranceStatus || item?.insurance_status || item?.api_data?.custom_vehicle_info?.rc_status || "Active",
   pucStatus: item?.pucStatus || item?.puc_status || "Active",
   image: item?.image || item?.vehicle_image || "/Car Image.png",
-  qrId: item?.qrId || item?.qr_id || item?.qrCode || "QR-DV-0000",
+  qrId: item?.qrId || item?.qr_id || (item?.qr_list && item.qr_list.length > 0 ? item.qr_list[0] : null) || item?.qrCode || "QR-DV-0000",
+  qr_list: item?.qr_list || [],
   vehicle_doc: item?.vehicle_doc || { security_code: "", documents: [] }
 });
 
@@ -168,8 +169,16 @@ export const fetchVehicleRtoDetails = async (rcNumber) => {
   const vehicleNumber = String(rcNumber).toUpperCase().trim();
   const response = await httpClient.post("/api/v1/add-vehicle", {
     vehicle_number: vehicleNumber
+  }, {
+    timeout: 65000  // RTO API can take up to 30s + premium fallback another 30s
   });
-  return response.data?.data?.result || response.data;
+  const data = response.data;
+  if (!data?.status && !data?.success) {
+    const err = new Error(data?.message || "Vehicle not found in RTO registry");
+    err.response = { data };
+    throw err;
+  }
+  return data?.data?.result || data;
 };
 
 export const addVehicleToGarage = async (rcNumber, ownerName) => {
