@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Paperclip, Send, X } from "lucide-react";
+import { ArrowLeft, Paperclip, Send, X, BookOpen } from "lucide-react";
 import { httpClient } from "../../../../features/shared/api/httpClient";
 import { toast } from "react-toastify";
 
@@ -16,6 +16,7 @@ const ReplyPage = () => {
   const customerName = `${query.first_name || ""} ${query.last_name || ""}`.trim();
   const customerEmail = query.email || "";
   const customerQuestion = query.query || "";
+  const queryType = query.query_type || "General";
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -66,6 +67,20 @@ const ReplyPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddFaq = () => {
+    if (!replyText.trim()) {
+      toast.warning("Please write a reply first to use it as the FAQ answer.");
+      return;
+    }
+    navigate("/post-faq", {
+      state: {
+        prefillQuestion: customerQuestion,
+        prefillAnswer: replyText,
+        prefillType: queryType,
+      },
+    });
   };
 
   return (
@@ -177,7 +192,8 @@ const ReplyPage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-4">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-100">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
@@ -190,6 +206,17 @@ const ReplyPage = () => {
             )}
             {isSubmitting ? "Sending..." : "Submit Reply"}
           </button>
+
+          {/* ✨ Add FAQ Button */}
+          <button
+            onClick={handleAddFaq}
+            disabled={isSubmitting}
+            className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition font-medium flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+          >
+            <BookOpen className="w-4 h-4" />
+            Add FAQ
+          </button>
+
           <button
             onClick={() => navigate(-1)}
             disabled={isSubmitting}

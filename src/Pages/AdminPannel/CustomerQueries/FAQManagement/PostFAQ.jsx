@@ -1,44 +1,75 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { HelpCircle } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { HelpCircle, CheckCircle } from "lucide-react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 const FAQ_STORAGE_KEY = "digivahan_posted_faqs";
+
+// Maps short key → full backend type string
 const FAQ_TYPE_MAP = {
   General: "General Information Queries",
   Technical: "Technical Queries",
-  Account: "Account Queries",
-  Payment: "Payment Queries",
-  "Order Status": "Order Status Queries",
-  Product: "Product Queries",
-  Billing: "Billing Queries",
-  Support: "Support Queries",
+  Account: "Account Related",
+  Payment: "Payment / Billing",
+  "Order Status": "Order / Service Status",
+  Product: "Product / Service Complaints",
+  Support: "Feedback & Suggestions",
+  Billing: "Cancellation / Return",
+  Escalation: "Escalation",
+  "Onboarding / Setup": "Onboarding / Setup",
+  Subscription: "Subscription",
+  "Verification Queries": "Verification Queries",
 };
+
+// Maps contact-form query_type values → PostFAQ questionType key
+const QUERY_TYPE_TO_CATEGORY = {
+  General: "General",
+  "Contact Form": "General",
+  Technical: "Technical",
+  Account: "Account",
+  Payment: "Payment",
+  "Order Status": "Order Status",
+  Product: "Product",
+  Support: "Support",
+  Billing: "Billing",
+  Escalation: "Escalation",
+  "Onboarding / Setup": "Onboarding / Setup",
+  Subscription: "Subscription",
+  "Verification Queries": "Verification Queries",
+};
+
+const questionTypes = [
+  "General",
+  "Technical",
+  "Account",
+  "Payment",
+  "Order Status",
+  "Product",
+  "Support",
+  "Billing",
+  "Escalation",
+  "Onboarding / Setup",
+  "Subscription",
+  "Verification Queries",
+];
 
 const PostFAQ = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read pre-fill data passed from ReplyPage
+  const prefill = location.state || {};
+  const prefillType = QUERY_TYPE_TO_CATEGORY[prefill.prefillType] || "General";
+
   const [formData, setFormData] = useState({
-    questionType: "General",
-    question: "",
-    answer: "",
+    questionType: prefillType,
+    question: prefill.prefillQuestion || "",
+    answer: prefill.prefillAnswer || "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successDialog, setSuccessDialog] = useState({
-    isOpen: false,
-    message: "",
-  });
-
-  const questionTypes = [
-    "General",
-    "Technical",
-    "Account",
-    "Payment",
-    "Order Status",
-    "Product",
-    "Billing",
-    "Support",
-  ];
+  const [successDialog, setSuccessDialog] = useState({ isOpen: false, message: "" });
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -49,7 +80,7 @@ const PostFAQ = () => {
     const answer = formData.answer.trim();
 
     if (!formData.questionType || !question || !answer) {
-      alert("Please fill Question Type, Question and Answer.");
+      toast.error("Please fill Question Type, Question and Answer.");
       return;
     }
 
@@ -80,25 +111,21 @@ const PostFAQ = () => {
         isOpen: true,
         message: response?.data?.message || "FAQ posted successfully.",
       });
-      setFormData({
-        questionType: "General",
-        question: "",
-        answer: "",
-      });
+      setFormData({ questionType: "General", question: "", answer: "" });
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to post FAQ.");
+      toast.error(error?.response?.data?.message || "Failed to post FAQ.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    navigate("/customer-queries");
+    navigate(-1);
   };
 
   return (
     <main className="w-full min-h-screen overflow-y-auto bg-gray-50 md:p-6 p-3">
-      {/* Top Header - Search & User */}
+      {/* Top Header */}
       <header className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="w-full md:w-1/2 relative">
           <input
@@ -108,7 +135,6 @@ const PostFAQ = () => {
           />
           <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
         </div>
-
         <div className="flex items-center gap-4">
           <button className="relative text-xl">
             🔔
@@ -120,6 +146,16 @@ const PostFAQ = () => {
         </div>
       </header>
 
+      {/* Pre-fill notice banner */}
+      {prefill.prefillQuestion && (
+        <div className="max-w-6xl mx-auto mb-4 flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-3">
+          <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+          <p className="text-sm text-emerald-700 font-medium">
+            Customer query and your reply have been pre-filled below. Review before posting.
+          </p>
+        </div>
+      )}
+
       {/* Container Card */}
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         {/* Header */}
@@ -129,9 +165,7 @@ const PostFAQ = () => {
               <HelpCircle className="w-6 h-6 md:w-7 md:h-7 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-semibold text-gray-900">
-                Post FAQ
-              </h1>
+              <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Post FAQ</h1>
               <p className="text-sm md:text-base text-gray-600 mt-1">
                 Add a new frequently asked question
               </p>
@@ -157,11 +191,11 @@ const PostFAQ = () => {
             <select
               value={formData.questionType}
               onChange={(e) => handleInputChange("questionType", e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white"
             >
               {questionTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {FAQ_TYPE_MAP[type] || type}
                 </option>
               ))}
             </select>
@@ -214,10 +248,14 @@ const PostFAQ = () => {
         </div>
       </div>
 
+      {/* Success Dialog */}
       {successDialog.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Success</h3>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-9 h-9 text-emerald-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">FAQ Posted!</h3>
             <p className="text-gray-600 mb-6">{successDialog.message}</p>
             <button
               type="button"

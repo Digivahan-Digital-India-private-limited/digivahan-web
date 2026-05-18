@@ -8,12 +8,16 @@ const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 const FAQ_TYPE_MAP = {
   General: "General Information Queries",
   Technical: "Technical Queries",
-  Account: "Account Queries",
-  Payment: "Payment Queries",
-  "Order Status": "Order Status Queries",
-  Product: "Product Queries",
-  Billing: "Billing Queries",
-  Support: "Support Queries",
+  Account: "Account Related",
+  Payment: "Payment / Billing",
+  "Order Status": "Order / Service Status",
+  Product: "Product / Service Complaints",
+  Support: "Feedback & Suggestions",
+  Billing: "Cancellation / Return",
+  Escalation: "Escalation",
+  "Onboarding / Setup": "Onboarding / Setup",
+  Subscription: "Subscription",
+  "Verification Queries": "Verification Queries",
 };
 
 const mapApiTypeToTab = (type = "") => {
@@ -22,11 +26,18 @@ const mapApiTypeToTab = (type = "") => {
   if (normalized.includes("general")) return "General";
   if (normalized.includes("technical")) return "Technical";
   if (normalized.includes("account")) return "Account";
-  if (normalized.includes("payment")) return "Payment";
-  if (normalized.includes("order")) return "Order Status";
-  if (normalized.includes("product")) return "Product";
-  if (normalized.includes("billing")) return "Billing";
-  if (normalized.includes("support")) return "Support";
+  if (normalized.includes("payment") || normalized.includes("billing")) {
+    // Distinguish between "Payment / Billing" and "Cancellation / Return" (Billing key)
+    if (normalized.includes("cancellation") || normalized.includes("return")) return "Billing";
+    return "Payment";
+  }
+  if (normalized.includes("order") || normalized.includes("service status")) return "Order Status";
+  if (normalized.includes("product") || normalized.includes("complaint")) return "Product";
+  if (normalized.includes("feedback") || normalized.includes("suggestion")) return "Support";
+  if (normalized.includes("escalation")) return "Escalation";
+  if (normalized.includes("onboarding") || normalized.includes("setup")) return "Onboarding / Setup";
+  if (normalized.includes("subscription")) return "Subscription";
+  if (normalized.includes("verification")) return "Verification Queries";
 
   return type || "General";
 };
@@ -37,6 +48,7 @@ const Contactpage = () => {
     last_name: "",
     email: "",
     phone: "",
+    category: "General",
     message: "",
   });
 
@@ -109,7 +121,7 @@ const Contactpage = () => {
         last_name: formData.last_name,
         email: formData.email,
         phone: formData.phone,
-        query_type: "Contact Form",
+        query_type: formData.category,
         query: formData.message,
       };
 
@@ -127,6 +139,7 @@ const Contactpage = () => {
           last_name: "",
           email: "",
           phone: "",
+          category: "General",
           message: "",
         });
         setTimeout(() => {
@@ -152,8 +165,12 @@ const Contactpage = () => {
     "Payment",
     "Order Status",
     "Product",
-    "Billing",
     "Support",
+    "Billing",
+    "Escalation",
+    "Onboarding / Setup",
+    "Subscription",
+    "Verification Queries",
   ];
   const faqCategories = baseFaqCategories;
 
@@ -497,6 +514,33 @@ const Contactpage = () => {
                   placeholder="Enter phone number"
                   className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 hover:border-yellow-300"
                 />
+              </div>
+
+              {/* Select Query Category */}
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <label className="text-sm font-semibold text-gray-700">
+                  Select Query Category *
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  required
+                  className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-700 transition-all duration-300 hover:border-yellow-300 font-semibold cursor-pointer"
+                >
+                  <option value="General">General Information Queries</option>
+                  <option value="Technical">Technical Queries</option>
+                  <option value="Account">Account Related</option>
+                  <option value="Payment">Payment / Billing</option>
+                  <option value="Order Status">Order / Service Status</option>
+                  <option value="Product">Product / Service Complaints</option>
+                  <option value="Support">Feedback & Suggestions</option>
+                  <option value="Billing">Cancellation / Return</option>
+                  <option value="Escalation">Escalation</option>
+                  <option value="Onboarding / Setup">Onboarding / Setup</option>
+                  <option value="Subscription">Subscription</option>
+                  <option value="Verification Queries">Verification Queries</option>
+                </select>
               </div>
 
               {/* Query */}
