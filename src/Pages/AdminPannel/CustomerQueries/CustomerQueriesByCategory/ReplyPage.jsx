@@ -8,7 +8,11 @@ const ReplyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const query = location.state?.query || {};
-  const [replyText, setReplyText] = useState("");
+  const storageKey = `digivahan_reply_${query._id || "temp"}`;
+
+  const [replyText, setReplyText] = useState(() => {
+    return localStorage.getItem(storageKey) || "";
+  });
   const [attachment, setAttachment] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
@@ -17,6 +21,13 @@ const ReplyPage = () => {
   const customerEmail = query.email || "";
   const customerQuestion = query.query || "";
   const queryType = query.query_type || "General";
+
+  // Sync state to localStorage
+  React.useEffect(() => {
+    if (query._id) {
+      localStorage.setItem(storageKey, replyText);
+    }
+  }, [replyText, query._id, storageKey]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -57,6 +68,7 @@ const ReplyPage = () => {
 
       if (response.data?.success) {
         toast.success("Reply sent successfully via email");
+        localStorage.removeItem(storageKey); // Clear from localStorage
         navigate(-1);
       } else {
         toast.error("Failed to send reply");
