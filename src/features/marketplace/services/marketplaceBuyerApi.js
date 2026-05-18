@@ -5,7 +5,6 @@ import {
   unwrapObject,
 } from "../../shared/api/requestWithFallback";
 import { marketplaceListings } from "../data/marketplaceMockData";
-import { upsertLocalOrder } from "../../orders/services/ordersApi";
 
 const LISTING_DETAILS_TIMEOUT_MS = 3000;
 
@@ -155,6 +154,5 @@ export const reserveMarketplaceListing = async (listing) => {
   );
 
   const order = normalizeOrderFromReserve(unwrapObject(response), listing);
-  upsertLocalOrder(order);
   return order;
 };
