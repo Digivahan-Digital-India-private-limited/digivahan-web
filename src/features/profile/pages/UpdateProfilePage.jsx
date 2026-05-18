@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Mail, Phone, User } from "lucide-react";
+import { Camera, Mail, Phone, User, Upload, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { getProfile, updateProfile } from "../services/profileApi";
 
@@ -41,6 +41,9 @@ const UpdateProfilePage = () => {
     avatar: "",
     address: "",
   });
+
+  const [showDpOptions, setShowDpOptions] = useState(false);
+  const [removeAvatarFlag, setRemoveAvatarFlag] = useState(false);
 
   useEffect(() => {
     if (!profile) {
@@ -90,9 +93,17 @@ const UpdateProfilePage = () => {
     try {
       const dataUrl = await fileToDataUrl(file);
       setFormData((prev) => ({ ...prev, avatar: dataUrl }));
+      setRemoveAvatarFlag(false);
     } catch {
       toast.error("Failed to read selected image");
     }
+  };
+
+  const handleRemoveAvatar = () => {
+    setFormData((prev) => ({ ...prev, avatar: "" }));
+    setRemoveAvatarFlag(true);
+    setShowDpOptions(false);
+    toast.info("Profile picture marked for removal. Please save to apply changes.");
   };
 
   const handleSubmit = async (event) => {
@@ -107,6 +118,7 @@ const UpdateProfilePage = () => {
       await mutation.mutateAsync({
         ...formData,
         phone: formData.phone.trim(),
+        remove_avatar: removeAvatarFlag,
       });
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to update profile");
@@ -142,14 +154,45 @@ const UpdateProfilePage = () => {
                 {getInitials()}
               </div>
             )}
-            <button
+             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm hover:bg-amber-500"
+              onClick={() => setShowDpOptions((prev) => !prev)}
+              className="absolute bottom-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm hover:bg-amber-500 transition active:scale-95 cursor-pointer"
               aria-label="Upload profile image"
             >
               <Camera size={18} />
             </button>
+            {showDpOptions && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowDpOptions(false)} 
+                />
+                <div className="absolute right-[-40px] top-[105px] z-20 w-44 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      setShowDpOptions(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                  >
+                    <Upload size={16} className="text-emerald-600" />
+                    Upload DP
+                  </button>
+                  {formData.avatar && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    >
+                      <Trash2 size={16} className="text-rose-600" />
+                      Remove DP
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
             <input
               ref={fileInputRef}
               type="file"

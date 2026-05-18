@@ -99,21 +99,64 @@ export const listVehicles = async () => {
       () => userId ? httpClient.get(`/api/v1/garage/${userId}`) : Promise.reject("No User ID"),
       () => httpClient.get("/api/vehicles"),
     ],
-    () => ({ data: getMockBackedVehicles() }),
+    () => ({ data: { vehicles: getMockBackedVehicles() } }),
   );
 
-  return unwrapCollection(response).map(normalizeVehicle);
+  // Safely extract vehicles array
+  const body = response?.data ?? response;
+  let items = [];
+  if (body) {
+    if (Array.isArray(body)) {
+      items = body;
+    } else if (Array.isArray(body.vehicles)) {
+      items = body.vehicles;
+    } else if (body.data && typeof body.data === "object") {
+      if (Array.isArray(body.data)) {
+        items = body.data;
+      } else if (Array.isArray(body.data.vehicles)) {
+        items = body.data.vehicles;
+      }
+    }
+  }
+
+  // Fallback to mock data if no vehicles found and not logged in
+  if (items.length === 0 && !userId) {
+    items = getMockBackedVehicles();
+  }
+
+  return items.map(normalizeVehicle);
 };
 
 export const getVehicleById = async (id) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
   const response = await requestWithFallback(
     [
-      () => httpClient.get(`/api/vehicles/${id}`),
-      () => httpClient.get(`/api/user/vehicles/${id}`),
-      () => httpClient.get(`/api/marketplace/vehicles/${id}`),
+      async () => {
+        // Fetch the user's active garage
+        const res = await httpClient.get(`/api/v1/garage/${userId}`);
+        const vehiclesList = res.data?.data?.vehicles || [];
+        // Find the vehicle with matching vehicle_id
+        const item = vehiclesList.find(
+          (v) => String(v.vehicle_id || v.id || v._id || "").toUpperCase() === String(id).toUpperCase()
+        );
+        if (!item) throw new Error("Vehicle not found in garage");
+        return { data: item };
+      }
     ],
     () => {
-      const item = getMockBackedVehicles().find((vehicle) => vehicle.id === String(id));
+      const item = getMockBackedVehicles().find(
+        (vehicle) => String(vehicle.id).toUpperCase() === String(id).toUpperCase()
+      );
       return { data: item || getMockBackedVehicles()[0] };
     },
   );
@@ -121,27 +164,55 @@ export const getVehicleById = async (id) => {
   return normalizeVehicle(unwrapObject(response));
 };
 
+export const fetchVehicleRtoDetails = async (rcNumber) => {
+  const vehicleNumber = String(rcNumber).toUpperCase().trim();
+  const response = await httpClient.post("/api/v1/add-vehicle", {
+    vehicle_number: vehicleNumber
+  });
+  return response.data?.data?.result || response.data;
+};
+
+export const addVehicleToGarage = async (rcNumber, ownerName) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
+  const vehicleNumber = String(rcNumber).toUpperCase().trim();
+  const response = await httpClient.post("/api/v1/user/add-garage", {
+    user_id: userId,
+    vehicle_number: vehicleNumber,
+    owner_name: ownerName
+  });
+  return response.data;
+};
+
 export const createVehicle = async (payload) => {
-  const requestPayload = mapVehiclePayload(payload);
-
-  const response = await requestWithFallback(
-    [
-      () => httpClient.post("/api/vehicles", requestPayload),
-      () => httpClient.post("/api/user/vehicles", requestPayload),
-      () => httpClient.post("/api/marketplace/vehicles", requestPayload),
-    ],
-    () => {
-      const local = getLocalVehicles();
-      const created = normalizeVehicle({
-        ...requestPayload,
-        id: `local_${Date.now()}`,
-      });
-      setLocalVehicles([created, ...local]);
-      return { data: created };
-    },
-  );
-
-  return normalizeVehicle(unwrapObject(response));
+  const vehicleNumber = String(payload.rcNumber || payload.rc_number || "").toUpperCase().trim();
+  try {
+    const details = await fetchVehicleRtoDetails(vehicleNumber);
+    const ownerName = details?.custom_vehicle_info?.owner_name || "test owner";
+    return await addVehicleToGarage(vehicleNumber, ownerName);
+  } catch (error) {
+    console.error("Fallback creation in createVehicle", error);
+    const local = getLocalVehicles();
+    const created = normalizeVehicle({
+      id: vehicleNumber || `local_${Date.now()}`,
+      rc_number: vehicleNumber,
+      vehicle_name: payload.vehicleName,
+      vehicle_type: payload.type,
+      fuel_type: payload.fuel,
+      model_year: payload.year,
+    });
+    setLocalVehicles([created, ...local]);
+    return created;
+  }
 };
 
 export const updateVehicle = async (id, payload) => {
@@ -151,10 +222,6 @@ export const updateVehicle = async (id, payload) => {
     [
       () => httpClient.put(`/api/vehicles/${id}`, requestPayload),
       () => httpClient.patch(`/api/vehicles/${id}`, requestPayload),
-      () => httpClient.put(`/api/user/vehicles/${id}`, requestPayload),
-      () => httpClient.patch(`/api/user/vehicles/${id}`, requestPayload),
-      () => httpClient.put(`/api/marketplace/vehicles/${id}`, requestPayload),
-      () => httpClient.patch(`/api/marketplace/vehicles/${id}`, requestPayload),
     ],
     () => {
       const local = getLocalVehicles().map(normalizeVehicle);
@@ -179,11 +246,23 @@ export const updateVehicle = async (id, payload) => {
 };
 
 export const deleteVehicle = async (id) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
   await requestWithFallback(
     [
-      () => httpClient.delete(`/api/vehicles/${id}`),
-      () => httpClient.delete(`/api/user/vehicles/${id}`),
-      () => httpClient.delete(`/api/marketplace/vehicles/${id}`),
+      () => httpClient.post("/api/v1/garage/remove-vehicle", {
+        user_id: userId,
+        vehicle_number: String(id).toUpperCase().trim()
+      })
     ],
     () => {
       const local = getLocalVehicles().map(normalizeVehicle);

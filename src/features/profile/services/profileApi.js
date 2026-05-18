@@ -95,6 +95,7 @@ const mapProfilePayload = (payload) => ({
   address: payload.address,
   avatar: payload.avatar,
   profile_pic: payload.avatar,
+  remove_avatar: payload.remove_avatar,
 });
 
 export const getProfile = async () => {
