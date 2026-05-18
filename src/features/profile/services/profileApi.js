@@ -41,6 +41,8 @@ const normalizeProfile = (item) => {
     address: publicData.address || item?.address || "",
     occupation: basic.occupation || item?.occupation || "",
     avatar: basic.profile_pic || item?.avatar || item?.profile_pic || "",
+    otp_required: item?.otp_required,
+    message: item?.message,
   };
 };
 
@@ -96,6 +98,7 @@ const mapProfilePayload = (payload) => ({
   avatar: payload.avatar,
   profile_pic: payload.avatar,
   remove_avatar: payload.remove_avatar,
+  phone_otp: payload.phone_otp,
 });
 
 export const getProfile = async () => {

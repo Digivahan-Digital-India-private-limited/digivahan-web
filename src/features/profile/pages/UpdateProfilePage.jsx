@@ -44,6 +44,10 @@ const UpdateProfilePage = () => {
 
   const [showDpOptions, setShowDpOptions] = useState(false);
   const [removeAvatarFlag, setRemoveAvatarFlag] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpValue, setOtpValue] = useState(["", "", "", ""]);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const otpRefs = useRef([]);
 
   useEffect(() => {
     if (!profile) {
@@ -115,13 +119,63 @@ const UpdateProfilePage = () => {
     }
 
     try {
-      await mutation.mutateAsync({
+      const response = await mutation.mutateAsync({
         ...formData,
         phone: formData.phone.trim(),
         remove_avatar: removeAvatarFlag,
       });
+
+      if (response?.otp_required) {
+        toast.info(response.message || "Verification code sent to your old number.");
+        setShowOtpModal(true);
+      }
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to update profile");
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otpValue.join("");
+    if (code.length !== 4) {
+      toast.error("Please enter a valid 4-digit verification code.");
+      return;
+    }
+
+    try {
+      setIsVerifying(true);
+      const response = await mutation.mutateAsync({
+        ...formData,
+        phone: formData.phone.trim(),
+        remove_avatar: removeAvatarFlag,
+        phone_otp: code,
+      });
+
+      if (!response?.otp_required) {
+        setShowOtpModal(false);
+        setOtpValue(["", "", "", ""]);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Verification failed. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleOtpChange = (value, index) => {
+    if (!/^\d?$/.test(value)) return;
+
+    const next = [...otpValue];
+    next[index] = value;
+    setOtpValue(next);
+
+    if (value && index < otpValue.length - 1) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otpValue[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
     }
   };
 
@@ -309,6 +363,66 @@ const UpdateProfilePage = () => {
           Back to Profile
         </Link>
       </section>
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform animate-in zoom-in-95 duration-300">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full">
+                <Phone className="w-8 h-8 text-emerald-600 animate-pulse" />
+              </div>
+              <h3 className="text-xl font-bold text-center text-slate-900 mb-2">
+                Verify Old Phone Number
+              </h3>
+              <p className="text-center text-slate-600 text-sm mb-6">
+                We've sent a 4-digit verification code to your current registered number. Please enter it below to confirm changing your phone number to <strong className="text-emerald-700">{formData.phone}</strong>.
+              </p>
+              
+              <div className="flex justify-center gap-2 mb-6">
+                {otpValue.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (otpRefs.current[index] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(e.target.value, index)}
+                    onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                    className="h-12 w-12 rounded-xl border-2 border-emerald-200 text-center text-lg font-semibold outline-none focus:border-emerald-500"
+                  />
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOtpModal(false);
+                    setOtpValue(["", "", "", ""]);
+                  }}
+                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={isVerifying || otpValue.join("").length !== 4}
+                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVerifying ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    "Verify & Update"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -69,8 +69,9 @@ const CustomerQueries = () => {
   const getCount = (title) => {
     // Map frontend titles to backend query_types
     // In Contactpage.jsx we send "Contact Form"
+    const pendingQueries = queries.filter(q => q.status !== "Completed");
     if (title === "General Information Queries") {
-      return queries.filter(q => q.query_type === "General" || q.query_type === "Contact Form" || !q.query_type).length;
+      return pendingQueries.filter(q => q.query_type === "General" || q.query_type === "Contact Form" || !q.query_type).length;
     }
     const typeMap = {
       "Technical Queries": "Technical",
@@ -82,7 +83,7 @@ const CustomerQueries = () => {
       "Cancellation / Return": "Billing", // fallback
     };
     const mappedType = typeMap[title] || title;
-    return queries.filter(q => q.query_type === mappedType).length;
+    return pendingQueries.filter(q => q.query_type === mappedType).length;
   };
 
   // Customer Query Categories

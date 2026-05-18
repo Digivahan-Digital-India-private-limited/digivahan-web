@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { Loader2, ArrowLeft, KeyRound, ShieldAlert } from "lucide-react";
@@ -22,7 +22,8 @@ const ChangePasswordPage = () => {
 
   // Forgot Password flow state
   const [forgotPassword, setForgotPassword] = useState("");
-  const [otpCode, setOtpCode] = useState("");
+  const [otpCode, setOtpCode] = useState(["", "", "", ""]);
+  const otpRefs = useRef([]);
 
   // Fetch profile to get the user's registered phone number
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -69,7 +70,7 @@ const ChangePasswordPage = () => {
       toast.success(data?.message || "Your new password has been verified and saved successfully!");
       setMode("change");
       setForgotPassword("");
-      setOtpCode("");
+      setOtpCode(["", "", "", ""]);
     },
     onError: (error) => {
       toast.error(
@@ -134,16 +135,34 @@ const ChangePasswordPage = () => {
       return;
     }
 
-    if (otpCode.length !== 4) {
+    if (otpCode.join("").length !== 4) {
       toast.error("Verification code must be exactly 4 digits");
       return;
     }
 
     verifyResetMutation.mutate({
       phone,
-      otp: otpCode,
+      otp: otpCode.join(""),
       newPassword: forgotPassword
     });
+  };
+
+  const handleOtpChange = (value, index) => {
+    if (!/^\d?$/.test(value)) return;
+
+    const next = [...otpCode];
+    next[index] = value;
+    setOtpCode(next);
+
+    if (value && index < otpCode.length - 1) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otpCode[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
   };
 
   // Loading indicator for background operations
@@ -316,17 +335,23 @@ const ChangePasswordPage = () => {
 
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-slate-600 block mb-1">Enter 4-Digit OTP</label>
-              <input
-                type="text"
-                maxLength={4}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="----"
-                className="w-full text-center tracking-[1em] text-lg font-bold rounded-xl border border-slate-200 px-3.5 py-2.5 outline-none focus:border-emerald-500 disabled:bg-slate-50"
-                required
-                disabled={isPending}
-              />
+              <label className="text-xs font-semibold text-slate-600 block mb-2 text-center">Enter 4-Digit OTP</label>
+              <div className="flex justify-center gap-2">
+                {otpCode.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (otpRefs.current[index] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(e.target.value, index)}
+                    onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                    disabled={isPending}
+                    className="h-14 w-14 rounded-xl border-2 border-slate-200 text-center text-xl font-bold outline-none focus:border-emerald-500 disabled:bg-slate-50 transition-colors"
+                  />
+                ))}
+              </div>
             </div>
           </div>
 

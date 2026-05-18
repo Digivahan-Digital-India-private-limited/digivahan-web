@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageSquare, Trash2, AlertCircle } from "lucide-react";
+import { ArrowLeft, MessageSquare, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
@@ -16,6 +16,7 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
   const [selectedIds, setSelectedIds] = React.useState([]);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState("pending"); // 'pending' or 'completed'
 
   // Modal State
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
@@ -55,11 +56,20 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
     fetchQueries();
   }, []);
 
+  const pendingQueries = queries.filter(q => q.status !== "Completed");
+  const completedQueries = queries.filter(q => q.status === "Completed");
+
   const filteredQueries = queries.filter((q) => {
     const fullName = `${q.first_name || ""} ${q.last_name || ""}`.toLowerCase();
     const email = (q.email || "").toLowerCase();
     const search = searchQuery.toLowerCase();
-    return fullName.includes(search) || email.includes(search);
+    const matchesSearch = fullName.includes(search) || email.includes(search);
+
+    if (activeTab === "pending") {
+      return matchesSearch && q.status !== "Completed";
+    } else {
+      return matchesSearch && q.status === "Completed";
+    }
   });
 
   const handleSelectAll = (e) => {
@@ -215,7 +225,7 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
             <button
               onClick={() => openDeleteModal('bulk')}
               disabled={isDeleting}
-              className="bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition font-medium flex items-center gap-2 border border-red-200"
+              className="bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition font-medium flex items-center gap-2 border border-red-200 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
               Delete Selected ({selectedIds.length})
@@ -241,7 +251,7 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/customer-queries")}
-            className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition shadow-sm"
+            className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition shadow-sm cursor-pointer bg-white"
           >
             <ArrowLeft className="w-6 h-6 text-gray-600" />
           </button>
@@ -250,22 +260,52 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
               {categoryTitle}
             </h1>
             <p className="text-sm text-gray-500 font-medium mt-1">
-              Showing {filteredQueries.length} active inquiries
+              Showing {filteredQueries.length} {activeTab === "pending" ? "pending" : "completed"} inquiries
             </p>
           </div>
         </div>
       </div>
 
+      {/* Tab Switcher */}
+      <div className="flex border-b border-gray-200 mb-6 bg-white rounded-xl p-1 shadow-sm max-w-md">
+        <button
+          onClick={() => {
+            setActiveTab("pending");
+            setSelectedIds([]);
+          }}
+          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer text-center ${
+            activeTab === "pending"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-100"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+          }`}
+        >
+          Pending ({pendingQueries.length})
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("completed");
+            setSelectedIds([]);
+          }}
+          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer text-center ${
+            activeTab === "completed"
+              ? "bg-emerald-600 text-white shadow-md shadow-emerald-100"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+          }`}
+        >
+          Completed / Replied ({completedQueries.length})
+        </button>
+      </div>
+
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-12">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left">
+                <th className="px-6 py-4 text-left w-12">
                   <input 
                     type="checkbox"
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     onChange={handleSelectAll}
                     checked={filteredQueries.length > 0 && selectedIds.length === filteredQueries.length}
                   />
@@ -299,10 +339,15 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
                 </tr>
               ) : filteredQueries.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
-                    <div className="flex flex-col items-center gap-2">
-                      <AlertCircle className="w-10 h-10 text-gray-300" />
-                      <p>{searchQuery ? "No matching queries found" : "No queries found"}</p>
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-3">
+                      <AlertCircle className="w-12 h-12 text-gray-300" />
+                      <p className="font-semibold text-gray-700">
+                        {searchQuery ? "No matching queries found" : `No ${activeTab === "pending" ? "pending" : "completed"} queries found`}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {activeTab === "pending" ? "Great job! All queries in this category have been answered." : "Completed queries will show up here after they are answered."}
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -310,12 +355,12 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
                 filteredQueries.map((query) => (
                   <tr 
                     key={query._id} 
-                    className={`${selectedIds.includes(query._id) ? 'bg-blue-50/50' : 'hover:bg-gray-50'} transition-colors`}
+                    className={`${selectedIds.includes(query._id) ? (activeTab === 'pending' ? 'bg-blue-50/50' : 'bg-emerald-50/50') : 'hover:bg-gray-50'} transition-colors`}
                   >
                     <td className="px-6 py-4">
                       <input 
                         type="checkbox"
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         checked={selectedIds.includes(query._id)}
                         onChange={() => handleSelectItem(query._id)}
                       />
@@ -339,10 +384,20 @@ const BaseQueryCategoryPage = ({ categoryTitle, queryTypes = [] }) => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
+                        {query.status === "Completed" && (
+                          <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+                            <CheckCircle className="w-3 h-3" />
+                            Replied
+                          </span>
+                        )}
                         <button 
                           onClick={() => navigate('/customer-queries/reply', { state: { query } })}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                          title="Reply"
+                          className={`p-2 rounded-lg transition cursor-pointer ${
+                            query.status === 'Completed' 
+                              ? 'text-gray-500 hover:text-blue-600 hover:bg-blue-50' 
+                              : 'text-blue-600 hover:bg-blue-50'
+                          }`}
+                          title={query.status === 'Completed' ? "Reply Again" : "Reply"}
                         >
                           <MessageSquare className="w-5 h-5" />
                         </button>

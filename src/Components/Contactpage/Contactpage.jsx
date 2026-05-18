@@ -23,23 +23,22 @@ const FAQ_TYPE_MAP = {
 const mapApiTypeToTab = (type = "") => {
   const normalized = type.toLowerCase();
 
-  if (normalized.includes("general")) return "General";
-  if (normalized.includes("technical")) return "Technical";
-  if (normalized.includes("account")) return "Account";
+  if (normalized.includes("general")) return "General Information Queries";
+  if (normalized.includes("technical")) return "Technical Queries";
+  if (normalized.includes("account")) return "Account Related";
   if (normalized.includes("payment") || normalized.includes("billing")) {
-    // Distinguish between "Payment / Billing" and "Cancellation / Return" (Billing key)
-    if (normalized.includes("cancellation") || normalized.includes("return")) return "Billing";
-    return "Payment";
+    if (normalized.includes("cancellation") || normalized.includes("return")) return "Cancellation / Return";
+    return "Payment / Billing";
   }
-  if (normalized.includes("order") || normalized.includes("service status")) return "Order Status";
-  if (normalized.includes("product") || normalized.includes("complaint")) return "Product";
-  if (normalized.includes("feedback") || normalized.includes("suggestion")) return "Support";
+  if (normalized.includes("order") || normalized.includes("service status")) return "Order / Service Status";
+  if (normalized.includes("product") || normalized.includes("complaint")) return "Product / Service Complaints";
+  if (normalized.includes("feedback") || normalized.includes("suggestion")) return "Feedback & Suggestions";
   if (normalized.includes("escalation")) return "Escalation";
   if (normalized.includes("onboarding") || normalized.includes("setup")) return "Onboarding / Setup";
   if (normalized.includes("subscription")) return "Subscription";
   if (normalized.includes("verification")) return "Verification Queries";
 
-  return type || "General";
+  return type || "General Information Queries";
 };
 
 const Contactpage = () => {
@@ -55,7 +54,7 @@ const Contactpage = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedFaqCategory, setSelectedFaqCategory] = useState("General");
+  const [selectedFaqCategory, setSelectedFaqCategory] = useState("General Information Queries");
   const [faqData, setFaqData] = useState([]);
   const [faqLoading, setFaqLoading] = useState(false);
   useEffect(() => {
@@ -75,7 +74,7 @@ const Contactpage = () => {
         setFaqLoading(true);
         const queryValue = FAQ_TYPE_MAP[selectedFaqCategory] || selectedFaqCategory;
         const response = await axios.get(`${BASE_URL}/api/faq/list`, {
-          params: { list: queryValue },
+          params: { type: queryValue },
         });
 
         const list = Array.isArray(response?.data?.data) ? response.data.data : [];
@@ -159,14 +158,14 @@ const Contactpage = () => {
   };
 
   const baseFaqCategories = [
-    "General",
-    "Technical",
-    "Account",
-    "Payment",
-    "Order Status",
-    "Product",
-    "Support",
-    "Billing",
+    "General Information Queries",
+    "Technical Queries",
+    "Account Related",
+    "Payment / Billing",
+    "Order / Service Status",
+    "Product / Service Complaints",
+    "Feedback & Suggestions",
+    "Cancellation / Return",
     "Escalation",
     "Onboarding / Setup",
     "Subscription",
