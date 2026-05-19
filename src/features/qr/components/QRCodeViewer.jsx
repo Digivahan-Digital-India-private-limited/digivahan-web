@@ -14,7 +14,7 @@ const QRCodeViewer = ({ value, label, imageUrl }) => {
         </div>
         <div className="text-center">
           <h2 className="text-base font-semibold text-slate-900">{label}</h2>
-          <p className="text-sm text-slate-500">{value}</p>
+          {/* <p className="text-sm text-slate-500">{value}</p> */}
         </div>
         <button
           type="button"
