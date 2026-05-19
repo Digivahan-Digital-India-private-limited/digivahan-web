@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
  * Centralized API calls for the Pay Challan feature
  */
 
-const BASE_URL = (import.meta.env.VITE_BASE_URL || "http://localhost:3000") + "/api";
+const BASE_URL = (import.meta.env.VITE_BASE_URL || "https://api.digivahan.in") + "/api";
 
 /**
  * Initialize the challan payment flow (sends OTP)

@@ -4,7 +4,7 @@ import axios from "axios";
  * Challan Webhook Admin Service
  */
 
-const BASE_URL = (import.meta.env.VITE_BASE_URL || "http://localhost:3000") + "/api";
+const BASE_URL = (import.meta.env.VITE_BASE_URL || "https://api.digivahan.in") + "/api";
 
 /** GET /api/challan-webhook/all */
 export const getAllWebhooks = async () => {
