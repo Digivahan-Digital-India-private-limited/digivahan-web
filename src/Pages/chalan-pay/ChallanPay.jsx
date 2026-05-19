@@ -102,16 +102,15 @@ const ChallanPay = () => {
         console.error("Failed to restore state:", err);
       }
     }
-    // Preload Razorpay script to make the payment gateway open faster
-    const preloadLink = document.createElement("link");
-    preloadLink.href = "https://checkout.razorpay.com/v1/checkout.js";
-    preloadLink.rel = "preload";
-    preloadLink.as = "script";
-    document.head.appendChild(preloadLink);
+    // Load Razorpay script in the background asynchronously to make the payment gateway open faster without preload warnings
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
 
     return () => {
-      if (document.head.contains(preloadLink)) {
-        document.head.removeChild(preloadLink);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
       }
     };
   }, []);
