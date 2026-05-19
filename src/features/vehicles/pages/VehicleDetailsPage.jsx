@@ -78,8 +78,9 @@ const VehicleDetailsPage = () => {
           </div>
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link to={`/vehicles/${vehicle.id}/qr`} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Generate QR</Link>
+          <Link to={`/orders/checkout?vehicle_id=${vehicle.id}`} className="rounded-xl bg-amber-500 hover:bg-amber-600 px-4 py-2 text-sm font-semibold text-slate-900 transition">Order Physical QR</Link>
           <button
             type="button"
             onClick={handleDelete}

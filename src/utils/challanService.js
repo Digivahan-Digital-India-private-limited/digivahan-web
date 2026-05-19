@@ -50,7 +50,7 @@ export const verifyChallanOtp = async (flowId, otp) => {
  */
 export const getChallanHistory = async () => {
   try {
-    const token = Cookies.get("token");
+    const token = Cookies.get("token") || Cookies.get("user_token");
     if (!token) {
       throw new Error("User is not authenticated");
     }
@@ -86,7 +86,7 @@ export const getChallanPaymentUrl = async (vehicleNumber, challanNumbers) => {
 
 export const refreshChallanData = async (rcNumber) => {
   try {
-    const token = Cookies.get("token");
+    const token = Cookies.get("token") || Cookies.get("user_token");
     if (!token) {
       throw new Error("User is not authenticated");
     }
@@ -106,12 +106,35 @@ export const refreshChallanData = async (rcNumber) => {
   }
 };
 
+export const directSearchChallanData = async (rcNumber) => {
+  try {
+    const token = Cookies.get("token") || Cookies.get("user_token");
+    if (!token) {
+      throw new Error("User is not authenticated");
+    }
+
+    const response = await axios.post(
+      `${BASE_URL}/challan-flow/direct-search`,
+      { rcNumber },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || error.message || "Failed to search challans";
+  }
+};
+
 const challanService = {
   initChallanFlow,
   verifyChallanOtp,
   getChallanHistory,
   getChallanPaymentUrl,
   refreshChallanData,
+  directSearchChallanData,
 };
 
 export default challanService;

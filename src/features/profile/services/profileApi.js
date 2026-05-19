@@ -54,7 +54,7 @@ const normalizeEmergencyContact = (item) => ({
     "Emergency Contact",
   relation: item?.relation || "Contact",
   phone: item?.phone || item?.phone_number || "",
-  avatar: item?.avatar || item?.profile_pic || mockEmergencyContacts[0].avatar,
+  avatar: item?.avatar || item?.profile_pic || "",
 });
 
 const getLocalProfile = () => {

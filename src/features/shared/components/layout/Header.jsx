@@ -23,7 +23,8 @@ const Header = ({
   const { data: notifications = [] } = useQuery({
     queryKey: ["user-notifications"],
     queryFn: listNotifications,
-    staleTime: 30 * 1000,
+    staleTime: 10 * 1000,
+    refetchInterval: 10000, // Auto-refresh notifications every 10 seconds
   });
 
   const unreadCount = notifications.filter((item) => item.unread).length;

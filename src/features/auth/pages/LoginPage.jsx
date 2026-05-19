@@ -74,14 +74,14 @@ const LoginPage = () => {
             {loading ? "Sending OTP..." : "Send OTP"}
           </button>
 
-          <div className="flex items-center justify-between pt-1 text-xs">
+          {/* <div className="flex items-center justify-between pt-1 text-xs">
             <Link to="/password-reset" className="font-semibold text-emerald-700 hover:text-emerald-800">
               Forgot password?
             </Link>
             <Link to="/account-created" className="font-semibold text-slate-500 hover:text-slate-700">
               New account created?
             </Link>
-          </div>
+          </div> */}
         </form>
       </div>
     </div>

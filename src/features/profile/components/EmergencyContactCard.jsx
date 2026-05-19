@@ -6,7 +6,13 @@ const EmergencyContactCard = ({ contact, onEdit, onDelete, deleting }) => {
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <img src={contact.avatar} alt={contact.name} className="h-12 w-12 rounded-full border border-slate-200 object-cover" />
+          {contact.avatar ? (
+            <img src={contact.avatar} alt={contact.name} className="h-12 w-12 rounded-full border border-slate-200 object-cover" />
+          ) : (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+              {contact.name ? contact.name.charAt(0).toUpperCase() : "E"}
+            </div>
+          )}
           <div>
             <h3 className="text-sm font-semibold text-slate-900">{contact.name}</h3>
             <p className="text-xs text-slate-500">{contact.relation}</p>

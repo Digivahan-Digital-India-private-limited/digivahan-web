@@ -39,13 +39,26 @@ const resolveUnread = (item) => {
   return true;
 };
 
+const formatTime = (dateString) => {
+  if (!dateString || dateString === "Just now") return "Just now";
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return dateString;
+  }
+};
+
 const normalizeNotification = (item) => ({
   id: String(item?.id || item?._id || item?.notification_id || item?.notificationId || ""),
   title: item?.title || item?.notification_title || "Notification",
   description: item?.description || item?.message || "",
-  time: item?.time || item?.createdAt || item?.created_at || "Just now",
+  time: formatTime(item?.time || item?.createdAt || item?.created_at || "Just now"),
   type: item?.type || (item?.priority === "high" ? "critical" : "info"),
   unread: resolveUnread(item),
+  vehicleId: item?.vehicle_id || "",
+  incidentProof: Array.isArray(item?.incident_proof) ? item.incident_proof : [],
 });
 
 const getMockBackedNotifications = () => {
@@ -55,11 +68,6 @@ const getMockBackedNotifications = () => {
 };
 
 export const listNotifications = async () => {
-  const local = getLocalNotifications();
-  if (local.length) {
-    return local.map(normalizeNotification);
-  }
-
   const token = Cookies.get("user_token");
   let userId = "";
   if (token) {
@@ -71,57 +79,76 @@ export const listNotifications = async () => {
     }
   }
 
-  const response = await requestWithFallback(
-    [
-      () => userId ? httpClient.get(`/api/v1/notifications/${userId}`) : Promise.reject("No User ID"),
-      () => httpClient.get("/api/notifications"),
-      () => httpClient.get("/api/notifications/list"),
-    ],
-    () => ({ data: getMockBackedNotifications() }),
-  );
+  if (!userId) return [];
 
-  return unwrapCollection(response).map(normalizeNotification);
+  try {
+    const response = await httpClient.get(`/api/notifications/${userId}`);
+    const rawData = response?.data?.data || response?.data || [];
+    return Array.isArray(rawData) ? rawData.map(normalizeNotification) : [];
+  } catch (error) {
+    console.error("Error fetching notifications from backend:", error);
+    return [];
+  }
 };
 
 export const markNotificationAsRead = async (notificationId) => {
-  const response = await requestWithFallback(
-    [
-      () => httpClient.patch(`/api/notifications/${notificationId}/read`),
-      () => httpClient.post(`/api/notifications/${notificationId}/read`),
-      () => httpClient.patch(`/api/user/notifications/${notificationId}`, { unread: false }),
-    ],
-    () => {
-      const updated = getMockBackedNotifications().map((item) =>
-        item.id === String(notificationId)
-          ? { ...item, unread: false, seen_status: true, is_read: true }
-          : item,
-      );
-      setLocalNotifications(updated);
-      return { data: updated.find((item) => item.id === String(notificationId)) };
-    },
-  );
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
 
-  return normalizeNotification(response?.data || response);
+  if (!userId || !notificationId) return null;
+
+  try {
+    const response = await httpClient.post(`/api/notifications/user/seen-notification`, {
+      user_id: userId,
+      notification_id: notificationId,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    return null;
+  }
 };
 
 export const markAllNotificationsAsRead = async () => {
-  await requestWithFallback(
-    [
-      () => httpClient.patch("/api/notifications/read-all"),
-      () => httpClient.post("/api/notifications/read-all"),
-      () => httpClient.patch("/api/user/notifications", { unread: false }),
-    ],
-    () => {
-      const updated = getMockBackedNotifications().map((item) => ({
-        ...item,
-        unread: false,
-        seen_status: true,
-        is_read: true,
-      }));
-      setLocalNotifications(updated);
-      return { data: { success: true } };
-    },
-  );
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
 
-  return true;
+  if (!userId) return false;
+
+  try {
+    // Get all notifications to find unread ones and mark them all as read sequentially
+    const notifications = await listNotifications();
+    const unreadNotifications = notifications.filter((n) => n.unread);
+
+    if (unreadNotifications.length > 0) {
+      await Promise.all(
+        unreadNotifications.map((n) =>
+          httpClient.post(`/api/notifications/user/seen-notification`, {
+            user_id: userId,
+            notification_id: n.id,
+          })
+        )
+      );
+    }
+    return true;
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+    return false;
+  }
 };

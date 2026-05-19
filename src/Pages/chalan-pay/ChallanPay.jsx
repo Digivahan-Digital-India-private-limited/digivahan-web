@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { FaChevronRight, FaCheckCircle, FaExclamationTriangle, FaExternalLinkAlt, FaHistory, FaTimes } from "react-icons/fa";
-import { initChallanFlow, verifyChallanOtp, getChallanHistory, getChallanPaymentUrl, refreshChallanData } from "../../utils/challanService";
+import { initChallanFlow, verifyChallanOtp, getChallanHistory, getChallanPaymentUrl, refreshChallanData, directSearchChallanData } from "../../utils/challanService";
 
 const ChallanPay = () => {
   const navigate = useNavigate();
@@ -116,13 +116,61 @@ const ChallanPay = () => {
     };
   }, []);
 
-  const handleRCNext = (e) => {
+  const handleRCNext = async (e) => {
     e.preventDefault();
     if (formData.rcNumber.trim().length < 4) {
       toast.error("Please enter a valid RC number");
       return;
     }
-    setStep(2);
+    
+    // Check if user is logged in
+    const isLoggedIn = !!(Cookies.get("token") || Cookies.get("user_token"));
+    if (isLoggedIn) {
+      try {
+        setLoading(true);
+        const data = await directSearchChallanData(formData.rcNumber);
+        if (data.status) {
+          const { user } = data;
+          const realChallans = user.challans || [];
+          
+          setChallans(realChallans);
+          setUserDetails(user);
+
+          // Fetch history
+          let fetchedWebhookRecords = [];
+          try {
+            const historyRes = await getChallanHistory();
+            if (historyRes.status && historyRes.history) {
+              fetchedWebhookRecords = historyRes.history;
+              setWebhookRecords(fetchedWebhookRecords);
+            }
+          } catch (e) {
+            console.error("Failed to fetch history silently:", e);
+          }
+
+          setStep(4);
+          toast.success("Challan details fetched successfully!");
+
+          // Save state to localStorage for persistence on refresh
+          const stateToSave = {
+            step: 4,
+            rcNumber: formData.rcNumber,
+            phone: user.basic_details?.phone_number || formData.phone,
+            challans: realChallans,
+            userDetails: user,
+            webhookRecords: fetchedWebhookRecords
+          };
+          localStorage.setItem("challan_pay_state", JSON.stringify(stateToSave));
+        }
+      } catch (error) {
+        console.error("Direct fetch failed, falling back to OTP flow:", error);
+        setStep(2);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setStep(2);
+    }
   };
 
   const handleInitFlow = async (e) => {
@@ -360,7 +408,7 @@ const ChallanPay = () => {
     }
   };
 
-  const hasToken = !!Cookies.get("token");
+  const hasToken = !!(Cookies.get("token") || Cookies.get("user_token"));
 
   return (
     <div className="min-h-screen bg-[#dce8f5] flex items-center justify-center p-4 md:p-8 font-['Nunito']">
@@ -544,16 +592,7 @@ const ChallanPay = () => {
         }
       `}</style>
 
-      {/* HISTORY BUTTON */}
-      {hasToken && (
-        <button
-          onClick={handleViewHistory}
-          style={{ position: 'fixed', top: '80px', right: '20px', zIndex: 100 }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 hover:bg-blue-700 transition"
-        >
-          <FaHistory /> Challan History
-        </button>
-      )}
+
 
       <div className="container-custom">
         {/* LEFT PANEL */}

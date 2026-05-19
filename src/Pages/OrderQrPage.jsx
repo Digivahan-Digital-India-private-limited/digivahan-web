@@ -31,7 +31,7 @@ const howToOrder = [
 
 const OrderQrPage = () => {
   const hasUserSession = Boolean(Cookies.get("user_token"));
-  const orderStartPath = hasUserSession ? "/vehicles/add" : "/login";
+  const orderStartPath = hasUserSession ? "/orders/checkout" : "/login";
   const orderStartLabel = hasUserSession ? "Start QR Order Flow" : "Login To Order QR";
 
   return (

@@ -19,8 +19,32 @@ const normalizeVehicle = (item) => ({
   fuel: item?.fuel || item?.fuel_type || item?.fuelType || item?.api_data?.custom_vehicle_info?.fuel_type || "Petrol",
   year: String(item?.year || item?.model_year || item?.modelYear || (item?.api_data?.custom_vehicle_info?.vehicle_age ? (new Date().getFullYear() - item.api_data.custom_vehicle_info.vehicle_age) : "2024")),
   ownership: item?.ownership || item?.ownership_type || item?.api_data?.custom_vehicle_info?.ownership_details || "First Owner",
-  insuranceStatus: item?.insuranceStatus || item?.insurance_status || item?.api_data?.custom_vehicle_info?.rc_status || "Active",
-  pucStatus: item?.pucStatus || item?.puc_status || "Active",
+  insuranceStatus: (() => {
+    const val = item?.insuranceStatus || item?.insurance_status;
+    if (val && val !== "N/A") return val;
+    const expiry = item?.api_data?.custom_vehicle_info?.insurance_expiry;
+    if (!expiry) return "Active";
+    try {
+      const expDate = new Date(expiry);
+      if (isNaN(expDate.getTime())) return "Active";
+      return expDate > new Date() ? "Active" : "Expired";
+    } catch {
+      return "Active";
+    }
+  })(),
+  pucStatus: (() => {
+    const val = item?.pucStatus || item?.puc_status;
+    if (val && val !== "N/A") return val;
+    const expiry = item?.api_data?.custom_vehicle_info?.pollution_expiry;
+    if (!expiry) return "Active";
+    try {
+      const expDate = new Date(expiry);
+      if (isNaN(expDate.getTime())) return "Active";
+      return expDate > new Date() ? "Active" : "Expired";
+    } catch {
+      return "Active";
+    }
+  })(),
   image: item?.image || item?.vehicle_image || "/Car Image.png",
   qrId: item?.qrId || item?.qr_id || (item?.qr_list && item.qr_list.length > 0 ? item.qr_list[0] : null) || item?.qrCode || "QR-DV-0000",
   qr_list: item?.qr_list || [],

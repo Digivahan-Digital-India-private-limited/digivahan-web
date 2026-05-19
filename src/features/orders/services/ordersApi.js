@@ -126,7 +126,36 @@ export const createOrder = async (orderData) => {
     ],
   };
 
+  // Include Razorpay payment details if provided
+  if (orderData.razorpay_payment_id) {
+    payload.razorpay_payment_id = orderData.razorpay_payment_id;
+  }
+  if (orderData.razorpay_order_id) {
+    payload.razorpay_order_id = orderData.razorpay_order_id;
+  }
+
   const response = await httpClient.post("/api/user/create-order", payload);
   const data = unwrapObject(response);
-  return normalizeOrder(data);
+  return normalizeOrder(data?.data || data);
+};
+
+export const cancelOrder = async (orderId) => {
+  const token = Cookies.get("user_token");
+  let userId = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userId = decoded.userId || decoded.user_id;
+    } catch (e) {
+      console.error("Token decode error", e);
+    }
+  }
+
+  if (!userId) throw new Error("No user ID found in session");
+
+  const response = await httpClient.post("/api/order/user-cancel", {
+    order_id: orderId,
+    user_id: userId,
+  });
+  return response?.data;
 };

@@ -185,13 +185,6 @@ const AddVehiclePage = () => {
                   {vehicleDetails?.custom_vehicle_info?.vehicle_name || "TVS Jupiter"}
                 </p>
               </div>
-
-              {/* Vehicle Avatar */}
-              <img
-                src={getVehicleImage(vehicleDetails?.custom_vehicle_info?.vehicle_class)}
-                alt="Vehicle Graphic"
-                className="h-16 w-24 object-contain bg-slate-50 border border-slate-100 rounded-xl"
-              />
             </div>
 
             {/* Verification Action Button */}
@@ -375,12 +368,9 @@ const AddVehiclePage = () => {
             </button>
 
             <form onSubmit={handleVerifySubmit} className="flex flex-col items-center text-center space-y-5 pt-3">
-              {/* Digivahan Logo Badge */}
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-amber-400 bg-white p-2 shadow-sm">
-                <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-emerald-500 text-white p-1">
-                  <span className="text-[10px] font-bold tracking-tight text-white/90">DIGIVAHAN</span>
-                  <span className="text-[8px] font-semibold text-amber-200">DIGITAL INDIA</span>
-                </div>
+              {/* Premium Verification Badge */}
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-inner">
+                <ShieldCheck size={40} className="stroke-[2.5]" />
               </div>
 
               {/* Form Headers */}

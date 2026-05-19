@@ -166,6 +166,7 @@ import MyVirtualQRPage from "./features/qr/pages/MyVirtualQRPage";
 import MyVirtualQRListPage from "./features/qr/pages/MyVirtualQRListPage";
 import MyVirtualQRDetailPage from "./features/qr/pages/MyVirtualQRDetailPage";
 import OrdersPage from "./features/orders/pages/OrdersPage";
+import CheckoutPage from "./features/orders/pages/CheckoutPage";
 import TrackOrderPage from "./features/orders/pages/TrackOrderPage";
 import ReviewOrderPage from "./features/orders/pages/ReviewOrderPage";
 import EditDeliveryAddressPage from "./features/orders/pages/EditDeliveryAddressPage";
@@ -243,6 +244,7 @@ const App = () => {
           <Route path="/my-virtual-qr-detail/:id" element={<MyVirtualQRDetailPage />} />
           <Route path="/my-virtual-qr-empty" element={<Navigate to="/virtual-qr" replace />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/checkout" element={<CheckoutPage />} />
           <Route path="/my-order" element={<Navigate to="/orders" replace />} />
           <Route path="/orders/:id/track" element={<TrackOrderPage />} />
           <Route path="/orders/:id/review" element={<ReviewOrderPage />} />
