@@ -616,7 +616,7 @@ const Aboutpage = () => {
                   { icon: <svg className="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>, label:"Company Name", val:"Digivahan Digital India Pvt Ltd" },
                   { icon: <svg className="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>, label:"Established", val:"2023" },
                   { icon: <svg className="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>, label:"CIN", val:"U62099DL2023PTC420571" },
-                  { icon: <svg className="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>, label:"Registered Address", val:"Plot No, 2-A, Third Floor, Block-R, Uttam Nagar, New Delhi - 110059, India" },
+                  { icon: <svg className="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>, label:"Registered Address", val:"Unit No. 309, 3rd Floor, Tower-A of SAS Tower, Support Area, Medicity, Sector-38, Gurgaon 122001" },
                   { icon: <svg className="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>, label:"Email", val:"info@digivahan.in" },
                 ].map(({ icon, label, val }) => (
                   <div key={label} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
@@ -642,7 +642,7 @@ const Aboutpage = () => {
                   <span className="text-yellow-500 text-xl">🏢</span>
                   <div>
                     <p className="text-xs font-bold text-gray-800">Our Office</p>
-                    <p className="text-xs text-gray-500">Gurugram, Haryana</p>
+                    <p className="text-xs text-gray-500">Sector-38, Gurgaon</p>
                   </div>
                 </div>
               </div>
@@ -656,7 +656,7 @@ const Aboutpage = () => {
         <div ref={ref("map")} className={`ab-fade-up ${v("map")} max-w-6xl mx-auto px-4 pb-10`}>
           <div className="w-full h-80 md:h-96 rounded-3xl overflow-hidden shadow-lg border border-gray-100">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d89879.39895896293!2d76.9286923357915!3d28.57726296237831!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d050021878051%3A0xd9da7e82a08b4777!2sDIGIVAHAN!5e0!3m2!1sen!2sin!4v1768393071255!5m2!1sen!2sin"
+              src="https://maps.google.com/maps?q=SAS%20Tower,%20Medicity,%20Sector-38,%20Gurgaon%20122001&t=&z=14&ie=UTF8&iwloc=&output=embed"
               width="100%"
               height="100%"
               style={{ border:0 }}
