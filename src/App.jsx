@@ -28,6 +28,7 @@ import AccidentNotification from "./Pages/AccidentNotification";
 import EmergencyContactUspage from "./Pages/EmergencyContactUspage";
 import AccessVehicleDoc from "./Pages/AccessVehicleDoc";
 import ChallanPay from "./Pages/chalan-pay/ChallanPay";
+import ChallanPayForApp from "./Pages/chalan-for-app/ChallanPayForApp";
 
 // Admin Pannel
 import AdminPannel from "./Pages/AdminPannel/AdminPannel";
@@ -353,6 +354,8 @@ const App = () => {
             element={<TermsAndConditionsPage />}
           />
         </Route>
+
+        <Route path="/digivahan/challan-pay/app" element={<ChallanPayForApp />} />
 
         <Route path="/digivahan/about-us" element={<SemanticPage label="About DigiVahan"><Aboutpage /></SemanticPage>} />
         <Route path="/digivahan/privacy-policy" element={<SemanticPage label="Privacy policy"><PrivacyPolicy /></SemanticPage>} />
