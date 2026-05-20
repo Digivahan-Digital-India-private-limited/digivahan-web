@@ -80,11 +80,22 @@ const ConnectTabs = () => {
         {/* Profile Section */}
         <div className="bg-white p-6 text-center">
           <div className="relative inline-block">
-            <img
-              src={user.profile_pic}
-              alt="profile"
-              className="w-28 h-28 rounded-full border-4 border-blue-500 object-cover"
-            />
+            {user.profile_pic ? (
+              <img
+                src={user.profile_pic}
+                alt="profile"
+                className="w-28 h-28 rounded-full border-4 border-blue-500 object-cover"
+              />
+            ) : (
+              <div className="flex w-28 h-28 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-4xl font-bold text-white shadow-sm border-4 border-blue-500 mx-auto">
+                {(() => {
+                  const parts = (user.full_Name || "").trim().split(/\s+/);
+                  if (!parts.length || parts[0] === "") return "U";
+                  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+                  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+                })()}
+              </div>
+            )}
             <FaCheckCircle className="absolute bottom-1 right-1 text-green-500 bg-white rounded-full" />
           </div>
 
@@ -92,10 +103,19 @@ const ConnectTabs = () => {
             {user.full_Name}
           </h2>
 
-          <p className="text-sm text-gray-500 mt-1">
-            {calculateAgeFromDate(user.age) || "N/A"} year old •{" "}
-            {user.gender || "N/A"}
-          </p>
+          {(() => {
+            const age = calculateAgeFromDate(user.age);
+            const hasAge = age !== null && age !== undefined && !isNaN(age);
+            const hasGender = user.gender && user.gender !== "N/A";
+            if (!hasAge && !hasGender) return null;
+            return (
+              <p className="text-sm text-gray-500 mt-1">
+                {hasAge ? `${age} year old` : ""}
+                {hasAge && hasGender ? " • " : ""}
+                {hasGender ? user.gender : ""}
+              </p>
+            );
+          })()}
 
           <p className="text-xs text-gray-400 mt-1">
             {user.address || "Address not available"}

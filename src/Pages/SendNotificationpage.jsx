@@ -304,17 +304,37 @@ const SendNotificationpage = () => {
           <div className="flex items-start flex-col md:flex-row justify-between gap-4">
             {/* Left: Profile Info */}
             <div className="flex items-center gap-4">
-              <img
-                src={user.profile_pic}
-                alt="profile"
-                className="w-16 h-16 rounded-full object-cover border-2 border-blue-500"
-              />
+              {user.profile_pic ? (
+                <img
+                  src={user.profile_pic}
+                  alt="profile"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-blue-500"
+                />
+              ) : (
+                <div className="flex w-16 h-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xl font-bold text-white shadow-sm border-2 border-blue-500">
+                  {(() => {
+                    const parts = (user.full_Name || "").trim().split(/\s+/);
+                    if (!parts.length || parts[0] === "") return "U";
+                    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+                    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+                  })()}
+                </div>
+              )}
               <div>
                 <h2 className="font-semibold text-lg">{user.full_Name}</h2>
-                <p className="text-sm text-gray-500">
-                  {calculateAgeFromDate(user.age) || "N/A"} year old •{" "}
-                  {user.gender || "N/A"}
-                </p>
+                {(() => {
+                  const age = calculateAgeFromDate(user.age);
+                  const hasAge = age !== null && age !== undefined && !isNaN(age);
+                  const hasGender = user.gender && user.gender !== "N/A";
+                  if (!hasAge && !hasGender) return null;
+                  return (
+                    <p className="text-sm text-gray-500">
+                      {hasAge ? `${age} year old` : ""}
+                      {hasAge && hasGender ? " • " : ""}
+                      {hasGender ? user.gender : ""}
+                    </p>
+                  );
+                })()}
                 <p className="text-xs text-gray-400">
                   {user.address || "Address not available"}
                 </p>

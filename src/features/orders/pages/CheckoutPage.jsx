@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   Package,
   MapPin,
@@ -12,6 +13,8 @@ import {
   CheckCircle2,
   Truck,
   AlertCircle,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { listVehicles } from "../../vehicles/services/vehiclesApi";
 import { createOrder } from "../services/ordersApi";
@@ -21,9 +24,11 @@ import {
   loadRazorpayScript,
 } from "../services/razorpayApi";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+
 // Price in paise (Rs 199)
-const QR_PRICE_PAISE = 19900;
-const QR_PRICE_INR = 199;
+const QR_PRICE_PAISE = 29900;
+const QR_PRICE_INR = 299;
 
 const INDIAN_STATES = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
@@ -68,6 +73,34 @@ const CheckoutPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
+  // Address book state
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [editingAddressId, setEditingAddressId] = useState("");
+
+  // Helper to map saved address back to checkout form format
+  const handleSelectSavedAddress = (savedAddr) => {
+    if (!savedAddr) return;
+    const parts = (savedAddr.name || "").trim().split(/\s+/);
+    const first_name = parts[0] || "";
+    const last_name = parts.slice(1).join(" ") || "";
+
+    setAddress({
+      first_name,
+      last_name,
+      phone: savedAddr.contact_no || "",
+      email: address.email || userInfo.email || "",
+      address1: savedAddr.house_no_building || "",
+      address2: savedAddr.landmark || "",
+      city: savedAddr.city || "",
+      state: savedAddr.state || "",
+      pincode: savedAddr.pincode || "",
+    });
+  };
+
   // Get user info from token
   const [userInfo, setUserInfo] = useState({ name: "", email: "", phone: "" });
   useEffect(() => {
@@ -78,6 +111,8 @@ const CheckoutPage = () => {
         const name = decoded.name || decoded.full_name || decoded.username || "";
         const [first_name = "", ...rest] = name.trim().split(" ");
         const last_name = rest.join(" ");
+        const uid = decoded.id || decoded.user_id || decoded._id || "";
+        setUserId(uid);
         setUserInfo({
           name,
           email: decoded.email || "",
@@ -105,6 +140,42 @@ const CheckoutPage = () => {
     loadRazorpayScript().catch(() => {});
   }, [searchParams]);
 
+  // Fetch address book when userId is loaded
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchAddresses = async () => {
+      setIsLoadingAddresses(true);
+      try {
+        const res = await axios.post(`${BASE_URL}/api/get_user_details`, {
+          user_id: userId,
+          details_type: "address_book",
+        });
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          setSavedAddresses(res.data.data);
+          // Auto select default or first address
+          const defaultAddr = res.data.data.find(addr => addr.default_status);
+          const activeAddr = defaultAddr || res.data.data[0];
+          if (activeAddr) {
+            setSelectedAddressId(activeAddr._id || activeAddr.id);
+            handleSelectSavedAddress(activeAddr);
+          } else {
+            setIsAddingNew(true);
+          }
+        } else {
+          setIsAddingNew(true);
+        }
+      } catch (err) {
+        console.error("Failed to fetch address book:", err);
+        setIsAddingNew(true);
+      } finally {
+        setIsLoadingAddresses(false);
+      }
+    };
+
+    fetchAddresses();
+  }, [userId]);
+
   // Fetch vehicles
   const { data: vehicles = [], isLoading: isVehiclesLoading } = useQuery({
     queryKey: ["user-vehicles"],
@@ -128,6 +199,128 @@ const CheckoutPage = () => {
     address.city.trim() &&
     address.state.trim() &&
     address.pincode.trim().length === 6;
+
+  // Handle address deletion
+  const handleAddressDelete = async (addressId, e) => {
+    if (e) e.stopPropagation(); // Prevent card selection when clicking delete
+    
+    if (!window.confirm("Are you sure you want to delete this address?")) return;
+
+    try {
+      const res = await axios.post(`${BASE_URL}/api/v1/user-address/delete`, {
+        user_id: userId,
+        address_id: addressId,
+      });
+
+      if (res.data?.status) {
+        toast.success("Address deleted successfully!");
+        
+        // Update local list
+        const updatedList = res.data.address_book || [];
+        setSavedAddresses(updatedList);
+
+        // If the deleted address was currently selected
+        if (selectedAddressId === addressId) {
+          if (updatedList.length > 0) {
+            const nextSelect = updatedList[0];
+            setSelectedAddressId(nextSelect._id || nextSelect.id);
+            handleSelectSavedAddress(nextSelect);
+          } else {
+            setSelectedAddressId("");
+            setIsAddingNew(true);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete address:", err);
+      toast.error(err?.response?.data?.message || "Failed to delete address.");
+    }
+  };
+
+  // Handle address form submission (saving or updating in backend)
+  const handleAddressSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!isStep2Valid) return;
+
+    if (userId) {
+      setIsProcessing(true);
+      try {
+        if (editingAddressId) {
+          // EDIT MODE
+          const payload = {
+            user_id: userId,
+            address_id: editingAddressId,
+            name: `${address.first_name || ""} ${address.last_name || ""}`.trim(),
+            contact_no: address.phone,
+            house_no_building: address.address1,
+            landmark: address.address2,
+            city: address.city,
+            state: address.state,
+            pincode: address.pincode,
+          };
+
+          const res = await axios.put(`${BASE_URL}/api/v1/user-address/upadte`, payload);
+          if (res.data?.status) {
+            toast.success("Address updated successfully!");
+            const updatedBook = res.data.address_book || [];
+            setSavedAddresses(updatedBook);
+            
+            // Set updated address as active selection
+            const updatedAddr = updatedBook.find(addr => addr._id === editingAddressId || addr.id === editingAddressId);
+            if (updatedAddr) {
+              setSelectedAddressId(updatedAddr._id || updatedAddr.id);
+              handleSelectSavedAddress(updatedAddr);
+            }
+            setEditingAddressId("");
+            setIsAddingNew(false);
+          }
+        } else {
+          // ADD MODE
+          const payload = {
+            user_id: userId,
+            name: `${address.first_name || ""} ${address.last_name || ""}`.trim(),
+            contact_no: address.phone,
+            house_no_building: address.address1,
+            landmark: address.address2,
+            city: address.city,
+            state: address.state,
+            pincode: address.pincode,
+            default_status: true,
+          };
+
+          const res = await axios.post(`${BASE_URL}/api/v1/user-address/add`, payload);
+          if (res.data?.status) {
+            toast.success("Address saved to address book!");
+            
+            // Refetch saved addresses
+            const fetchRes = await axios.post(`${BASE_URL}/api/get_user_details`, {
+              user_id: userId,
+              details_type: "address_book",
+            });
+            if (fetchRes.data?.success && Array.isArray(fetchRes.data.data)) {
+              setSavedAddresses(fetchRes.data.data);
+              // Select the newly created address
+              const newAddr = fetchRes.data.data.find(
+                addr => addr.house_no_building === address.address1 && addr.pincode === address.pincode
+              ) || fetchRes.data.data[fetchRes.data.data.length - 1];
+              if (newAddr) {
+                setSelectedAddressId(newAddr._id || newAddr.id);
+                handleSelectSavedAddress(newAddr);
+              }
+            }
+            setIsAddingNew(false);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to process address:", err);
+        toast.error(err?.response?.data?.message || "Failed to save address. Proceeding anyway.");
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+
+    setStep(3);
+  };
 
   // Handle Razorpay payment + order creation
   const handlePayAndOrder = async () => {
@@ -287,95 +480,240 @@ const CheckoutPage = () => {
               Continue →
             </button>
           )}
-        </section>
-      )}
+         </section>
+       )}
 
-      {/* Step 2: Delivery Address */}
+       {/* Step 2: Delivery Address */}
       {step === 2 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Delivery Address</h3>
+            <h3 className="text-base font-semibold text-slate-900">
+              {editingAddressId ? "Edit Address" : "Delivery Address"}
+            </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Enter the address to ship your QR sticker.
+              {isAddingNew ? (editingAddressId ? "Modify your shipping address below." : "Enter the address to ship your QR sticker.") : "Select a shipping address or add a new one."}
             </p>
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setStep(3);
-            }}
-            className="space-y-3"
-          >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">First Name *</label>
-                <input name="first_name" value={address.first_name} onChange={handleAddressChange} className={inputCls} placeholder="First name" required />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Last Name</label>
-                <input name="last_name" value={address.last_name} onChange={handleAddressChange} className={inputCls} placeholder="Last name" />
-              </div>
+          {isLoadingAddresses ? (
+            <div className="flex flex-col items-center justify-center py-10 space-y-2">
+              <span className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
+              <p className="text-sm text-slate-500 font-medium">Loading saved addresses...</p>
             </div>
+          ) : !isAddingNew && savedAddresses.length > 0 ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {savedAddresses.map((addr) => {
+                  const isSelected = selectedAddressId === (addr._id || addr.id);
+                  return (
+                    <button
+                      key={addr._id || addr.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAddressId(addr._id || addr.id);
+                        handleSelectSavedAddress(addr);
+                      }}
+                      className={`w-full text-left rounded-xl border p-4 transition flex flex-col justify-between h-full min-h-[160px]
+                        ${isSelected
+                          ? "border-emerald-500 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-500"
+                          : "border-slate-200 bg-white hover:border-emerald-300"
+                        }`}
+                    >
+                      <div className="flex flex-col justify-between h-full space-y-3 w-full">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-sm text-slate-900 truncate">{addr.name}</p>
+                            {isSelected && (
+                              <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-600 text-white text-[10px] font-bold shrink-0">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-600 font-medium">{addr.contact_no}</p>
+                          <p className="text-xs text-slate-500 leading-relaxed pt-1">
+                            {addr.house_no_building}
+                            {addr.landmark ? `, ${addr.landmark}` : ""}
+                            <br />
+                            {addr.city}, {addr.state} – {addr.pincode}
+                          </p>
+                        </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Phone *</label>
-                <input name="phone" value={address.phone} onChange={handleAddressChange} className={inputCls} placeholder="10-digit mobile number" maxLength={10} required />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
-                <input name="email" type="email" value={address.email} onChange={handleAddressChange} className={inputCls} placeholder="Email address" />
-              </div>
-            </div>
+                        {/* Edit and Delete Actions */}
+                        <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-2 shrink-0 w-full">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingAddressId(addr._id || addr.id);
+                              setIsAddingNew(true);
+                              // Prefill form for editing
+                              const parts = (addr.name || "").trim().split(/\s+/);
+                              const first_name = parts[0] || "";
+                              const last_name = parts.slice(1).join(" ") || "";
+                              setAddress({
+                                first_name,
+                                last_name,
+                                phone: addr.contact_no || "",
+                                email: address.email || userInfo.email || "",
+                                address1: addr.house_no_building || "",
+                                address2: addr.landmark || "",
+                                city: addr.city || "",
+                                state: addr.state || "",
+                                pincode: addr.pincode || "",
+                              });
+                            }}
+                            className="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-emerald-600 hover:bg-slate-100 transition cursor-pointer"
+                          >
+                            <Pencil size={11} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleAddressDelete(addr._id || addr.id, e)}
+                            className="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          >
+                            <Trash2 size={11} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
 
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Address Line 1 *</label>
-              <input name="address1" value={address.address1} onChange={handleAddressChange} className={inputCls} placeholder="House / Flat no., Street, Area" required />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Address Line 2</label>
-              <input name="address2" value={address.address2} onChange={handleAddressChange} className={inputCls} placeholder="Landmark (optional)" />
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">City *</label>
-                <input name="city" value={address.city} onChange={handleAddressChange} className={inputCls} placeholder="City" required />
+                {/* Add New Address Card */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingNew(true);
+                    setEditingAddressId("");
+                    // Pre-fill name and details from user profile but clear address specific fields
+                    const name = userInfo.name || "";
+                    const [first_name = "", ...rest] = name.trim().split(" ");
+                    const last_name = rest.join(" ");
+                    setAddress({
+                      first_name,
+                      last_name,
+                      phone: userInfo.phone || "",
+                      email: userInfo.email || "",
+                      address1: "",
+                      address2: "",
+                      city: "",
+                      state: "",
+                      pincode: "",
+                    });
+                  }}
+                  className="w-full h-full min-h-[160px] rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 hover:border-emerald-500 hover:bg-emerald-50/20 flex flex-col items-center justify-center p-4 transition group cursor-pointer"
+                >
+                  <span className="text-2xl text-slate-400 group-hover:text-emerald-600 mb-1 font-bold">+</span>
+                  <span className="text-sm font-semibold text-slate-600 group-hover:text-emerald-600">Add New Address</span>
+                </button>
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">State *</label>
-                <select name="state" value={address.state} onChange={handleAddressChange} className={inputCls} required>
-                  <option value="">Select state</option>
-                  {INDIAN_STATES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Pincode *</label>
-                <input name="pincode" value={address.pincode} onChange={handleAddressChange} className={inputCls} placeholder="6-digit pincode" maxLength={6} required />
-              </div>
-            </div>
 
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-              >
-                ← Back
-              </button>
-              <button
-                type="submit"
-                disabled={!isStep2Valid}
-                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Continue →
-              </button>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 cursor-pointer"
+                >
+                  Continue →
+                </button>
+              </div>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleAddressSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">First Name *</label>
+                  <input name="first_name" value={address.first_name} onChange={handleAddressChange} className={inputCls} placeholder="First name" required />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Last Name</label>
+                  <input name="last_name" value={address.last_name} onChange={handleAddressChange} className={inputCls} placeholder="Last name" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Phone *</label>
+                  <input name="phone" value={address.phone} onChange={handleAddressChange} className={inputCls} placeholder="10-digit mobile number" maxLength={10} required />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
+                  <input name="email" type="email" value={address.email} onChange={handleAddressChange} className={inputCls} placeholder="Email address" />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Address Line 1 *</label>
+                <input name="address1" value={address.address1} onChange={handleAddressChange} className={inputCls} placeholder="House / Flat no., Street, Area" required />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Address Line 2</label>
+                <input name="address2" value={address.address2} onChange={handleAddressChange} className={inputCls} placeholder="Landmark (optional)" />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">City *</label>
+                  <input name="city" value={address.city} onChange={handleAddressChange} className={inputCls} placeholder="City" required />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">State *</label>
+                  <select name="state" value={address.state} onChange={handleAddressChange} className={inputCls} required>
+                    <option value="">Select state</option>
+                    {INDIAN_STATES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Pincode *</label>
+                  <input name="pincode" value={address.pincode} onChange={handleAddressChange} className={inputCls} placeholder="6-digit pincode" maxLength={6} required />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (savedAddresses.length > 0) {
+                      setIsAddingNew(false);
+                      setEditingAddressId("");
+                      // Restore previously selected address
+                      const activeAddr = savedAddresses.find(addr => addr._id === selectedAddressId || addr.id === selectedAddressId) || savedAddresses[0];
+                      if (activeAddr) {
+                        handleSelectSavedAddress(activeAddr);
+                      }
+                    } else {
+                      setStep(1);
+                    }
+                  }}
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  {savedAddresses.length > 0 ? "Cancel" : "← Back"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={!isStep2Valid || isProcessing}
+                  className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {isProcessing && (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  )}
+                  {editingAddressId ? "Save Changes" : "Save & Continue"}
+                </button>
+              </div>
+            </form>
+          )}
         </section>
       )}
 
