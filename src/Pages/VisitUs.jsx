@@ -696,7 +696,6 @@ const VisitUs = () => {
                     <div className="bg-blue-50/30 rounded-2xl p-5 border border-blue-100 space-y-4">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Assigned Executive</p>
-                        <FaUserTie className="text-blue-200 text-xl" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -736,7 +735,7 @@ const VisitUs = () => {
               📍 Find Us
             </div>
             <h2 className="text-3xl font-extrabold text-gray-900">Our Office Location</h2>
-            <p className="text-gray-500 text-sm">J3C4+MF9, Prem Nagar, Block E, Param Puri, Uttam Nagar, Delhi – 110059</p>
+            <p className="text-gray-500 text-sm">Unit No. 309, 3rd Floor, Tower-A of SAS Tower, Support Area, Medicity, Sector-38, Gurgaon 122001</p>
           </div>
 
           {/* Map */}
@@ -744,7 +743,7 @@ const VisitUs = () => {
             style={{ boxShadow: "0 25px 60px rgba(0,0,0,.12)" }}>
             <iframe
               title="Digivahan Office Location"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3502.0!2d77.05!3d28.63!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d053a83b0b3b3%3A0x1234567890abcdef!2sJ3C4%2BMF9%2C%20Prem%20Nagar%2C%20Block%20E%2C%20Param%20Puri%2C%20Uttam%20Nagar%2C%20Delhi%2C%20110059!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+              src="https://maps.google.com/maps?q=SAS%20Tower,%20Medicity,%20Sector-38,%20Gurgaon%20122001&t=&z=14&ie=UTF8&iwloc=&output=embed"
               width="100%"
               height="460"
               style={{ border: 0, display: "block" }}
