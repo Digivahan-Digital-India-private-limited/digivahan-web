@@ -42,14 +42,14 @@ const ReplyPage = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const sendReply = async () => {
     if (!replyText.trim()) {
       toast.error("Reply text cannot be empty");
-      return;
+      return false;
     }
     if (!customerEmail) {
       toast.error("Customer email is missing");
-      return;
+      return false;
     }
 
     try {
@@ -72,30 +72,42 @@ const ReplyPage = () => {
       if (response.data?.success) {
         toast.success("Reply sent successfully via email");
         localStorage.removeItem(storageKey); // Clear from localStorage
-        navigate(-1);
+        return true;
       } else {
         toast.error("Failed to send reply");
+        return false;
       }
     } catch (error) {
       console.error("Reply Error:", error);
       toast.error(error.response?.data?.message || "Something went wrong while sending the reply");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleAddFaq = () => {
+  const handleSubmit = async () => {
+    const success = await sendReply();
+    if (success) {
+      navigate(-1);
+    }
+  };
+
+  const handleAddFaq = async () => {
     if (!replyText.trim()) {
       toast.warning("Please write a reply first to use it as the FAQ answer.");
       return;
     }
-    navigate("/post-faq", {
-      state: {
-        prefillQuestion: customerQuestion,
-        prefillAnswer: replyText,
-        prefillType: queryType,
-      },
-    });
+    const success = await sendReply();
+    if (success) {
+      navigate("/post-faq", {
+        state: {
+          prefillQuestion: customerQuestion,
+          prefillAnswer: replyText,
+          prefillType: queryType,
+        },
+      });
+    }
   };
 
   return (
