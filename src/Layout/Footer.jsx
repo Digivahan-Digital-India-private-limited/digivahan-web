@@ -50,6 +50,9 @@ export const Footer = () => {
           <p className="text-xs md:text-sm text-gray-500">
             CIN U62099DL2023PTC420571
           </p>
+          <p className="text-xs md:text-sm text-gray-500">
+            Address - Unit No. 309, 3rd Floor, Tower-A of SAS Tower, Support Area, Medicity, Sector-38, Gurgaon 122001
+          </p>
         </div>
 
         {/* Pages */}
@@ -100,6 +103,21 @@ export const Footer = () => {
         <div>
           <ul className="flex flex-col gap-2 text-sm">
             <li className="text-gray-600 font-bold">My Account</li>
+            <li>
+              <Link to="/dashboard">My Account</Link>
+            </li>
+            <li>
+              <Link to="/orders">My Orders</Link>
+            </li>
+            <li>
+              <Link to="/virtual-qr">My Virtual QRs</Link>
+            </li>
+            <li>
+              <Link to="/document-vault">Document Vault</Link>
+            </li>
+            <li>
+              <Link to="/profile/update">Update Profile</Link>
+            </li>
             {adminToken ? (
               <li>
                 <button

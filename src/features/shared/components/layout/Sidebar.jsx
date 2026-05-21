@@ -28,7 +28,6 @@ const menuSections = [
       { label: "My Virtual QRs", to: "/virtual-qr", icon: QrCode },
       { label: "Notifications", to: "/notifications", icon: Bell },
       { label: "Document Vault", to: "/document-vault", icon: FolderOpen },
-      { label: "Support Chat", to: "/chat", icon: MessageSquare },
       { label: "Report Issue", to: "/Report-page", icon: Shield },
       { label: "Update Profile", to: "/profile/update", icon: UserRound },
     ],

@@ -64,19 +64,19 @@ const Navbar = () => {
         {/* Right Side Buttons */}
         <div className="hidden md:flex items-center gap-4">
           {adminToken ? (
-            <button
-              onClick={handleAdminLogout}
-              className="text-yellow-500 font-semibold hover:text-yellow-600 transition cursor-pointer"
+            <Link
+              to="/admin-panel"
+              className="text-yellow-500 font-semibold hover:text-yellow-600 transition"
             >
-              Logout
-            </button>
+              Dashboard
+            </Link>
           ) : userToken ? (
-            <button
-              onClick={handleUserLogout}
-              className="text-sky-600 font-semibold hover:text-sky-700 transition cursor-pointer"
+            <Link
+              to="/dashboard"
+              className="text-sky-600 font-semibold hover:text-sky-700 transition"
             >
-              Logout
-            </button>
+              My Account
+            </Link>
           ) : (
             <Link
               to="/login"
@@ -137,19 +137,21 @@ const Navbar = () => {
 
           <div className="flex flex-col gap-4">
             {adminToken ? (
-              <button
-                onClick={handleAdminLogout}
-                className="text-yellow-500 font-semibold text-center hover:text-yellow-600 transition cursor-pointer"
+              <Link
+                to="/admin-panel"
+                onClick={() => setIsOpen(false)}
+                className="text-yellow-500 font-semibold text-center hover:text-yellow-600 transition"
               >
-                Logout
-              </button>
+                Dashboard
+              </Link>
             ) : userToken ? (
-              <button
-                onClick={handleUserLogout}
-                className="text-sky-600 font-semibold text-center hover:text-sky-700 transition cursor-pointer"
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="text-sky-600 font-semibold text-center hover:text-sky-700 transition"
               >
-                Logout
-              </button>
+                My Account
+              </Link>
             ) : (
               <>
                 <Link

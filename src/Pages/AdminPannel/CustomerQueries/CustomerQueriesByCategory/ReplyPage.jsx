@@ -58,6 +58,7 @@ const ReplyPage = () => {
       formData.append("email", customerEmail);
       formData.append("replyText", replyText);
       formData.append("customerName", customerName);
+      formData.append("customerQuestion", customerQuestion);
       if (query._id) {
         formData.append("queryId", query._id);
       }
