@@ -40,9 +40,7 @@ const ProfilePage = () => {
           <Link to="/document-vault" className="block rounded-xl border border-slate-200 px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50">
             Document Vault
           </Link>
-          <Link to="/chat" className="block rounded-xl border border-slate-200 px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50">
-            Support Chat
-          </Link>
+
         </div>
       </section>
     </div>
