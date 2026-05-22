@@ -5,7 +5,7 @@ import { Footer } from './Footer'
 
 function Layout() {
   return (
-    <div className='w-full h-full'>
+    <div className='w-full  h-full'>
       <header>
         <Navbar/>
       </header>
