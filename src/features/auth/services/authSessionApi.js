@@ -23,8 +23,26 @@ export const getSessionUser = async () => {
       () => userId ? httpClient.post("/api/get_user_details", { user_id: userId, details_type: "all" }) : Promise.reject("No User ID"),
       () => httpClient.get("/api/users/me", { timeout: SESSION_REQUEST_TIMEOUT_MS }),
     ],
-    () => ({ data: mockProfile }),
+    () => ({
+      data: userId
+        ? {
+            id: userId,
+            name: "User",
+            phone: localStorage.getItem("user_login_phone") || "",
+          }
+        : mockProfile,
+    }),
   );
 
-  return response.data?.data || response.data || mockProfile;
+  return (
+    response.data?.data ||
+    response.data ||
+    (userId
+      ? {
+          id: userId,
+          name: "User",
+          phone: localStorage.getItem("user_login_phone") || "",
+        }
+      : mockProfile)
+  );
 };

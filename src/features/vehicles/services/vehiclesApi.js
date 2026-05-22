@@ -124,7 +124,7 @@ export const listVehicles = async () => {
       () => userId ? httpClient.get(`/api/v1/garage/${userId}`) : Promise.reject("No User ID"),
       () => httpClient.get("/api/vehicles"),
     ],
-    () => ({ data: { vehicles: getMockBackedVehicles() } }),
+    () => ({ data: { vehicles: userId ? [] : getMockBackedVehicles() } }),
   );
 
   // Safely extract vehicles array
@@ -179,6 +179,7 @@ export const getVehicleById = async (id) => {
       }
     ],
     () => {
+      if (userId) return { data: null };
       const item = getMockBackedVehicles().find(
         (vehicle) => String(vehicle.id).toUpperCase() === String(id).toUpperCase()
       );
@@ -186,7 +187,9 @@ export const getVehicleById = async (id) => {
     },
   );
 
-  return normalizeVehicle(unwrapObject(response));
+  const unwrapped = unwrapObject(response);
+  if (!unwrapped) return null;
+  return normalizeVehicle(unwrapped);
 };
 
 export const fetchVehicleRtoDetails = async (rcNumber) => {

@@ -119,7 +119,16 @@ export const getProfile = async () => {
       () => httpClient.get("/api/users/me"),
       () => httpClient.get("/api/user/profile"),
     ],
-    () => ({ data: getLocalProfile() || mockProfile }),
+    () => ({
+      data: userId
+        ? {
+            id: userId,
+            name: "User",
+            phone: localStorage.getItem("user_login_phone") || "",
+            address: "",
+          }
+        : getLocalProfile() || mockProfile,
+    }),
   );
 
   return normalizeProfile(unwrapObject(response));
@@ -141,7 +150,7 @@ export const listEmergencyContacts = async () => {
     [
       () => userId ? httpClient.post("/api/get_user_details", { user_id: userId, details_type: "emergency_contacts" }) : Promise.reject("No User ID"),
     ],
-    () => ({ data: getLocalEmergencyContacts() || mockEmergencyContacts }),
+    () => ({ data: userId ? [] : (getLocalEmergencyContacts() || mockEmergencyContacts) }),
   );
 
   const body = unwrapObject(response);
