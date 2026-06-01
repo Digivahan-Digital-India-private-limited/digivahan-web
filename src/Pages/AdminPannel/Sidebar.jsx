@@ -20,6 +20,7 @@ import {
   UserX,
   Webhook,
   BriefcaseBusiness,
+  BarChart2,
 } from "lucide-react";
 import { MyContext } from "../../ContextApi/DataProvider";
 
@@ -27,6 +28,8 @@ const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, link: "/admin-panel" },
   { name: "Orders", icon: ShoppingCart, link: "/orders-panel" },
   { name: "QR Management", icon: QrCode, link: "/qr-panel" },
+  { name: "User Management", icon: Users, link: "/user-management" },
+  { name: "Analytics", icon: BarChart2, link: "/analytics" },
   { name: "Customer Queries", icon: MessageSquare, link: "/customer-queries" },
   { name: "Raise Concern", icon: AlertTriangle, link: "/manage-concerns" },
   { name: "Delete Account Request", icon: UserX, link: "/delete-account-requests" },

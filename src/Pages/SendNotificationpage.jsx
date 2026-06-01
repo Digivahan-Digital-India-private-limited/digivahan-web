@@ -100,9 +100,11 @@ const SendNotificationpage = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [firstIssueType, setFirstIssueType] = useState(null);
   const [lockNotifications, setLockNotifications] = useState(false);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
 
   const navigate = useNavigate();
   const { qr_id } = useParams();
+
 
   const {
     data: user,
@@ -152,6 +154,34 @@ const SendNotificationpage = () => {
     }
   }, []);
 
+  // 🕒 15-Minute Session Tracking
+  useEffect(() => {
+    if (!qr_id) return;
+    
+    const SESSION_DURATION = 15 * 60 * 1000; // 15 minutes
+    const sessionKey = `qr_session_${qr_id}`;
+    let startTime = sessionStorage.getItem(sessionKey);
+
+    if (!startTime) {
+      startTime = Date.now().toString();
+      sessionStorage.setItem(sessionKey, startTime);
+    }
+
+    const checkSession = () => {
+      const elapsed = Date.now() - parseInt(startTime, 10);
+      if (elapsed > SESSION_DURATION) {
+        setIsSessionExpired(true);
+      }
+    };
+
+    checkSession();
+    // Check every 10 seconds
+    const interval = setInterval(checkSession, 10000); 
+
+    return () => clearInterval(interval);
+  }, [qr_id]);
+
+
   useEffect(() => {
     if (timer > 0 || !issueType) return;
 
@@ -167,6 +197,30 @@ const SendNotificationpage = () => {
 
     navigate(`/connect-tabs/${qr_id}/${issueType}`);
   }, [timer, issueType, navigate, qr_id]);
+
+  // Trap mobile hardware back button
+  useEffect(() => {
+    // Push current state into history so we have something to pop
+    window.history.pushState({ page: "scan-qr" }, "", window.location.href);
+
+    const handlePopState = (event) => {
+      // The user pressed the hardware back button
+      // Attempt to close the window (works in many QR scanners / in-app browsers)
+      try {
+        window.close();
+      } catch (e) {
+        console.error("Cannot close window natively", e);
+      }
+      
+      // Fallback: forcefully try to close or go to a blank page instead of the website
+      setTimeout(() => {
+        window.location.href = "about:blank";
+      }, 100);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     if (!cooldown) return;
@@ -276,8 +330,35 @@ const SendNotificationpage = () => {
     return <Undermaintenance />;
   }
 
+  if (isSessionExpired) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
+        <div className="bg-white p-8 rounded-2xl shadow max-w-sm w-full">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border border-red-100">
+            ⏳
+          </div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Session Expired</h2>
+          <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+            For security reasons, this page is only active for 15 minutes after scanning. 
+            Please scan the QR code again to send a notification.
+          </p>
+          <button 
+            onClick={() => {
+              try { window.close(); } catch(e){}
+              setTimeout(() => { window.location.href = "about:blank"; }, 100);
+            }}
+            className="bg-gray-800 hover:bg-gray-900 transition text-white px-6 py-2.5 rounded-xl font-medium w-full"
+          >
+            Close Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main>
+
       {showPopup && (
         <DownloadApptabs
           timer={timer}
@@ -293,9 +374,6 @@ const SendNotificationpage = () => {
       <div className="min-h-screen max-w-6xl mx-auto bg-gray-100 p-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate("/")} className="text-xl">
-            ←
-          </button>
           <h1 className="font-semibold text-lg">Scan QR Code</h1>
         </div>
 

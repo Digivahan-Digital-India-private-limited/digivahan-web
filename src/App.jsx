@@ -101,6 +101,8 @@ import DeleteAccountRequests from "./Pages/AdminPannel/DeleteAccountRequests/Del
 import ReportIssueList from "./Pages/AdminPannel/ReportsIssue/ReportIssueList";
 import ChallanWebhookAdmin from "./Pages/AdminPannel/ChallanWebhook/ChallanWebhookAdmin";
 import HRManager from "./Pages/AdminPannel/HRManager/HRManager";
+import UserManagement from "./Pages/AdminPannel/UserManagement/UserManagement";
+import Analytics from "./Pages/AdminPannel/Analytics/Analytics";
 
 // Protected Routes
 import ProtectedRoutes from "./ProtectedRoutes/ProtectedRoutes";
@@ -520,6 +522,8 @@ const App = () => {
           <Route path="/manage-appointment" element={<ManageAppointment />} />
           <Route path="/challan-webhook-admin" element={<ChallanWebhookAdmin />} />
           <Route path="/hr-manager" element={<HRManager />} />
+          <Route path="/user-management" element={<UserManagement />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/post-faq" element={<PostFAQ />} />
           <Route path="/delete-faq" element={<DeleteFAQ />} />
           <Route path="/update-faq" element={<UpdateFAQ />} />
