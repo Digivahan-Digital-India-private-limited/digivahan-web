@@ -251,7 +251,7 @@ const AnalyticsDetailModal = ({ row, onClose }) => {
 
                                     {/* API Type Badge */}
                                     <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
-                                      {hit.apiType === "rto_premium_api" ? (
+                                      {/* {hit.apiType === "rto_premium_api" ? (
                                         <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded uppercase tracking-wider whitespace-nowrap">
                                           Premium API
                                         </span>
@@ -263,7 +263,7 @@ const AnalyticsDetailModal = ({ row, onClose }) => {
                                         <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase tracking-wider whitespace-nowrap">
                                           Normal API
                                         </span>
-                                      )}
+                                      )} */}
                                       
                                       {hit.trigger === "refresh" ? (
                                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded uppercase tracking-wider whitespace-nowrap">
@@ -365,15 +365,15 @@ const AnalyticsCard = ({ row, onClick }) => {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-indigo-50 rounded-xl p-2 text-center">
           <p className="text-lg font-bold text-indigo-700">{row.hitCount}</p>
           <p className="text-[10px] text-indigo-500 font-medium">Total Hits</p>
         </div>
-        <div className="bg-rose-50 rounded-xl p-2 text-center">
+        {/* <div className="bg-rose-50 rounded-xl p-2 text-center">
           <p className="text-lg font-bold text-rose-700">{row.challanHits || 0}</p>
           <p className="text-[10px] text-rose-500 font-medium">Challan</p>
-        </div>
+        </div> */}
         <div className="bg-emerald-50 rounded-xl p-2 text-center flex flex-col justify-center">
           <p className="text-[11px] font-bold text-emerald-700 leading-tight">{fmtDate(row.lastHitAt)}</p>
           <p className="text-[10px] text-emerald-500 font-medium mt-0.5">Last Hit</p>
