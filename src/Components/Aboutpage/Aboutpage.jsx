@@ -217,14 +217,14 @@ const Aboutpage = () => {
                 image={SandeepRathore}
                 points={["Visionary Entrepreneur","Business & Growth Strategist","Founder-led Leadership"]}
               />
-              <ProfileCard
+              {/* <ProfileCard
                 align="left"
                 name="Rehan Ansari"
                 role="Director"
                 quote="Committed to vision, driven by excellence."
                 image={ParvezAnsari}
                 points={["10+ Years Experience","Startup & Product Specialist","Business Leadership"]}
-              />
+              /> */}
             </div>
 
             {/* Team text */}
@@ -452,11 +452,11 @@ const Aboutpage = () => {
                   {/* Animated ring border */}
                   <div className="absolute inset-0 rounded-2xl pointer-events-none z-10"
                     style={{ boxShadow:"inset 0 0 0 2px rgba(234,179,8,0.35)", animation:"uspGlow 3s ease-in-out infinite" }} />
-                  <img
+                  {/* <img
                     src={VisionImg}
                     alt="Vision Illustration"
                     className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-                  />
+                  /> */}
                   {/* Dark gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                   {/* Floating label over image */}

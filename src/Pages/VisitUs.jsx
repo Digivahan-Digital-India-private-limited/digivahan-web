@@ -476,22 +476,22 @@ const VisitUs = () => {
           </div>
 
           {/* RIGHT — target image full height */}
-          <div className="vu-fade-right relative rounded-2xl overflow-hidden min-h-120"
-            style={{ boxShadow: "0 30px 60px rgba(0,0,0,.14)" }}>
+          {/* <div className="vu-fade-right relative rounded-2xl overflow-hidden min-h-120"
+            style={{ boxShadow: "0 30px 60px rgba(0,0,0,.14)" }}> */}
             {/* glow border */}
-            <div className="absolute -inset-3 rounded-2xl opacity-20 pointer-events-none"
+            {/* <div className="absolute -inset-3 rounded-2xl opacity-20 pointer-events-none"
               style={{ background: "linear-gradient(135deg,#fbbf24,#f97316)" }} />
             <img
               src="/Whom to Meet.webp"
               alt="Whom to meet"
               className="absolute inset-0 w-full h-full object-cover rounded-2xl"
-            />
+            /> */}
             {/* Stats badge */}
-            <div className="absolute top-4 right-4 bg-yellow-500 text-white rounded-xl px-4 py-3 shadow-xl text-center z-10">
+            {/* <div className="absolute top-4 right-4 bg-yellow-500 text-white rounded-xl px-4 py-3 shadow-xl text-center z-10">
               <p className="text-xl font-extrabold leading-none">3+</p>
               <p className="text-xs font-semibold opacity-90">Expert Teams</p>
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
 
