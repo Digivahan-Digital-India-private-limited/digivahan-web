@@ -194,10 +194,19 @@ export const getVehicleById = async (id) => {
 
 export const fetchVehicleRtoDetails = async (rcNumber) => {
   const vehicleNumber = String(rcNumber).toUpperCase().trim();
+
+  // ✅ Token attach karo taaki backend userId track kar sake (analytics ke liye)
+  const token = Cookies.get("user_token");
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await httpClient.post("/api/v1/add-vehicle", {
     vehicle_number: vehicleNumber
   }, {
-    timeout: 65000  // RTO API can take up to 30s + premium fallback another 30s
+    timeout: 65000,  // RTO API can take up to 30s + premium fallback another 30s
+    headers,
   });
   const data = response.data;
   if (!data?.status && !data?.success) {
