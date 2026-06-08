@@ -46,6 +46,7 @@ import GenerateQR from "./Pages/AdminPannel/QRManagement/GenerateQR";
 import AssignedQR from "./Pages/AdminPannel/QRManagement/QRStatusTabs/AssignedQR";
 import BlockedQR from "./Pages/AdminPannel/QRManagement/QRStatusTabs/BlockedQR";
 import AllottedQrCode from "./Pages/AdminPannel/QRManagement/QRStatusTabs/AllottedQrCode";
+import UnassignedQR from "./Pages/AdminPannel/QRManagement/QRStatusTabs/UnassignedQR";
 import SalesDetails from "./Pages/AdminPannel/QRManagement/SalesDetails";
 import ManageUserApp from "./Pages/AdminPannel/ManageUserApp/ManageUserApp";
 import UpdatePolicies from "./Pages/AdminPannel/ManageUserApp/OurPolicies/UpdatePolicies";
@@ -483,6 +484,7 @@ const App = () => {
           <Route path="/check-assigned-qr" element={<AssignedQR />} />
           <Route path="/check-blocked-qr" element={<BlockedQR />} />
           <Route path="/allotted-qr-code" element={<AllottedQrCode />} />
+          <Route path="/unassigned-qr" element={<UnassignedQR />} />
           <Route path="/sales-details-page" element={<SalesDetails />} />
           <Route path="/manage-user" element={<ManageUserApp />} />
 

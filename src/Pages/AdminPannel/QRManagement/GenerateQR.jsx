@@ -59,7 +59,7 @@ export default function GenerateQR() {
       setGenerated([]);
       canvasRefs.current = [];
 
-      const res = await generateQrByAdmin(quantity);
+      const res = await generateQrByAdmin(quantity, qrType.toLowerCase());
       console.log(res);
 
       if (res) {

@@ -591,11 +591,12 @@ const DataProvider = ({ children }) => {
     }
   };
 
-  const generateQrByAdmin = async (units) => {
+  const generateQrByAdmin = async (units, vehicle_type = "car") => {
     try {
       const token = Cookies.get("admin_token");
       const response = await axios.post(`${BASE_URL}/api/generate-qr`, {
         unit: units,
+        vehicle_type,
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -651,12 +652,17 @@ const DataProvider = ({ children }) => {
     }
   };
 
-  const filterQrData = async (qrstatus) => {
+  const filterQrData = async (qrstatus, vehicle_type) => {
     try {
       const token = Cookies.get("admin_token");
+      const params = {};
+      if (vehicle_type && vehicle_type !== "all") {
+        params.vehicle_type = vehicle_type;
+      }
       const res = await axios.get(
         `${BASE_URL}/api/admin/filter-qr-list/${qrstatus}`,
         {
+          params,
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -664,7 +670,7 @@ const DataProvider = ({ children }) => {
       );
 
       if (res?.data?.success) {
-        setfilterQrlist(res.data.data); // 👈 state me save
+        setfilterQrlist(res.data.data);
       }
 
       return res.data;
@@ -672,6 +678,25 @@ const DataProvider = ({ children }) => {
       console.error("Error fetching QR data:", error);
     }
   };
+
+  const getQrStats = async () => {
+    try {
+      const token = Cookies.get("admin_token");
+      const res = await axios.get(`${BASE_URL}/api/admin/qr-stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res?.data?.success) {
+        return res.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching QR stats:", error);
+      return null;
+    }
+  };
+
 
   useEffect(() => {
     const token = Cookies.get("admin_token");
@@ -744,6 +769,7 @@ const DataProvider = ({ children }) => {
         BlockedQrByAdmin,
         filterQrData,
         filterQrlist,
+        getQrStats,
       }}
     >
       {children}
