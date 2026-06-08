@@ -15,6 +15,7 @@ import {
   Trash2,
   AlertTriangle,
   ExternalLink,
+  Phone,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -26,6 +27,19 @@ const fmt = (v) => {
     hour: "2-digit", minute: "2-digit",
   });
 };
+
+// Invincible payment receipt base URL — receiptFile stores only the filename
+const INVINCIBLE_RECEIPT_BASE_URL = "https://invoices.invinciblepay.in/";
+const getReceiptFileUrl = (receiptFile) => {
+  if (!receiptFile) return "#";
+  // Already a full URL — use as-is
+  if (receiptFile.startsWith("http://") || receiptFile.startsWith("https://")) {
+    return receiptFile;
+  }
+  // Just a filename — prefix with Invincible's receipt base URL
+  return `${INVINCIBLE_RECEIPT_BASE_URL}${receiptFile}`;
+};
+
 
 const getStatusMeta = (tx, isSettled, ioStatus) => {
   const s = (tx || "").toLowerCase();
@@ -155,7 +169,7 @@ const ChallanWebhookAdmin = () => {
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((r) =>
-        [r.rcNumber, r.challanNumber, r.transactionStatus, r.requestId, r.ioStatus, r._id]
+        [r.rcNumber, r.challanNumber, r.transactionStatus, r.requestId, r.ioStatus, r._id, r.userPhone]
           .join(" ").toLowerCase().includes(q)
       );
     }
@@ -270,7 +284,7 @@ const ChallanWebhookAdmin = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by RC, Challan No., Request ID, Status…"
+                placeholder="Search by RC, Challan No., Mobile No., Request ID, Status…"
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
             </div>
@@ -330,6 +344,11 @@ const ChallanWebhookAdmin = () => {
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Challan No.</p>
                         <p className="text-slate-800 font-extrabold text-base">{rec.challanNumber || "—"}</p>
                         <p className="text-xs text-slate-500 mt-0.5 font-medium">RC: {rec.rcNumber || "—"}</p>
+                        {rec.userPhone && (
+                          <p className="text-xs text-indigo-600 mt-1 font-semibold flex items-center gap-1">
+                            <Phone className="w-3 h-3" />{rec.userPhone}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -355,6 +374,15 @@ const ChallanWebhookAdmin = () => {
                     {isExpanded && (
                       <div className="col-span-2 border-t border-slate-100 pt-3 mt-1 grid grid-cols-2 gap-x-4 gap-y-3">
                         <InfoRow label="Request ID"    value={rec.requestId || "—"} wide />
+                        {rec.userPhone && (
+                          <div className="col-span-2 flex items-center gap-2 py-2 px-3 rounded-xl bg-indigo-50 border border-indigo-100">
+                            <Phone className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">User Mobile</p>
+                              <p className="text-sm font-bold text-indigo-700">{rec.userPhone}</p>
+                            </div>
+                          </div>
+                        )}
                         <InfoRow label="PG Fee"        value={rec.paymentGatewayFee ? `₹${rec.paymentGatewayFee}` : "—"} />
                         <InfoRow label="Refund"        value={rec.refundAmount && rec.refundAmount !== "0" ? `₹${rec.refundAmount}` : "—"} />
                         <InfoRow label="Receipt No."  value={rec.receiptNumber || "—"} />
@@ -362,7 +390,7 @@ const ChallanWebhookAdmin = () => {
                           <div className="col-span-2">
                             <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Receipt File</p>
                             <a
-                              href={rec.receiptFile}
+                              href={getReceiptFileUrl(rec.receiptFile)}
                               target="_blank"
                               rel="noreferrer"
                               className="text-indigo-600 font-semibold text-xs hover:underline flex items-center gap-1"
