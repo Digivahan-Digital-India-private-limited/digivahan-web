@@ -122,11 +122,11 @@ export const getProfile = async () => {
     () => ({
       data: userId
         ? {
-            id: userId,
-            name: "User",
-            phone: localStorage.getItem("user_login_phone") || "",
-            address: "",
-          }
+          id: userId,
+          name: "User",
+          phone: localStorage.getItem("user_login_phone") || "",
+          address: "",
+        }
         : getLocalProfile() || mockProfile,
     }),
   );
