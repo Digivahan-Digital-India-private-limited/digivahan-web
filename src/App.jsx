@@ -40,6 +40,8 @@ import GenerateManifest from "./Pages/AdminPannel/Orders/GenerateManifest/Genera
 import DeliveryPartners from "./Pages/AdminPannel/Orders/DeliveryPartners/DeliveryPartners";
 import ManageOrder from "./Pages/AdminPannel/Orders/ManageOrder";
 import PendingOrders from "./Pages/AdminPannel/Orders/PendingOrders/PendingOrders";
+import ConfirmedOrders from "./Pages/AdminPannel/Orders/ConfirmedOrders/ConfirmedOrders";
+import CancelledOrders from "./Pages/AdminPannel/Orders/CancelledOrders/CancelledOrders";
 import Qrmanagement from "./Pages/AdminPannel/QRManagement/Qrmanagement";
 import FilterQR from "./Pages/AdminPannel/QRManagement/FilterQR";
 import GenerateQR from "./Pages/AdminPannel/QRManagement/GenerateQR";
@@ -477,6 +479,14 @@ const App = () => {
           <Route
             path="/orders-panel/pending-orders"
             element={<PendingOrders />}
+          />
+          <Route
+            path="/orders-panel/confirmed-orders"
+            element={<ConfirmedOrders />}
+          />
+          <Route
+            path="/orders-panel/cancelled-orders"
+            element={<CancelledOrders />}
           />
           <Route path="/qr-panel" element={<Qrmanagement />} />
           <Route path="/filter-qr" element={<FilterQR />} />

@@ -482,7 +482,7 @@ const DataProvider = ({ children }) => {
     }
   };
 
-  const OrderCancelByAdmin = async (orderId) => {
+  const OrderCancelByAdmin = async (orderId, reason, notes) => {
     try {
       const token = Cookies.get("admin_token");
 
@@ -495,6 +495,8 @@ const DataProvider = ({ children }) => {
         `${BASE_URL}/api/orders/admin-cancel`,
         {
           order_id: orderId, // business order_id (MY_QR_xxx)
+          cancellation_reason: reason,
+          cancellation_notes: notes,
         },
         {
           headers: {
@@ -697,6 +699,24 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const getOrderStats = async () => {
+    try {
+      const token = Cookies.get("admin_token");
+      const res = await axios.get(`${BASE_URL}/api/admin/order-stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res?.data?.status) {
+        return res.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching Order stats:", error);
+      return null;
+    }
+  };
+
 
   useEffect(() => {
     const token = Cookies.get("admin_token");
@@ -770,6 +790,7 @@ const DataProvider = ({ children }) => {
         filterQrData,
         filterQrlist,
         getQrStats,
+        getOrderStats,
       }}
     >
       {children}

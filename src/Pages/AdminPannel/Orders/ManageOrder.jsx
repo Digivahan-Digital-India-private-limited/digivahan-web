@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   ArrowLeft,
   Package,
@@ -10,7 +10,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { MyContext } from "../../../ContextApi/DataProvider";
 
 const cancellationReasons = [
@@ -23,6 +23,16 @@ const cancellationReasons = [
 
 const ManageOrder = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state && location.state.action) {
+      setActiveCard(location.state.action);
+      if (location.state.orderId) {
+        setInputOrderId(location.state.orderId);
+      }
+    }
+  }, [location.state]);
   const { getOrderDetailsByAdmin, OrderCancelByAdmin, TrackOrderByAdmin } =
     useContext(MyContext);
   const [activeCard, setActiveCard] = useState(null);
@@ -33,6 +43,8 @@ const ManageOrder = () => {
   const [cancellationNotes, setCancellationNotes] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [confirmCancelModal, setConfirmCancelModal] = useState(false);
+  const [errorModalMessage, setErrorModalMessage] = useState("");
 
   const handleCardClick = (cardType) => {
     setActiveCard(cardType);
@@ -58,7 +70,7 @@ const ManageOrder = () => {
         const response = await TrackOrderByAdmin(inputOrderId);
 
         if (!response?.status) {
-          alert("Tracking failed");
+          setErrorModalMessage("Tracking failed");
           return;
         }
 
@@ -86,7 +98,7 @@ const ManageOrder = () => {
         const response = await getOrderDetailsByAdmin(inputOrderId);
 
         if (!response?.status) {
-          alert("Order not found");
+          setErrorModalMessage("Order not found");
           return;
         }
 
@@ -107,24 +119,33 @@ const ManageOrder = () => {
       }
     } catch (error) {
       console.log(error);
-      alert("Something went wrong");
+      setErrorModalMessage("Something went wrong");
     }
   };
 
-  const handleCancelOrder = async () => {
+  const handleCancelOrder = () => {
     if (!cancellationReason || !cancellationNotes.trim()) {
-      alert("Please select a reason and add notes");
+      setErrorModalMessage("Please select a reason and add notes");
       return;
     }
+    setConfirmCancelModal(true);
+  };
 
+  const confirmCancellation = async () => {
     try {
-      const response = await OrderCancelByAdmin(selectedOrder.id);
+      const response = await OrderCancelByAdmin(
+        selectedOrder.id,
+        cancellationReason,
+        cancellationNotes
+      );
 
       if (!response?.status) {
-        alert("Cancellation failed");
+        setErrorModalMessage("Cancellation failed");
+        setConfirmCancelModal(false);
         return;
       }
 
+      setConfirmCancelModal(false);
       setSuccessMessage("Order cancelled successfully!");
 
       setTimeout(() => {
@@ -132,7 +153,8 @@ const ManageOrder = () => {
       }, 2000);
     } catch (error) {
       console.log(error);
-      alert("Something went wrong");
+      setErrorModalMessage("Something went wrong");
+      setConfirmCancelModal(false);
     }
   };
 
@@ -515,6 +537,56 @@ const ManageOrder = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmCancelModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 animate-fadeIn">
+            <div className="flex items-center gap-3 mb-4 text-red-600">
+              <AlertCircle className="w-6 h-6" />
+              <h3 className="text-xl font-bold">Confirm Cancellation</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to cancel the order <strong>{selectedOrder?.id}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmCancelModal(false)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-semibold transition-all duration-300"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={confirmCancellation}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-md transition-all duration-300"
+              >
+                Yes, Cancel Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorModalMessage && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 animate-fadeIn">
+            <div className="flex items-center gap-3 mb-4 text-orange-600">
+              <AlertCircle className="w-6 h-6" />
+              <h3 className="text-xl font-bold">Notice</h3>
+            </div>
+            <p className="text-gray-600 mb-6">{errorModalMessage}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setErrorModalMessage("")}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold shadow-md transition-all duration-300"
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

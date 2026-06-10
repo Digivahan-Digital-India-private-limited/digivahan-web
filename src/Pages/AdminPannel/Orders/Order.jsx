@@ -1,40 +1,34 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Truck, FileText, Settings, Package } from "lucide-react";
+import { Package, Truck, FileText, Settings, CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../../ContextApi/DataProvider";
 
 function Order() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const { DeliveryOrders, ShiprocketOrders, ConfirmedOrders, PendingOrders } =
-    useContext(MyContext);
+  const { getOrderStats } = useContext(MyContext);
 
-  const shiprocketOrders =
-    ShiprocketOrders?.filter(
-      (order) =>
-        order.active_partner === "shiprocket" && order.order_status === "NEW",
-    ) || [];
+  const [stats, setStats] = useState({
+    shiprocket: 0,
+    delhivery: 0,
+    confirmed: 0,
+    pending: 0,
+    cancelled: 0,
+  });
 
-  const delhiveryOrders =
-    DeliveryOrders?.filter(
-      (order) =>
-        order.active_partner === "delivery" && order.order_status === "NEW",
-    ) || [];
-
-  const confirmedOrders =
-    ConfirmedOrders?.filter((order) => order.order_status === "CONFIRMED") ||
-    [];
-
-  const pendingOrders =
-    PendingOrders?.filter((order) => order.order_status === "NEW") || [];
-    
-
-  // Fetch order counts from API
   const fetchOrderCounts = async () => {
     setLoading(true);
     try {
-      // Simulate API call with mock data
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const data = await getOrderStats();
+      if (data) {
+        setStats({
+          shiprocket: data.shiprocket || 0,
+          delhivery: data.delhivery || 0,
+          confirmed: data.confirmed || 0,
+          pending: data.pending || 0,
+          cancelled: data.cancelled || 0,
+        });
+      }
     } catch (error) {
       console.error("Error fetching order counts:", error);
     } finally {
@@ -51,7 +45,7 @@ function Order() {
       id: "shiprocket",
       title: "Shiprocket",
       description: "Click to view details",
-      count: shiprocketOrders.length,
+      count: stats.shiprocket,
       gradient: "from-purple-400 to-purple-500",
       icon: Package,
       link: "/orders-panel/shiprocket",
@@ -70,7 +64,7 @@ function Order() {
       id: "delhivery",
       title: "Delhivery",
       description: "Click to view details",
-      count: delhiveryOrders.length,
+      count: stats.delhivery,
       gradient: "from-rose-400 to-rose-500",
       icon: Truck,
       link: "/orders-panel/delhivery",
@@ -79,7 +73,7 @@ function Order() {
       id: "manifest",
       title: "Generate Manifest & Label",
       description: "Click to view details",
-      count: confirmedOrders.length,
+      count: stats.confirmed,
       gradient: "from-amber-400 to-amber-500",
       icon: FileText,
       link: "/orders-panel/generate-manifest",
@@ -93,15 +87,32 @@ function Order() {
       link: "/orders-panel/manage",
       hideCount: true,
     },
-
     {
       id: "pending",
       title: "Pending Order",
       description: "Fetch The Pending Orders",
-      count: pendingOrders.length,
+      count: stats.pending,
       gradient: "from-red-400 to-indigo-500",
       icon: Settings,
       link: "/orders-panel/pending-orders",
+    },
+    {
+      id: "confirmed",
+      title: "Confirmed Orders",
+      description: "View all confirmed orders",
+      count: stats.confirmed,
+      gradient: "from-emerald-400 to-emerald-600",
+      icon: CheckCircle,
+      link: "/orders-panel/confirmed-orders",
+    },
+    {
+      id: "cancelled",
+      title: "Cancelled Orders",
+      description: "View all cancelled orders",
+      count: stats.cancelled || 0,
+      gradient: "from-red-500 to-red-700",
+      icon: XCircle,
+      link: "/orders-panel/cancelled-orders",
     },
   ];
 

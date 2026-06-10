@@ -5,58 +5,53 @@ import DataTable from "react-data-table-component";
 import { MyContext } from "../../../../ContextApi/DataProvider";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { toast } from "react-toastify";
 
-function PendingOrders() {
+function ConfirmedOrders() {
   const navigate = useNavigate();
-  const { OrderConfirms } = useContext(MyContext);
+  const { OrderCancelByAdmin } = useContext(MyContext);
 
   const [processedOrders, setProcessedOrders] = useState({});
-  const [pendingOrders, setPendingOrders] = useState([]);
+  const [confirmedOrders, setConfirmedOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const token = Cookies.get("admin_token");
-        const res = await axios.get(
-          `${BASE_URL}/api/admin/all-new-order?order_status=NEW&limit=1000`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (res?.data?.status) {
-          const sortedData = res.data.data.sort((a, b) => {
-            const dateA = new Date(a.canceled_at || a.updatedAt || a.createdAt);
-            const dateB = new Date(b.canceled_at || b.updatedAt || b.createdAt);
-            return dateB - dateA;
-          });
-          setPendingOrders(sortedData);
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const token = Cookies.get("admin_token");
+      const res = await axios.get(
+        `${BASE_URL}/api/admin/all-new-order?order_status=CONFIRMED&limit=1000`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      } catch (error) {
-        console.error("Error fetching Pending orders:", error);
-      } finally {
-        setLoading(false);
+      );
+      if (res?.data?.status) {
+        const sortedData = res.data.data.sort((a, b) => {
+          const dateA = new Date(a.canceled_at || a.updatedAt || a.createdAt);
+          const dateB = new Date(b.canceled_at || b.updatedAt || b.createdAt);
+          return dateB - dateA;
+        });
+        setConfirmedOrders(sortedData);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching Confirmed orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOrders();
   }, [BASE_URL]);
 
-  const handleProcessOrder = async (orderId) => {
-    try {
-      setProcessedOrders((prev) => ({
-        ...prev,
-        [orderId]: true,
-      }));
-
-      const response = await OrderConfirms(orderId);
-      console.log(response);
-    } catch (error) {
-      console.log(error);
-    }
+  const handleCancelOrder = (orderId) => {
+    navigate("/orders-panel/manage", {
+      state: { action: "cancel", orderId: orderId },
+    });
   };
 
   const columns = useMemo(
@@ -103,21 +98,21 @@ function PendingOrders() {
       {
         name: "Action",
         cell: (row) =>
-          processedOrders[row._id] ? (
-            <button className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium cursor-default">
-              Processed
+          processedOrders[row.order_id] ? (
+            <button disabled className="bg-gray-400 text-white px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+              Processing...
             </button>
           ) : (
             <button
-              onClick={() => handleProcessOrder(row._id)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium"
+              onClick={() => handleCancelOrder(row.order_id)}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium"
             >
-              Process
+              Cancel Order
             </button>
           ),
       },
     ],
-    [processedOrders],
+    [processedOrders]
   );
 
   return (
@@ -130,17 +125,17 @@ function PendingOrders() {
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <h1 className="text-2xl font-semibold">Pending Orders</h1>
+        <h1 className="text-2xl font-semibold">Confirmed Orders</h1>
 
         <span className="ml-auto text-sm font-medium text-gray-600">
-          Total Orders: {pendingOrders?.length || 0}
+          Total Orders: {confirmedOrders?.length || 0}
         </span>
       </div>
 
       <div className="p-6">
         <DataTable
           columns={columns}
-          data={pendingOrders || []}
+          data={confirmedOrders || []}
           pagination
           progressPending={loading}
           highlightOnHover
@@ -152,4 +147,4 @@ function PendingOrders() {
   );
 }
 
-export default PendingOrders;
+export default ConfirmedOrders;

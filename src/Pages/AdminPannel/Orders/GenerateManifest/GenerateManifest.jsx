@@ -1,27 +1,58 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo, useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import { MyContext } from "../../../../ContextApi/DataProvider";
+import axios from "axios";
+import Cookies from "js-cookie";
 
 function GenerateManifest() {
   const navigate = useNavigate();
   const {
-    ConfirmedOrders,
     PrintManifest,
     PrintShiprocketLabel,
     PrintDeliveryLabel,
   } = useContext(MyContext);
 
-  const confirmedOrders =
-    ConfirmedOrders?.filter((order) => order.order_status === "CONFIRMED") ||
-    [];
+  const [confirmedOrders, setConfirmedOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const token = Cookies.get("admin_token");
+        const res = await axios.get(
+          `${BASE_URL}/api/admin/all-new-order?order_status=CONFIRMED&limit=1000`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (res?.data?.status) {
+          const sortedData = res.data.data.sort((a, b) => {
+            const dateA = new Date(a.canceled_at || a.updatedAt || a.createdAt);
+            const dateB = new Date(b.canceled_at || b.updatedAt || b.createdAt);
+            return dateB - dateA;
+          });
+          setConfirmedOrders(sortedData);
+        }
+      } catch (error) {
+        console.error("Error fetching Confirmed orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [BASE_URL]);
 
   const handlePrintLabel = async (order) => {
     if (order.active_partner === "shiprocket") {
       const response = await PrintShiprocketLabel(order._id);
       console.log("Print Label:", response);
-    } else if (order.active_partner === "delivery") {
+    } else if (order.active_partner === "delhivery" || order.active_partner === "delivery") {
       const response = await PrintDeliveryLabel(order._id);
       console.log("Print Label:", response);
     }
@@ -110,6 +141,7 @@ function GenerateManifest() {
           highlightOnHover
           striped
           responsive
+          progressPending={loading}
         />
       </div>
     </main>

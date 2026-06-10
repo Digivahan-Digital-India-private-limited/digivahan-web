@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../../../ContextApi/DataProvider";
+import { toast } from "react-toastify";
 
 const deliveryPartners = [
   { id: "shiprocket", name: "Shiprocket" },
@@ -10,23 +11,42 @@ const deliveryPartners = [
 
 function DeliveryPartners() {
   const navigate = useNavigate();
-  const { AddDeliveryPartners } = useContext(MyContext);
+  const { AddDeliveryPartners, getOrderStats } = useContext(MyContext);
 
   const [activePartner, setActivePartner] = useState(
     localStorage.getItem("active_partner") || null,
   );
+  const [confirmPartner, setConfirmPartner] = useState(null);
 
-  // 👇 when component loads, read from localStorage
+  // 👇 when component loads, fetch from backend
   useEffect(() => {
-    const storedPartner = localStorage.getItem("active_partner");
-    if (storedPartner) {
-      setActivePartner(storedPartner);
-    }
+    const fetchActivePartner = async () => {
+      try {
+        const stats = await getOrderStats();
+        if (stats && stats.active_partner) {
+          setActivePartner(stats.active_partner);
+          localStorage.setItem("active_partner", stats.active_partner);
+        } else {
+          const storedPartner = localStorage.getItem("active_partner");
+          if (storedPartner) {
+            setActivePartner(storedPartner);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch active partner", error);
+      }
+    };
+    fetchActivePartner();
   }, []);
 
-  const setActivePartnerHandler = async (partnerId) => {
+  const setActivePartnerHandler = (partnerId) => {
+    setConfirmPartner(partnerId);
+  };
+
+  const confirmActivation = async () => {
+    if (!confirmPartner) return;
     try {
-      const response = await AddDeliveryPartners(partnerId);
+      const response = await AddDeliveryPartners(confirmPartner);
 
       if (response?.data?.active_partner) {
         const partnerFromServer = response.data.active_partner;
@@ -36,9 +56,13 @@ function DeliveryPartners() {
 
         // ✅ Update state
         setActivePartner(partnerFromServer);
+        toast.success(`${confirmPartner} set as active partner successfully!`);
       }
     } catch (error) {
       console.log(error);
+      toast.error("Failed to set active partner");
+    } finally {
+      setConfirmPartner(null);
     }
   };
 
@@ -120,6 +144,32 @@ function DeliveryPartners() {
           ))}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmPartner && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 animate-fadeIn">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Activation</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to set <strong className="text-indigo-600 capitalize">{confirmPartner}</strong> as the active delivery partner?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmPartner(null)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-semibold transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmActivation}
+                className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold shadow-md transition-all duration-300"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
