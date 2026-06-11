@@ -1,16 +1,33 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import DataTable from "react-data-table-component";
+import { Search, Loader2 } from "lucide-react";
 import { MyContext } from "../../../../ContextApi/DataProvider";
 
 const BlockedQR = () => {
-  const { BlockedQrByAdmin } = useContext(MyContext);
+  const { BlockedQrByAdmin, filterQrData } = useContext(MyContext);
   const navigate = useNavigate();
   const [qrInput, setQrInput] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const [blockedReason, setBlockedReason] = useState("");
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+
+  const [qrData, setQrData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const res = await filterQrData("blocked", "all");
+    setQrData(res?.data || []);
+    setLoading(false);
+  };
 
   const today = new Date();
   const presentDate = `${String(today.getDate()).padStart(2, "0")}-${String(
@@ -52,6 +69,7 @@ const BlockedQR = () => {
         setIsBlocked(true);
         setShowConfirmPopup(false);
         setBlockedReason("");
+        fetchData(); // Refresh the table
       } else {
         toast.error("Failed to block QR");
       }
@@ -64,6 +82,39 @@ const BlockedQR = () => {
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
     qrInput,
   )}`;
+
+  const columns = [
+    { name: "QR ID", selector: (row) => row.qr_id, sortable: true },
+    { name: "QR Number", selector: (row) => row.qr_no, sortable: true },
+    { name: "Vehicle", selector: (row) => row.vehicle_type || "N/A", sortable: true },
+    {
+      name: "Blocked Date",
+      selector: (row) => new Date(row.updatedAt).toLocaleDateString(),
+      sortable: true,
+    },
+    {
+      name: "Reason",
+      selector: (row) => row.blocked_reason || "N/A",
+      sortable: true,
+      grow: 2,
+    },
+    {
+      name: "Status",
+      cell: () => (
+        <span className="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full">
+          Blocked
+        </span>
+      ),
+    },
+  ];
+
+  const filteredData = qrData.filter((item) =>
+    search.toLowerCase() === ""
+      ? item
+      : item.qr_id?.toLowerCase().includes(search.toLowerCase()) ||
+        item.qr_no?.toLowerCase().includes(search.toLowerCase()) ||
+        item.blocked_reason?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="w-full h-screen overflow-y-auto bg-gray-50 p-6">
@@ -115,7 +166,7 @@ const BlockedQR = () => {
           className={`mt-6 transition-all duration-700 ${
             showDetails
               ? "opacity-100 translate-y-0"
-              : "opacity-0 -translate-y-4 pointer-events-none"
+              : "opacity-0 -translate-y-4 hidden"
           }`}
         >
           <div className="bg-red-50 border border-red-200 rounded-2xl p-8 flex items-start gap-8">
@@ -172,6 +223,50 @@ const BlockedQR = () => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Table Section */}
+        <div className="bg-white rounded-xl shadow-sm border mt-8 mb-12">
+          <div className="p-4 border-b flex justify-between items-center bg-gray-50/50 rounded-t-xl">
+            <h3 className="font-semibold text-gray-800">All Blocked QRs</h3>
+            <div className="relative">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search QR..."
+                className="pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64 transition-shadow"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="p-4">
+            <DataTable
+              columns={columns}
+              data={filteredData}
+              pagination
+              progressPending={loading}
+              progressComponent={<Loader2 className="w-6 h-6 animate-spin my-4 text-red-500" />}
+              highlightOnHover
+              customStyles={{
+                headRow: {
+                  style: {
+                    backgroundColor: "#f9fafb",
+                    fontWeight: "600",
+                    color: "#374151",
+                  },
+                },
+                rows: {
+                  style: {
+                    minHeight: "60px",
+                    "&:hover": {
+                      backgroundColor: "#f3f4f6",
+                    },
+                  },
+                },
+              }}
+            />
           </div>
         </div>
       </div>

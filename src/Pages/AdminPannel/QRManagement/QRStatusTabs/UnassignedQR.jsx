@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Car, Bike, Search, RefreshCw, QrCode } from "lucide-react";
+import { ArrowLeft, Car, Bike, Search, RefreshCw, QrCode, Download, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "react-data-table-component";
+import { toast } from "react-toastify";
 import { MyContext } from "../../../../ContextApi/DataProvider";
 
 const TABS = [
@@ -29,10 +30,13 @@ const TABS = [
 
 const UnassignedQR = () => {
   const navigate = useNavigate();
-  const { filterQrData } = useContext(MyContext);
+  const { filterQrData, generateQrtemplateInBulk } = useContext(MyContext);
 
   const [activeTab, setActiveTab] = useState("car");
   const [search, setSearch] = useState("");
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [toggledClearRows, setToggleClearRows] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [carData, setCarData] = useState([]);
   const [bikeData, setBikeData] = useState([]);
   const [loadingCar, setLoadingCar] = useState(true);
@@ -148,6 +152,43 @@ const UnassignedQR = () => {
     else fetchBikes();
   };
 
+  const handleRowSelected = React.useCallback((state) => {
+    setSelectedRows(state.selectedRows);
+  }, []);
+
+  const handleDownloadSelected = async () => {
+    if (selectedRows.length === 0) return;
+    
+    setIsDownloading(true);
+    try {
+      const qrIds = selectedRows.map(row => row.qr_id);
+      const res = await generateQrtemplateInBulk(activeTab, qrIds);
+      
+      if (res?.success && res?.download_zip) {
+        const link = document.createElement("a");
+        link.href = res.download_zip;
+        link.setAttribute("download", "");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success(`Successfully downloaded ${selectedRows.length} QR code(s)`);
+        
+        // Refresh the list after downloading
+        handleRefresh();
+        setSelectedRows([]);
+        setToggleClearRows(!toggledClearRows);
+      } else {
+        toast.error("Download failed. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error downloading QR codes.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <main className="w-full h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-amber-50 p-6">
       <style>{`
@@ -177,15 +218,35 @@ const UnassignedQR = () => {
             </p>
           </div>
 
-          <button
-            onClick={handleRefresh}
-            className="ml-auto flex items-center gap-1.5 text-sm bg-white border border-slate-200 px-3 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            {selectedRows.length > 0 && (
+              <button
+                onClick={handleDownloadSelected}
+                disabled={isDownloading}
+                className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg shadow-sm transition
+                  ${isDownloading 
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                    : "bg-blue-600 text-white hover:bg-blue-700"}`}
+              >
+                {isDownloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Download Selected ({selectedRows.length})
+              </button>
+            )}
+
+            <button
+              onClick={handleRefresh}
+              className="flex items-center gap-1.5 text-sm bg-white border border-slate-200 px-3 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* ─── Summary Badges ─── */}
@@ -223,6 +284,8 @@ const UnassignedQR = () => {
                 onClick={() => {
                   setActiveTab(key);
                   setSearch("");
+                  setSelectedRows([]);
+                  setToggleClearRows(!toggledClearRows);
                 }}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-all duration-200 border-b-2 ${
                   activeTab === key
@@ -300,6 +363,9 @@ const UnassignedQR = () => {
                 striped
                 responsive
                 customStyles={customStyles}
+                selectableRows
+                onSelectedRowsChange={handleRowSelected}
+                clearSelectedRows={toggledClearRows}
               />
             )}
           </div>

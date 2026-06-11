@@ -129,7 +129,7 @@ const BlockConfirmModal = ({ user, onConfirm, onCancel, blocking }) => {
 };
 
 /* ─────────────────────── Detail Modal ─────────────────────── */
-const AnalyticsDetailModal = ({ row, onClose, onBlockChange }) => {
+const AnalyticsDetailModal = ({ row, startDate, endDate, onClose, onBlockChange }) => {
   const [detail, setDetail]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -142,14 +142,18 @@ const AnalyticsDetailModal = ({ row, onClose, onBlockChange }) => {
     if (!row) return;
     setLoading(true);
     setError(null);
+    const params = new URLSearchParams();
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    
     httpClient
-      .get(`/api/user/analytics/rto-user/${row._id}`)
+      .get(`/api/user/analytics/rto-user/${row._id}?${params}`)
       .then((res) => setDetail(res.data))
       .catch((e) => setError(e?.response?.data?.message || "Failed to load details"))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchDetail(); }, [row]);
+  useEffect(() => { fetchDetail(); }, [row, startDate, endDate]);
 
   if (!row) return null;
 
@@ -586,6 +590,8 @@ const Analytics = () => {
   const [error, setError]           = useState(null);
   const [search, setSearch]         = useState("");
   const [debouncedSearch, setDS]    = useState("");
+  const [startDate, setStartDate]   = useState("");
+  const [endDate, setEndDate]       = useState("");
   const [page, setPage]             = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [selected, setSelected]     = useState(null);
@@ -601,6 +607,8 @@ const Analytics = () => {
     try {
       const params = new URLSearchParams({ page, limit: 20 });
       if (debouncedSearch) params.set("search", debouncedSearch);
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
       const res = await httpClient.get(`/api/user/analytics/rto-users?${params}`);
       setRows(res.data.users || []);
       setPagination(res.data.pagination || { total: 0, totalPages: 1 });
@@ -609,7 +617,7 @@ const Analytics = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -652,7 +660,42 @@ const Analytics = () => {
           </p>
         </div>
 
-        <div className="relative w-full sm:w-80">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm w-full sm:w-auto overflow-x-auto">
+            <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { 
+                setStartDate(e.target.value); 
+                if (!endDate && e.target.value) {
+                  setEndDate(new Date().toISOString().split("T")[0]);
+                }
+                setPage(1); 
+              }}
+              className="bg-transparent text-sm text-gray-600 focus:outline-none min-w-[110px]"
+            />
+            <span className="text-gray-300">-</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+              className="bg-transparent text-sm text-gray-600 focus:outline-none min-w-[110px]"
+            />
+            {(startDate || endDate) && (
+              <button
+                onClick={() => { setStartDate(""); setEndDate(""); setPage(1); }}
+                className="ml-1 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                title="Clear dates"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             type="text"
@@ -669,6 +712,7 @@ const Analytics = () => {
               <X className="w-4 h-4" />
             </button>
           )}
+        </div>
         </div>
       </div>
 
@@ -773,6 +817,8 @@ const Analytics = () => {
       {selected && (
         <AnalyticsDetailModal
           row={selected}
+          startDate={startDate}
+          endDate={endDate}
           onClose={() => setSelected(null)}
           onBlockChange={handleBlockChange}
         />

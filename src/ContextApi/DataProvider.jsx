@@ -612,20 +612,35 @@ const DataProvider = ({ children }) => {
     }
   };
 
-  const generateQrtemplateInBulk = async (templatetype) => {
+  const generateQrtemplateInBulk = async (templatetype, qr_ids = null) => {
     try {
       const token = Cookies.get("admin_token");
+      const payload = {
+        template_type: templatetype,
+      };
+      if (qr_ids && Array.isArray(qr_ids) && qr_ids.length > 0) {
+        payload.qr_ids = qr_ids;
+      }
       const response = await axios.post(
         `${BASE_URL}/api/create/qr-template-in-bluk`,
-        {
-          template_type: templatetype,
-        },
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
+      if (response.data?.download_zip) {
+        try {
+          const urlObj = new URL(response.data.download_zip, BASE_URL);
+          response.data.download_zip = `${BASE_URL}${urlObj.pathname}${urlObj.search}`;
+        } catch (e) {
+          if (response.data.download_zip.startsWith("/")) {
+            response.data.download_zip = `${BASE_URL}${response.data.download_zip}`;
+          }
+        }
+      }
 
       return response.data;
     } catch (error) {

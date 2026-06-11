@@ -64,8 +64,155 @@ const formatDate = (d) => {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+/* ─────────────────────── Block Confirm Modal ─────────────────────── */
+const BlockConfirmModal = ({ user, onConfirm, onCancel, blocking }) => {
+  const [reason, setReason] = useState("");
+  const name = getDisplayName(user);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Block User</h3>
+            <p className="text-sm text-gray-500">This action is serious and immediate</p>
+          </div>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+          <div className="flex gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">
+              <span className="font-semibold">{name}</span> will be{" "}
+              <span className="font-bold">permanently blocked</span> — they cannot login via OTP or
+              password using their phone number or email. All API access will be denied.
+            </p>
+          </div>
+        </div>
+
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          Reason for blocking{" "}
+          <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="e.g. Suspicious activity, API abuse..."
+          rows={3}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300 mb-4"
+        />
+
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={blocking}
+            className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {blocking ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Shield className="w-4 h-4" />
+            )}
+            {blocking ? "Blocking..." : "Block User"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────── Delete Confirm Modal ─────────────────────── */
+const DeleteConfirmModal = ({ user, onConfirm, onCancel, deleting }) => {
+  const [reason, setReason] = useState("");
+  const name = getDisplayName(user);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+            <XCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Delete User</h3>
+            <p className="text-sm text-gray-500">This action will soft-delete the user</p>
+          </div>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+          <div className="flex gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">
+              <span className="font-semibold">{name}</span> will be{" "}
+              <span className="font-bold">deleted</span> — an email notification will be sent to them.
+            </p>
+          </div>
+        </div>
+
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          Reason for deletion{" "}
+          <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="e.g. Account closed per user request..."
+          rows={3}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300 mb-4"
+        />
+
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={deleting || !reason.trim()}
+            className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {deleting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
+            {deleting ? "Deleting..." : "Delete User"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ─────────────────────── User Detail Modal ─────────────────────── */
-const UserDetailModal = ({ user, onClose }) => {
+const UserDetailModal = ({ user, onClose, onRefresh }) => {
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   if (!user) return null;
 
   const name = getDisplayName(user);
@@ -115,6 +262,47 @@ const UserDetailModal = ({ user, onClose }) => {
     </div>
   );
 
+  const handleUnblock = async () => {
+    setActionLoading(true);
+    try {
+      await httpClient.post("/api/user/admin/unblock-user", { userId: user._id });
+      if (onRefresh) onRefresh();
+      onClose();
+    } catch (err) {
+      alert(err?.response?.data?.message || "Action failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBlock = async (reason) => {
+    setActionLoading(true);
+    try {
+      await httpClient.post("/api/user/admin/block-user", { userId: user._id, reason });
+      if (onRefresh) onRefresh();
+      setShowBlockConfirm(false);
+      onClose();
+    } catch (err) {
+      alert(err?.response?.data?.message || "Action failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelete = async (reason) => {
+    setActionLoading(true);
+    try {
+      await httpClient.delete(`/api/user/admin/delete-user/${user._id}`, { data: { reason } });
+      if (onRefresh) onRefresh();
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to delete user");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -146,7 +334,8 @@ const UserDetailModal = ({ user, onClose }) => {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold truncate">{name}</h2>
-              <p className="text-white/75 text-sm">{bd.occupation || "No occupation"}</p>
+              <p className="text-white/75 text-sm mb-1">{bd.occupation || "No occupation"}</p>
+              <p className="text-white/60 text-xs font-mono">ID: {user._id}</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20`}>
                   <span className={`w-1.5 h-1.5 rounded-full bg-white`} />
@@ -188,6 +377,18 @@ const UserDetailModal = ({ user, onClose }) => {
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 p-5">
+          {status === "BLOCKED" && user.blocked_reason && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+              <div className="flex gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-semibold text-red-800">Blocked Reason</h4>
+                  <p className="text-sm text-red-700 mt-0.5">{user.blocked_reason}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Contact Information</h3>
           <div className="bg-gray-50 rounded-xl px-4">
             <InfoRow icon={Phone} label="Phone Number" value={bd.phone_number} verified={bd.phone_number_verified} />
@@ -417,8 +618,55 @@ const UserDetailModal = ({ user, onClose }) => {
               <InfoRow icon={Calendar} label="Suspended Until" value={formatDate(user.suspended_until)} />
             )}
           </div>
+
+          {/* Action Buttons */}
+          <div className="mt-8 flex gap-3">
+            <button
+              onClick={() => {
+                if (status === "BLOCKED") {
+                  handleUnblock();
+                } else {
+                  setShowBlockConfirm(true);
+                }
+              }}
+              disabled={actionLoading}
+              className={`flex-1 py-2.5 rounded-xl font-semibold text-sm transition flex justify-center items-center gap-2 ${status === "BLOCKED"
+                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                } disabled:opacity-50`}
+            >
+              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+              {status === "BLOCKED" ? "Unblock User" : "Block User"}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={actionLoading}
+              className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-red-100 text-red-700 hover:bg-red-200 transition flex justify-center items-center gap-2 disabled:opacity-50"
+            >
+              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+              Delete User
+            </button>
+          </div>
         </div>
       </div>
+
+      {showBlockConfirm && (
+        <BlockConfirmModal
+          user={user}
+          onConfirm={handleBlock}
+          onCancel={() => setShowBlockConfirm(false)}
+          blocking={actionLoading}
+        />
+      )}
+
+      {showDeleteConfirm && (
+        <DeleteConfirmModal
+          user={user}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+          deleting={actionLoading}
+        />
+      )}
     </div>
   );
 };
@@ -436,21 +684,41 @@ const UserCard = ({ user, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200 hover:border-blue-200 group"
+      className={`bg-white border rounded-2xl p-4 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group ${status === "BLOCKED" ? "border-red-200 hover:border-red-400 opacity-80" :
+        status === "DELETED" ? "border-gray-300 hover:border-gray-400 opacity-60 grayscale" :
+          "border-gray-200 hover:border-blue-200"
+        }`}
     >
       <div className="flex items-center gap-3 mb-3">
         <div
-          className={`w-12 h-12 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-base shrink-0 overflow-hidden`}
+          className={`relative w-12 h-12 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-base shrink-0 overflow-hidden`}
         >
           {profilePic ? (
             <img src={profilePic} alt={name} className="w-full h-full object-cover rounded-full" />
           ) : (
             getInitials(name)
           )}
+          {status === "BLOCKED" && (
+            <div className="absolute inset-0 bg-red-800/70 rounded-full flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+          )}
+          {status === "DELETED" && (
+            <div className="absolute inset-0 bg-gray-800/70 rounded-full flex items-center justify-center">
+              <XCircle className="w-5 h-5 text-white" />
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">{name}</p>
-          <p className="text-xs text-gray-400 truncate">{bd.occupation || "—"}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">{name}</p>
+            {status === "BLOCKED" && (
+              <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full shrink-0">
+                BLOCKED
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 truncate mt-0.5">{bd.occupation || "—"}</p>
         </div>
       </div>
 
@@ -498,6 +766,7 @@ const UserManagement = () => {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [selectedUser, setSelectedUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("ACTIVE");
 
   // Debounce search input (500ms)
   useEffect(() => {
@@ -512,7 +781,7 @@ const UserManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page, limit: 20 });
+      const params = new URLSearchParams({ page, limit: 20, status: activeTab });
       if (debouncedSearch) params.set("search", debouncedSearch);
 
       const res = await httpClient.get(`/api/user/all-users?${params}`);
@@ -523,7 +792,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, activeTab]);
 
   useEffect(() => {
     fetchUsers();
@@ -571,6 +840,22 @@ const UserManagement = () => {
             </button>
           )}
         </div>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className="flex border-b border-gray-200 mb-6">
+        {["ACTIVE", "BLOCKED", "DELETED"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => { setActiveTab(tab); setPage(1); }}
+            className={`py-3 px-6 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+          >
+            {tab.charAt(0) + tab.slice(1).toLowerCase()} Users
+          </button>
+        ))}
       </div>
 
       {/* ── States ── */}
@@ -650,11 +935,10 @@ const UserManagement = () => {
                     <button
                       key={p}
                       onClick={() => setPage(p)}
-                      className={`w-8 h-8 text-sm rounded-lg border transition font-medium ${
-                        p === page
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                      }`}
+                      className={`w-8 h-8 text-sm rounded-lg border transition font-medium ${p === page
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                        }`}
                     >
                       {p}
                     </button>
@@ -675,7 +959,7 @@ const UserManagement = () => {
 
       {/* ── Detail Modal ── */}
       {selectedUser && (
-        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} onRefresh={fetchUsers} />
       )}
     </main>
   );
