@@ -69,8 +69,8 @@ const UnassignedQR = () => {
     const q = search.toLowerCase();
     return activeData.filter(
       (item) =>
-        (item.qr_id || "").toLowerCase().includes(q) ||
-        (item.vehicle_id || "").toLowerCase().includes(q)
+        (item.qr_id && item.qr_id.toLowerCase().includes(q)) ||
+        (item.qr_no && String(item.qr_no).toLowerCase().includes(q))
     );
   }, [activeData, search]);
 
@@ -322,7 +322,7 @@ const UnassignedQR = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by QR ID…"
+                placeholder="Search by QR ID or Number..."
                 className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50"
               />
             </div>

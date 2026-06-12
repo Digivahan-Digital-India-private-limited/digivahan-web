@@ -55,8 +55,8 @@ const AssignedQR = () => {
   const filteredData = qrData.filter((item) =>
     search.toLowerCase() === ""
       ? item
-      : item.qr_id?.toLowerCase().includes(search.toLowerCase()) ||
-        item.qr_no?.toLowerCase().includes(search.toLowerCase())
+      : (item.qr_id && item.qr_id.toLowerCase().includes(search.toLowerCase())) ||
+        (item.qr_no && String(item.qr_no).toLowerCase().includes(search.toLowerCase()))
   );
 
   return (

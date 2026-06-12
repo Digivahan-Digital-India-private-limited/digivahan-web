@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { QrCode, Funnel, Loader2 } from "lucide-react";
+import { QrCode, Funnel, Loader2, Unlock, Trash2 } from "lucide-react";
 import { MdBlockFlipped } from "react-icons/md";
 import { MyContext } from "../../../ContextApi/DataProvider";
 
@@ -153,6 +153,45 @@ const Qrmanagement = () => {
         </div>
       </div>
 
+      {/* ── Row 3: Custom Actions ── */}
+      <div className="flex flex-wrap gap-5">
+        {/* Generate QR by ID */}
+        <div
+          onClick={() => navigate("/generate-qr-id")}
+          className="qr-card-anim relative bg-orange-100 flex-1 min-w-[220px] rounded-xl border border-orange-200 mt-5 p-6 cursor-pointer hover:bg-orange-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+        >
+          <p className="text-gray-600 text-sm font-medium">Generate Custom QR</p>
+          <p className="text-2xl font-bold text-orange-700 mt-3 whitespace-normal break-words">Generate QR by Custom ID</p>
+          <div className="absolute top-5 right-5 bg-white h-14 w-14 rounded-full flex items-center justify-center shadow-md">
+            <QrCode className="text-orange-600 w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Unassign QR */}
+        <div
+          onClick={() => navigate("/unassign-qr-admin")}
+          className="qr-card-anim relative bg-red-100 flex-1 min-w-[220px] rounded-xl border border-red-200 mt-5 p-6 cursor-pointer hover:bg-red-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+        >
+          <p className="text-gray-600 text-sm font-medium">Unassign QR</p>
+          <p className="text-2xl font-bold text-red-700 mt-3 whitespace-normal break-words">Assign QR Manage</p>
+          <div className="absolute top-5 right-5 bg-white h-14 w-14 rounded-full flex items-center justify-center shadow-md">
+            <Unlock className="text-red-600 w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Delete QR */}
+        <div
+          onClick={() => navigate("/delete-qr-admin")}
+          className="qr-card-anim relative bg-red-100 flex-1 min-w-[220px] rounded-xl border border-red-200 mt-5 p-6 cursor-pointer hover:bg-red-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+        >
+          <p className="text-gray-600 text-sm font-medium">Delete QR</p>
+          <p className="text-2xl font-bold text-red-700 mt-3 whitespace-normal break-words">Delete QR by ID</p>
+          <div className="absolute top-5 right-5 bg-white h-14 w-14 rounded-full flex items-center justify-center shadow-md">
+            <Trash2 className="text-red-600 w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
       {/* Total Summary */}
       {!loading && stats && (
         <div className="mt-6 flex items-center gap-2 text-sm text-gray-500">
@@ -161,6 +200,7 @@ const Qrmanagement = () => {
           </span>
         </div>
       )}
+
     </main>
   );
 };

@@ -45,6 +45,9 @@ import CancelledOrders from "./Pages/AdminPannel/Orders/CancelledOrders/Cancelle
 import Qrmanagement from "./Pages/AdminPannel/QRManagement/Qrmanagement";
 import FilterQR from "./Pages/AdminPannel/QRManagement/FilterQR";
 import GenerateQR from "./Pages/AdminPannel/QRManagement/GenerateQR";
+import GenerateQrById from "./Pages/AdminPannel/QRManagement/GenerateQrById";
+import UnassignQr from "./Pages/AdminPannel/QRManagement/UnassignQr";
+import DeleteQr from "./Pages/AdminPannel/QRManagement/DeleteQr";
 import AssignedQR from "./Pages/AdminPannel/QRManagement/QRStatusTabs/AssignedQR";
 import BlockedQR from "./Pages/AdminPannel/QRManagement/QRStatusTabs/BlockedQR";
 import AllottedQrCode from "./Pages/AdminPannel/QRManagement/QRStatusTabs/AllottedQrCode";
@@ -491,6 +494,9 @@ const App = () => {
           <Route path="/qr-panel" element={<Qrmanagement />} />
           <Route path="/filter-qr" element={<FilterQR />} />
           <Route path="/generate-qr" element={<GenerateQR />} />
+          <Route path="/generate-qr-id" element={<GenerateQrById />} />
+          <Route path="/unassign-qr-admin" element={<UnassignQr />} />
+          <Route path="/delete-qr-admin" element={<DeleteQr />} />
           <Route path="/check-assigned-qr" element={<AssignedQR />} />
           <Route path="/check-blocked-qr" element={<BlockedQR />} />
           <Route path="/allotted-qr-code" element={<AllottedQrCode />} />

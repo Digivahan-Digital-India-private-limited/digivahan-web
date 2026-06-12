@@ -612,6 +612,38 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const generateQrByIdAdmin = async (qr_id, vehicle_type = "car") => {
+    try {
+      const token = Cookies.get("admin_token");
+      if (!token) {
+        toast.error("Session expired");
+        return null;
+      }
+      const response = await axios.post(
+        `${BASE_URL}/api/generate-qr-id`,
+        {
+          qr_id,
+          vehicle_type,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      if (response.data?.status) {
+        toast.success(response.data.message || "QR generated successfully");
+        return response.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("QR Generation by ID error:", error);
+      toast.error(error.response?.data?.message || "Failed to generate QR");
+      return null;
+    }
+  };
+
   const generateQrtemplateInBulk = async (templatetype, qr_ids = null) => {
     try {
       const token = Cookies.get("admin_token");
@@ -732,6 +764,51 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const unassignQrAdmin = async (qrId) => {
+    try {
+      const token = Cookies.get("admin_token");
+      const res = await axios.post(
+        `${BASE_URL}/api/admin/unassign-qr`,
+        { qr_id: qrId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (res?.data?.success) {
+        toast.success(res.data.message);
+        return res.data;
+      }
+      return null;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to unassign QR");
+      return null;
+    }
+  };
+
+  const deleteQrAdmin = async (qrId) => {
+    try {
+      const token = Cookies.get("admin_token");
+      const res = await axios.post(
+        `${BASE_URL}/api/admin/delete-qr`,
+        { qr_id: qrId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (res?.data?.success) {
+        toast.success(res.data.message);
+        return res.data;
+      }
+      return null;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete QR");
+      return null;
+    }
+  };
 
   useEffect(() => {
     const token = Cookies.get("admin_token");
@@ -798,7 +875,10 @@ const DataProvider = ({ children }) => {
         OrderCancelByAdmin,
         TrackOrderByAdmin,
         generateQrByAdmin,
+        generateQrByIdAdmin,
         generateQrtemplateInBulk,
+        unassignQrAdmin,
+        deleteQrAdmin,
         PendingOrders,
         loadingOrders,
         BlockedQrByAdmin,
