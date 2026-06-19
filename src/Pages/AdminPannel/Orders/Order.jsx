@@ -24,6 +24,7 @@ function Order() {
         setStats({
           shiprocket: data.shiprocket || 0,
           delhivery: data.delhivery || 0,
+          manifest_count: data.manifest_count || 0,
           confirmed: data.confirmed || 0,
           pending: data.pending || 0,
           cancelled: data.cancelled || 0,
@@ -73,7 +74,7 @@ function Order() {
       id: "manifest",
       title: "Generate Manifest & Label",
       description: "Click to view details",
-      count: stats.confirmed,
+      count: stats.manifest_count,
       gradient: "from-amber-400 to-amber-500",
       icon: FileText,
       link: "/orders-panel/generate-manifest",

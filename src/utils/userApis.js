@@ -45,8 +45,8 @@ const fetchUserDetails = async (qr_id) => {
               user_id: userId,
               phone_number: u.basic_details?.phone_number || "",
               full_name:
-                `${u.basic_details?.first_name || ""} ${u.basic_details?.last_name || ""}`.trim() ||
                 u.public_details?.nick_name ||
+                `${u.basic_details?.first_name || ""} ${u.basic_details?.last_name || ""}`.trim() ||
                 "Guest",
               profile_pic: u.public_details?.public_pic || "",
               age: u.public_details?.age || "",

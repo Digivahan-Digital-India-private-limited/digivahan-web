@@ -35,7 +35,14 @@ function ConfirmedOrders() {
           const dateB = new Date(b.canceled_at || b.updatedAt || b.createdAt);
           return dateB - dateA;
         });
-        setConfirmedOrders(sortedData);
+        
+        // Filter: Show Shiprocket orders OR Delhivery orders that HAVE been scheduled
+        const scheduledOrders = sortedData.filter((o) => {
+          if (o.active_partner === "shiprocket") return true;
+          return !!o.partner_details?.pickup_data;
+        });
+
+        setConfirmedOrders(scheduledOrders);
       }
     } catch (error) {
       console.error("Error fetching Confirmed orders:", error);
@@ -94,6 +101,22 @@ function ConfirmedOrders() {
         name: "Order Date",
         selector: (row) => new Date(row.createdAt).toLocaleString(),
         sortable: true,
+      },
+      {
+        name: "Pickup Info",
+        cell: (row) => {
+          if (row.active_partner === "shiprocket") return <span className="text-gray-500">N/A</span>;
+          const pickupData = row.partner_details?.pickup_data?.payload;
+          if (pickupData) {
+            return (
+              <div className="flex flex-col text-xs">
+                <span className="font-semibold text-gray-700">{pickupData.pickup_date} {pickupData.pickup_time}</span>
+                <span className="text-gray-500">{pickupData.pickup_location}</span>
+              </div>
+            );
+          }
+          return <span className="text-red-500">Not Scheduled</span>;
+        },
       },
       {
         name: "Action",

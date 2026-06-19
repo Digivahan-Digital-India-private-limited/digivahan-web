@@ -12,9 +12,11 @@ function GenerateManifest() {
     PrintManifest,
     PrintShiprocketLabel,
     PrintDeliveryLabel,
+    ScheduleBulkDelhivery,
   } = useContext(MyContext);
 
   const [confirmedOrders, setConfirmedOrders] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
@@ -37,7 +39,13 @@ function GenerateManifest() {
             const dateB = new Date(b.canceled_at || b.updatedAt || b.createdAt);
             return dateB - dateA;
           });
-          setConfirmedOrders(sortedData);
+          
+          // Only show orders that don't have a pickup scheduled yet
+          const unscheduledOrders = sortedData.filter(
+            (o) => !o.partner_details?.pickup_data
+          );
+          
+          setConfirmedOrders(unscheduledOrders);
         }
       } catch (error) {
         console.error("Error fetching Confirmed orders:", error);
@@ -47,6 +55,47 @@ function GenerateManifest() {
     };
     fetchOrders();
   }, [BASE_URL]);
+
+  const handleRowSelected = (state) => {
+    setSelectedRows(state.selectedRows);
+  };
+
+  const handleScheduleBulkPickup = async () => {
+    if (selectedRows.length === 0) return;
+    
+    // Ensure all selected are delhivery
+    const hasNonDelhivery = selectedRows.some(row => row.active_partner !== "delhivery" && row.active_partner !== "delivery");
+    if (hasNonDelhivery) {
+      alert("Please select only Delhivery orders for scheduling pickup.");
+      return;
+    }
+
+    const packageCount = selectedRows.length;
+    const orderIds = selectedRows.map((r) => r._id);
+    const response = await ScheduleBulkDelhivery(orderIds, packageCount);
+    if (response) {
+      // Re-fetch orders to remove them from this list
+      setLoading(true);
+      const token = Cookies.get("admin_token");
+      const res = await axios.get(
+        `${BASE_URL}/api/admin/all-new-order?order_status=CONFIRMED&limit=1000`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res?.data?.status) {
+        const sortedData = res.data.data.sort((a, b) => {
+          const dateA = new Date(a.canceled_at || a.updatedAt || a.createdAt);
+          const dateB = new Date(b.canceled_at || b.updatedAt || b.createdAt);
+          return dateB - dateA;
+        });
+        const unscheduledOrders = sortedData.filter(
+          (o) => !o.partner_details?.pickup_data
+        );
+        setConfirmedOrders(unscheduledOrders);
+      }
+      setSelectedRows([]);
+      setLoading(false);
+    }
+  };
 
   const handlePrintLabel = async (order) => {
     if (order.active_partner === "shiprocket") {
@@ -128,8 +177,18 @@ function GenerateManifest() {
 
         <h1 className="text-2xl font-semibold">Generate Manifest</h1>
 
-        <span className="ml-auto text-sm font-medium text-gray-600">
-          Total Orders: {confirmedOrders.length}
+        <span className="ml-auto flex items-center gap-4">
+          {selectedRows.length > 0 && (
+            <button
+              onClick={handleScheduleBulkPickup}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors"
+            >
+              Schedule Pickup ({selectedRows.length})
+            </button>
+          )}
+          <span className="text-sm font-medium text-gray-600">
+            Total Orders: {confirmedOrders.length}
+          </span>
         </span>
       </div>
 
@@ -141,6 +200,9 @@ function GenerateManifest() {
           highlightOnHover
           striped
           responsive
+          selectableRows
+          onSelectedRowsChange={handleRowSelected}
+          selectableRowDisabled={(row) => row.active_partner === "shiprocket"}
           progressPending={loading}
         />
       </div>

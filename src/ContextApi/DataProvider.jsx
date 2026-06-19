@@ -339,6 +339,42 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const ScheduleBulkDelhivery = async (orderIds, packageCount) => {
+    try {
+      const token = Cookies.get("admin_token");
+
+      if (!token) {
+        toast.error("Session expired");
+        return null;
+      }
+
+      const response = await axios.post(
+        `${BASE_URL}/api/admin/schedule-delhivery-pickup`,
+        {
+          order_ids: orderIds,
+          package_count: packageCount,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (response.data?.status) {
+        toast.success(response.data.message || "Pickup Scheduled Successfully");
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Pickup schedule error:", error);
+      toast.error(error.response?.data?.message || "Failed to schedule pickup");
+      return null;
+    }
+  };
+
   const fetchPendingOrders = async () => {
     try {
       setLoadingOrders(true);
@@ -867,6 +903,7 @@ const DataProvider = ({ children }) => {
         DeliveryOrders,
         ShiprocketOrders,
         OrderConfirms,
+        ScheduleBulkDelhivery,
         ConfirmedOrders,
         PrintManifest,
         PrintShiprocketLabel,
