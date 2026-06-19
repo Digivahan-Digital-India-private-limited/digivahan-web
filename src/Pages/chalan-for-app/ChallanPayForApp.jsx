@@ -962,11 +962,11 @@ const ChallanPayForApp = () => {
                                         <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
                                       </div>
                                     )}
-                                    {challan._webhookRecord.isSettled !== undefined && (
-                                      <div>
+                                    {challan.isSettled !== undefined && (
+                                      <div className="mt-2">
                                         <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
-                                        <span className={`text-xs font-semibold ${challan._webhookRecord.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
-                                          {challan._webhookRecord.isSettled ? 'Yes' : 'No'}
+                                        <span className={`text-xs font-semibold ${challan.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
+                                          {challan.isSettled ? 'Yes' : 'No'}
                                         </span>
                                       </div>
                                     )}
@@ -1027,14 +1027,14 @@ const ChallanPayForApp = () => {
                                   <div>
                                     <span className="text-[10px] text-slate-400 font-bold uppercase block">IO Status</span>
                                     <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
-                                  </div>
-                                )}
-                                {challan._webhookRecord.isSettled !== undefined && (
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
-                                    <span className={`text-xs font-semibold ${challan._webhookRecord.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
-                                      {challan._webhookRecord.isSettled ? 'Yes' : 'No'}
-                                    </span>
+                                    {challan.isSettled !== undefined && (
+                                      <div className="mt-2">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
+                                        <span className={`text-xs font-semibold ${challan.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
+                                          {challan.isSettled ? 'Yes' : 'No'}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                                 {challan._webhookRecord.convenienceFee ? (
