@@ -371,10 +371,10 @@ const ChallanPay = () => {
 
         // Save token to Cookies if available
         if (data.token) {
-          Cookies.set("token", data.token, { expires: 7 });
+          Cookies.set("token", data.token, { expires: 7, path: "/" });
           localStorage.setItem("user", JSON.stringify(user));
         } else if (user.token) {
-          Cookies.set("token", user.token, { expires: 7 });
+          Cookies.set("token", user.token, { expires: 7, path: "/" });
           localStorage.setItem("user", JSON.stringify(user));
         }
 
@@ -480,6 +480,15 @@ const ChallanPay = () => {
   };
 
   const resetAll = () => {
+    // Always wipe the saved session so next search starts fresh (especially for guest users)
+    localStorage.removeItem("challan_pay_state");
+    localStorage.removeItem("user");
+
+    // 🔐 Because main app users use "user_token" and guest users use "token",
+    // we simply wipe "token" to ensure guest sessions are cleared.
+    // We do NOT wipe "user_token" so real app logged-in users stay logged in.
+    Cookies.remove("token", { path: "/" });
+
     setFormData({
       rcNumber: "",
       phone: "",
@@ -487,8 +496,11 @@ const ChallanPay = () => {
     });
     setStep(1);
     setChallans([]);
+    setUserDetails(null);
+    setFlowId("");
     setActiveTab("UNPAID");
     setWebhookRecords([]);
+    setCredits(null); // ✅ Reset credits so new search isn't blocked by stale 0 value
   };
 
   const handleViewHistory = async () => {
@@ -1026,7 +1038,7 @@ const ChallanPay = () => {
                             <span className="text-base">🪙</span>
                             <div>
                               <div className="text-[10px] uppercase tracking-wider opacity-70">Credits Left</div>
-                              <div className="text-sm font-black">{credits === null ? '...' : credits} / 10</div>
+                              <div className="text-sm font-black">{credits === null ? '...' : credits} / 3</div>
                             </div>
                           </div>
                           {credits !== null && credits <= 0 && (
@@ -1044,6 +1056,7 @@ const ChallanPay = () => {
                           <div>
                             <div className="text-red-700 font-black text-sm">You have used all your credits!</div>
                             <div className="text-red-500 text-xs font-medium">You cannot search or refresh any more challans with this account.</div>
+                            <div className="text-orange-500 text-xs font-semibold mt-1">🔄 Your credits will automatically restore after 3 days.</div>
                           </div>
                         </div>
                       )}
