@@ -248,6 +248,9 @@ const DataProvider = ({ children }) => {
 
       if (response.data) {
         Cookies.remove("user_token");
+        Cookies.remove("token"); // Also remove challan token
+        localStorage.removeItem("challan_pay_state"); // ✅ Clear challan page data
+        localStorage.removeItem("user"); // Clear user info
         toast.success("Logged out successfully");
         return response.data;
       }
@@ -257,6 +260,9 @@ const DataProvider = ({ children }) => {
       console.log("User logout error:", error);
       // Even if API fails, remove cookie for better UX
       Cookies.remove("user_token");
+      Cookies.remove("token"); // Also remove challan token
+      localStorage.removeItem("challan_pay_state"); // ✅ Clear challan page data
+      localStorage.removeItem("user");
       toast.success("Logged out");
       return null;
     }

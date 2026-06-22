@@ -128,6 +128,32 @@ export const directSearchChallanData = async (rcNumber) => {
   }
 };
 
+export const getChallanCredits = async () => {
+  try {
+    const token = Cookies.get("token") || Cookies.get("user_token");
+    if (!token) {
+      throw new Error("User is not authenticated");
+    }
+
+    const response = await axios.get(`${BASE_URL}/challan-flow/credits`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    // Throw the full error so caller can detect 401 (deleted user) vs other errors
+    if (error.response) {
+      const err = new Error(error.response.data?.message || "Failed to fetch credits");
+      err.status = error.response.status;
+      err.error_type = error.response.data?.error_type;
+      throw err;
+    }
+    throw new Error(error.message || "Failed to fetch credits");
+  }
+};
+
+
 const challanService = {
   initChallanFlow,
   verifyChallanOtp,
@@ -135,6 +161,7 @@ const challanService = {
   getChallanPaymentUrl,
   refreshChallanData,
   directSearchChallanData,
+  getChallanCredits,
 };
 
 export default challanService;

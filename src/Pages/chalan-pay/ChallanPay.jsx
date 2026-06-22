@@ -4,7 +4,8 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { FaChevronRight, FaCheckCircle, FaExclamationTriangle, FaExternalLinkAlt, FaHistory, FaTimes } from "react-icons/fa";
-import { initChallanFlow, verifyChallanOtp, getChallanHistory, getChallanPaymentUrl, refreshChallanData, directSearchChallanData } from "../../utils/challanService";
+import { jwtDecode } from "jwt-decode";
+import { initChallanFlow, verifyChallanOtp, getChallanHistory, getChallanPaymentUrl, refreshChallanData, directSearchChallanData, getChallanCredits } from "../../utils/challanService";
 
 const ChallanPay = () => {
   const navigate = useNavigate();
@@ -33,8 +34,18 @@ const ChallanPay = () => {
   // Refresh State
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // 🪙 Credits State
+  const [credits, setCredits] = useState(null);
+
   const handleRefreshData = async () => {
     if (!formData.rcNumber) return;
+
+    // 🪙 Block if no credits
+    if (credits !== null && credits <= 0) {
+      toast.error("You have used all your credits. You cannot refresh anymore.");
+      return;
+    }
+
     setIsRefreshing(true);
     try {
       const token = Cookies.get("token");
@@ -44,6 +55,12 @@ const ChallanPay = () => {
         if (historyRes.status && historyRes.history) {
           setWebhookRecords(historyRes.history);
           const savedState = JSON.parse(localStorage.getItem("challan_pay_state") || "{}");
+          
+          const currentToken = Cookies.get("token") || Cookies.get("user_token");
+          if (currentToken) {
+            try { savedState.userId = jwtDecode(currentToken).userId; } catch(e) {}
+          }
+
           savedState.webhookRecords = historyRes.history;
           localStorage.setItem("challan_pay_state", JSON.stringify(savedState));
         }
@@ -53,13 +70,35 @@ const ChallanPay = () => {
       if (challanRes.status && challanRes.challans) {
         setChallans(challanRes.challans);
         const savedState = JSON.parse(localStorage.getItem("challan_pay_state") || "{}");
+        
+        const currentToken = Cookies.get("token") || Cookies.get("user_token");
+        if (currentToken) {
+          try { savedState.userId = jwtDecode(currentToken).userId; } catch(e) {}
+        }
+
         savedState.challans = challanRes.challans;
         localStorage.setItem("challan_pay_state", JSON.stringify(savedState));
+
+        // 🪙 Update credits if returned
+        if (challanRes.challan_credits !== null && challanRes.challan_credits !== undefined) {
+          setCredits(challanRes.challan_credits);
+        }
       }
       toast.success("Data refreshed successfully");
     } catch (error) {
       console.error("Refresh error:", error);
-      toast.error("Failed to refresh data");
+      // 🪙 Handle no_credits error from backend
+      if (error?.error_type === "no_credits" || (typeof error === "string" && error.includes("credits"))) {
+        setCredits(0);
+        toast.error("You have used all your credits!");
+      } else if (typeof error === "string" && (error.toLowerCase().includes("deleted") || error.toLowerCase().includes("deactivated") || error.toLowerCase().includes("blocked"))) {
+        toast.error(error);
+        clearChallanPageData();
+        Cookies.remove("token");
+        Cookies.remove("user_token");
+      } else {
+        toast.error("Failed to refresh data");
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -68,40 +107,111 @@ const ChallanPay = () => {
   // View Details Modal State
   const [viewDetailsItem, setViewDetailsItem] = useState(null);
 
+  // Helper to fully reset this page's state and localStorage
+  const clearChallanPageData = () => {
+    localStorage.removeItem("challan_pay_state");
+    setStep(1);
+    setFlowId("");
+    setFormData({ rcNumber: "", phone: "", otp: ["", "", "", "", "", ""] });
+    setChallans([]);
+    setUserDetails(null);
+    setWebhookRecords([]);
+    setActiveTab("UNPAID");
+    setCredits(null);
+  };
+
   useEffect(() => {
     // Scroll to top on mount
     window.scrollTo(0, 0);
 
-    // Restore state from localStorage
-    const savedState = localStorage.getItem("challan_pay_state");
-    if (savedState) {
-      try {
-        const parsed = JSON.parse(savedState);
-        setStep(parsed.step || 1);
-        setFlowId(parsed.flowId || "");
-        setFormData(prev => ({ 
-          ...prev, 
-          rcNumber: parsed.rcNumber || "",
-          phone: parsed.phone || ""
-        }));
-        setChallans(parsed.challans || []);
-        setUserDetails(parsed.userDetails || null);
-        setWebhookRecords(parsed.webhookRecords || []);
-
-        // Fetch fresh webhook records to update status if returning to the page
-        if (parsed.step === 4 && Cookies.get("token")) {
-          getChallanHistory().then(res => {
-            if (res.status && res.history) {
-              setWebhookRecords(res.history);
-              parsed.webhookRecords = res.history;
-              localStorage.setItem("challan_pay_state", JSON.stringify(parsed));
-            }
-          }).catch(e => console.error("Failed to fetch fresh history:", e));
-        }
-      } catch (err) {
-        console.error("Failed to restore state:", err);
-      }
+    const token = Cookies.get("token") || Cookies.get("user_token");
+    let currentUserId = null;
+    if (token) {
+      try { currentUserId = jwtDecode(token).userId; } catch(e) {}
     }
+
+    // 🔐 AUTH GUARD on mount: if no token, clear any stale saved state
+    if (!token) {
+      localStorage.removeItem("challan_pay_state");
+      // No restoration — stay on Step 1
+    } else {
+      // 🪙 Fetch credits on mount — also validates that the user still exists in DB
+      getChallanCredits()
+        .then(res => {
+          if (res.status) {
+            setCredits(res.challan_credits);
+
+            // ✅ Only restore state AFTER validating the user still exists and token is valid
+            const savedState = localStorage.getItem("challan_pay_state");
+            if (savedState) {
+              try {
+                const parsed = JSON.parse(savedState);
+
+                // 🔥 STRICT ISOLATION: Ensure the state belongs to the CURRENTLY logged-in user!
+                // If it's old state (no userId) or mismatched userId, wipe it aggressively!
+                if (!parsed.userId || parsed.userId !== currentUserId) {
+                  console.warn("[ChallanPay] State belongs to a different user ID or is old. Wiping state.");
+                  clearChallanPageData();
+                  return; // Stop restoring
+                }
+
+                setStep(parsed.step || 1);
+                setFlowId(parsed.flowId || "");
+                setFormData(prev => ({
+                  ...prev,
+                  rcNumber: parsed.rcNumber || "",
+                  phone: parsed.phone || ""
+                }));
+                setChallans(parsed.challans || []);
+                setUserDetails(parsed.userDetails || null);
+                setWebhookRecords(parsed.webhookRecords || []);
+
+                // Fetch fresh webhook records to update status if returning to the page
+                if (parsed.step === 4 && Cookies.get("token")) {
+                  getChallanHistory().then(historyRes => {
+                    if (historyRes.status && historyRes.history) {
+                      setWebhookRecords(historyRes.history);
+                      parsed.webhookRecords = historyRes.history;
+                      localStorage.setItem("challan_pay_state", JSON.stringify(parsed));
+                    }
+                  }).catch(e => console.error("Failed to fetch fresh history:", e));
+                }
+              } catch (err) {
+                console.error("Failed to restore state:", err);
+              }
+            }
+          }
+        })
+        .catch((err) => {
+          // Any auth failure (401/404) from this endpoint = user deleted or session invalid
+          // Wipe localStorage and reset the page to Step 1
+          console.warn("[ChallanPay] Credit fetch failed — clearing stale data:", err);
+          clearChallanPageData();
+          Cookies.remove("token");
+          Cookies.remove("user_token");
+        });
+    }
+
+    // 👁️ TOKEN WATCHER — poll every 1.5s; if token disappears (logout/delete), reset page
+    const tokenWatcher = setInterval(() => {
+      const currentToken = Cookies.get("token") || Cookies.get("user_token");
+      if (!currentToken) {
+        clearChallanPageData();
+        clearInterval(tokenWatcher);
+        return;
+      }
+
+      // 🔥 Detect if user logged into another account in a different tab
+      try {
+        const newUserId = jwtDecode(currentToken).userId;
+        if (currentUserId && newUserId !== currentUserId) {
+          console.warn("[ChallanPay] User changed in background tab. Wiping state.");
+          clearChallanPageData();
+          currentUserId = newUserId; // Update to avoid loop
+        }
+      } catch(e) {}
+    }, 1500);
+
     // Load Razorpay script in the background asynchronously to make the payment gateway open faster without preload warnings
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -109,6 +219,7 @@ const ChallanPay = () => {
     document.body.appendChild(script);
 
     return () => {
+      clearInterval(tokenWatcher); // ✅ Cleanup watcher on unmount
       if (document.body.contains(script)) {
         document.body.removeChild(script);
       }
@@ -122,6 +233,12 @@ const ChallanPay = () => {
       return;
     }
     
+    // 🪙 Block if no credits
+    if (credits !== null && credits <= 0) {
+      toast.error("You have used all your credits. You cannot search any more challans.");
+      return;
+    }
+    
     // Check if user is logged in
     const isLoggedIn = !!(Cookies.get("token") || Cookies.get("user_token"));
     if (isLoggedIn) {
@@ -130,10 +247,15 @@ const ChallanPay = () => {
         const data = await directSearchChallanData(formData.rcNumber);
         if (data.status) {
           const { user } = data;
-          const realChallans = user.challans || [];
+          const realChallans = user?.challans || data.challans || [];
           
           setChallans(realChallans);
-          setUserDetails(user);
+          setUserDetails(user || null);
+
+          // 🪙 Update credits from response
+          if (data.challan_credits !== null && data.challan_credits !== undefined) {
+            setCredits(data.challan_credits);
+          }
 
           // Fetch history
           let fetchedWebhookRecords = [];
@@ -151,17 +273,38 @@ const ChallanPay = () => {
           toast.success("Challan details fetched successfully!");
 
           // Save state to localStorage for persistence on refresh
+          const currentToken = Cookies.get("token") || Cookies.get("user_token");
+          let currentUserId = null;
+          if (currentToken) {
+            try {
+              currentUserId = jwtDecode(currentToken).userId;
+            } catch(e) {}
+          }
+
           const stateToSave = {
+            userId: currentUserId,
             step: 4,
             rcNumber: formData.rcNumber,
-            phone: user.basic_details?.phone_number || formData.phone,
+            phone: user?.basic_details?.phone_number || formData.phone,
             challans: realChallans,
-            userDetails: user,
+            userDetails: user || null,
             webhookRecords: fetchedWebhookRecords
           };
           localStorage.setItem("challan_pay_state", JSON.stringify(stateToSave));
         }
       } catch (error) {
+        // 🪙 Handle no_credits error
+        if (error?.error_type === "no_credits" || (typeof error === "string" && error.includes("credits"))) {
+          setCredits(0);
+          toast.error("You have used all your credits!");
+          return;
+        } else if (typeof error === "string" && (error.toLowerCase().includes("deleted") || error.toLowerCase().includes("deactivated") || error.toLowerCase().includes("blocked"))) {
+          toast.error(error);
+          clearChallanPageData();
+          Cookies.remove("token");
+          Cookies.remove("user_token");
+          return;
+        }
         console.error("Direct fetch failed, falling back to OTP flow:", error);
         setStep(2);
       } finally {
@@ -227,9 +370,19 @@ const ChallanPay = () => {
         setUserDetails(user);
 
         // Save token to Cookies if available
-        if (user.token) {
+        if (data.token) {
+          Cookies.set("token", data.token, { expires: 7 });
+          localStorage.setItem("user", JSON.stringify(user));
+        } else if (user.token) {
           Cookies.set("token", user.token, { expires: 7 });
           localStorage.setItem("user", JSON.stringify(user));
+        }
+
+        // 🪙 Update credits from response
+        if (data.user && (data.user.challan_credits !== null && data.user.challan_credits !== undefined)) {
+          setCredits(data.user.challan_credits);
+        } else if (user.challan_credits !== null && user.challan_credits !== undefined) {
+          setCredits(user.challan_credits);
         }
 
         // Fetch webhook records to identify under process challans
@@ -250,7 +403,16 @@ const ChallanPay = () => {
         toast.success(data.message || "Verification successful");
         
         // Save state to localStorage for persistence on refresh
+        const currentToken = Cookies.get("token") || Cookies.get("user_token");
+        let currentUserId = null;
+        if (currentToken) {
+          try {
+            currentUserId = jwtDecode(currentToken).userId;
+          } catch(e) {}
+        }
+
         const stateToSave = {
+          userId: currentUserId,
           step: 4,
           rcNumber: formData.rcNumber,
           phone: formData.phone,
@@ -843,17 +1005,48 @@ const ChallanPay = () => {
                             <div className="text-slate-900 font-black text-xl">{formData.rcNumber}</div>
                             <button 
                               onClick={handleRefreshData} 
-                              disabled={isRefreshing}
+                              disabled={isRefreshing || (credits !== null && credits <= 0)}
                               className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded hover:bg-indigo-100 font-bold transition disabled:opacity-50"
                             >
                               {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
                             </button>
                           </div>
                         </div>
-                        <div className={`px-4 py-2 rounded-full font-extrabold text-xs ${unpaidCount > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
-                          {unpaidCount} {unpaidCount === 1 ? 'Pending Challan' : 'Pending Challans'}
+                        {/* 🪙 CREDIT BADGE */}
+                        <div className="flex flex-col items-end gap-1">
+                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${
+                            credits === null
+                              ? 'bg-slate-50 border-slate-200 text-slate-500'
+                              : credits <= 0
+                              ? 'bg-red-50 border-red-200 text-red-600'
+                              : credits <= 3
+                              ? 'bg-amber-50 border-amber-200 text-amber-700'
+                              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                          }`}>
+                            <span className="text-base">🪙</span>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wider opacity-70">Credits Left</div>
+                              <div className="text-sm font-black">{credits === null ? '...' : credits} / 10</div>
+                            </div>
+                          </div>
+                          {credits !== null && credits <= 0 && (
+                            <div className="text-[10px] text-red-500 font-bold text-right">
+                              All credits used!
+                            </div>
+                          )}
                         </div>
                       </div>
+
+                      {/* 🚫 NO CREDITS BANNER */}
+                      {credits !== null && credits <= 0 && (
+                        <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                          <span className="text-2xl">🚫</span>
+                          <div>
+                            <div className="text-red-700 font-black text-sm">You have used all your credits!</div>
+                            <div className="text-red-500 text-xs font-medium">You cannot search or refresh any more challans with this account.</div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* TABS */}
                       <div className="flex gap-2 mb-6 border-b border-slate-200 pb-2 overflow-x-auto custom-scrollbar">
