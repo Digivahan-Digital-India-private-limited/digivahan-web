@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { getAllWebhooks, deleteSingleWebhook, bulkDeleteWebhooks } from "../../../utils/challanWebhookService";
+import { getAllWebhooks, deleteSingleWebhook, bulkDeleteWebhooks, getReceiptUrl } from "../../../utils/challanWebhookService";
 import {
   Webhook,
   RefreshCcw,
@@ -28,17 +28,6 @@ const fmt = (v) => {
   });
 };
 
-// Invincible payment receipt base URL — receiptFile stores only the filename
-const INVINCIBLE_RECEIPT_BASE_URL = "https://invoices.invinciblepay.in/";
-const getReceiptFileUrl = (receiptFile) => {
-  if (!receiptFile) return "#";
-  // Already a full URL — use as-is
-  if (receiptFile.startsWith("http://") || receiptFile.startsWith("https://")) {
-    return receiptFile;
-  }
-  // Just a filename — prefix with Invincible's receipt base URL
-  return `${INVINCIBLE_RECEIPT_BASE_URL}${receiptFile}`;
-};
 
 
 const getStatusMeta = (tx, isSettled, ioStatus) => {
@@ -70,6 +59,7 @@ const ChallanWebhookAdmin = () => {
   const [expandedId,   setExpandedId]   = useState(null);
   const [confirmDel,   setConfirmDel]   = useState(null); // id | "bulk" | null
   const [deleting,     setDeleting]     = useState(false);
+  const [receiptLoadingId, setReceiptLoadingId] = useState(null); // tracks which card is loading the receipt URL
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -91,6 +81,29 @@ const ChallanWebhookAdmin = () => {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // ── View Receipt (pre-signed URL) ─────────────────────────────────────────
+  const handleViewReceipt = async (rec) => {
+    try {
+      setReceiptLoadingId(rec._id);
+      // Send the full receiptFile path as the key, e.g. "challan-receipts/filename.pdf"
+      const key = rec.receiptFile || "";
+      if (!key) { toast.error("Receipt file key not found."); return; }
+      const result = await getReceiptUrl(key);
+      // The API returns url at result.url or nested in result.data.url
+      const pdfUrl = result?.url || result?.data?.url || result?.data;
+      if (pdfUrl && typeof pdfUrl === "string") {
+        window.open(pdfUrl, "_blank", "noreferrer");
+      } else {
+        toast.error("Could not retrieve the receipt URL.");
+      }
+    } catch (err) {
+      console.error("[ViewReceipt] Error:", err);
+      toast.error("Failed to load receipt.");
+    } finally {
+      setReceiptLoadingId(null);
+    }
+  };
 
   // ── Delete single ─────────────────────────────────────────────────────────
   const doDeleteSingle = async (id) => {
@@ -386,30 +399,16 @@ const ChallanWebhookAdmin = () => {
                         <InfoRow label="PG Fee"        value={rec.paymentGatewayFee ? `₹${rec.paymentGatewayFee}` : "—"} />
                         <InfoRow label="Refund"        value={rec.refundAmount && rec.refundAmount !== "0" ? `₹${rec.refundAmount}` : "—"} />
                         <InfoRow label="Receipt No."  value={rec.receiptNumber || "—"} />
-                        {rec.receiptFile && (
-                          <div className="col-span-2">
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Receipt File</p>
-                            <a
-                              href={getReceiptFileUrl(rec.receiptFile)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-indigo-600 font-semibold text-xs hover:underline flex items-center gap-1"
-                            >
-                              {rec.receiptFile} <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                        )}
-                        {rec.receiptLink && (
+                        {(rec.receiptFile || rec.receiptLink) && (
                           <div className="col-span-2">
                             <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Receipt Link</p>
-                            <a
-                              href={rec.receiptLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-indigo-600 font-semibold text-xs hover:underline flex items-center gap-1"
+                            <button
+                              onClick={() => handleViewReceipt(rec)}
+                              disabled={receiptLoadingId === rec._id}
+                              className="text-indigo-600 font-semibold text-xs hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
                             >
-                              View Receipt <ExternalLink className="w-3 h-3" />
-                            </a>
+                              {receiptLoadingId === rec._id ? "Loading…" : <>{"View Receipt"} <ExternalLink className="w-3 h-3" /></>}
+                            </button>
                           </div>
                         )}
                         {rec.comment && rec.comment !== "n" && (

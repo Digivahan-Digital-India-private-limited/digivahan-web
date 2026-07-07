@@ -6,6 +6,7 @@ import Cookies from "js-cookie";
 import { FaChevronRight, FaCheckCircle, FaExclamationTriangle, FaExternalLinkAlt, FaHistory, FaTimes } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 import { initChallanFlow, verifyChallanOtp, getChallanHistory, getChallanPaymentUrl, refreshChallanData, directSearchChallanData, getChallanCredits } from "../../utils/challanService";
+import { getReceiptUrl } from "../../utils/challanWebhookService";
 
 const ChallanPay = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const ChallanPay = () => {
 
   // 🪙 Credits State
   const [credits, setCredits] = useState(null);
+  const [receiptLoadingId, setReceiptLoadingId] = useState(null);
 
   const handleRefreshData = async () => {
     if (!formData.rcNumber) return;
@@ -101,6 +103,29 @@ const ChallanPay = () => {
       }
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleViewReceipt = async (recordId, receiptFile) => {
+    try {
+      setReceiptLoadingId(recordId);
+      const key = receiptFile || "";
+      if (!key) {
+        toast.error("Receipt file key not found.");
+        return;
+      }
+      const result = await getReceiptUrl(key);
+      const pdfUrl = result?.url || result?.data?.url || result?.data;
+      if (pdfUrl && typeof pdfUrl === "string") {
+        window.open(pdfUrl, "_blank", "noreferrer");
+      } else {
+        toast.error("Could not retrieve the receipt URL.");
+      }
+    } catch (err) {
+      console.error("[ViewReceipt] Error:", err);
+      toast.error("Failed to load receipt.");
+    } finally {
+      setReceiptLoadingId(null);
     }
   };
 
@@ -1117,14 +1142,6 @@ const ChallanPay = () => {
                               <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Amount</span><span className={`font-black text-lg ${isPaid ? 'text-slate-600' : 'text-red-500'}`}>₹{challan.amountSettledAt || 0}</span></div>
                               <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Date</span><span className="text-slate-700 font-bold">{new Date(challan.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                               <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Reason</span><span className="text-slate-700 font-bold">{challan.offence}</span></div>
-                              {challan.receiptLink && (
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-slate-400 font-bold">Receipt</span>
-                                  <a href={challan.receiptLink} target="_blank" rel="noreferrer" className="text-indigo-600 font-bold flex items-center gap-1 hover:underline">
-                                    View <FaExternalLinkAlt size={10} />
-                                  </a>
-                                </div>
-                              )}
                           </div>
 
                           {challan.category === 'UNPAID' && (
@@ -1188,14 +1205,18 @@ const ChallanPay = () => {
                                         <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
                                       </div>
                                     ) : null}
-                                    {challan._webhookRecord.receiptFile && (
-                                      <div className="col-span-2">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt File</span>
-                                        <a href={challan._webhookRecord.receiptFile} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                                          Download File <FaExternalLinkAlt size={10} />
-                                        </a>
-                                      </div>
-                                    )}
+                                    {(challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink) && (
+                                       <div className="col-span-2">
+                                         <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Link</span>
+                                         <button
+                                           onClick={() => handleViewReceipt(challan._webhookRecord._id, challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink)}
+                                           disabled={receiptLoadingId === challan._webhookRecord._id}
+                                           className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
+                                         >
+                                           {receiptLoadingId === challan._webhookRecord._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
+                                         </button>
+                                       </div>
+                                     )}
                                     {challan._webhookRecord.receiptNumber && (
                                       <div className="col-span-2">
                                         <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Number</span>
@@ -1255,12 +1276,16 @@ const ChallanPay = () => {
                                     <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
                                   </div>
                                 ) : null}
-                                {challan._webhookRecord.receiptFile && (
+                                {(challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink) && (
                                   <div className="col-span-2">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt File</span>
-                                    <a href={challan._webhookRecord.receiptFile} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                                      Download File <FaExternalLinkAlt size={10} />
-                                    </a>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Link</span>
+                                    <button
+                                      onClick={() => handleViewReceipt(challan._webhookRecord._id, challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink)}
+                                      disabled={receiptLoadingId === challan._webhookRecord._id}
+                                      className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
+                                    >
+                                      {receiptLoadingId === challan._webhookRecord._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
+                                    </button>
                                   </div>
                                 )}
                                 {challan._webhookRecord.receiptNumber && (
@@ -1459,20 +1484,16 @@ const ChallanPay = () => {
                                         <span className="text-sm font-semibold text-slate-700">₹{item.refundAmount}</span>
                                       </div>
                                     ) : null}
-                                    {item.receiptLink && (
+                                    {(item.receiptFile || item.receiptLink) && (
                                       <div className="col-span-2 md:col-span-1">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Link</span>
-                                        <a href={item.receiptLink} target="_blank" rel="noreferrer" className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                                          View Receipt <FaExternalLinkAlt size={10} />
-                                        </a>
-                                      </div>
-                                    )}
-                                    {item.receiptFile && (
-                                      <div className="col-span-2 md:col-span-1">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt File</span>
-                                        <a href={item.receiptFile} target="_blank" rel="noreferrer" className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                                          Download File <FaExternalLinkAlt size={10} />
-                                        </a>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt</span>
+                                        <button
+                                          onClick={() => handleViewReceipt(item._id, item.receiptFile || item.receiptLink)}
+                                          disabled={receiptLoadingId === item._id}
+                                          className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
+                                        >
+                                          {receiptLoadingId === item._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
+                                        </button>
                                       </div>
                                     )}
                                     {item.comment && (
@@ -1598,20 +1619,16 @@ const ChallanPay = () => {
                     <span className="text-sm font-semibold text-slate-700">₹{viewDetailsItem.refundAmount}</span>
                   </div>
                 ) : null}
-                {viewDetailsItem.receiptLink && (
+                {(viewDetailsItem.receiptFile || viewDetailsItem.receiptLink) && (
                   <div className="col-span-2">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Receipt Link</span>
-                    <a href={viewDetailsItem.receiptLink} target="_blank" rel="noreferrer" className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                      View Receipt <FaExternalLinkAlt size={10} />
-                    </a>
-                  </div>
-                )}
-                {viewDetailsItem.receiptFile && (
-                  <div className="col-span-2">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Receipt File</span>
-                    <a href={viewDetailsItem.receiptFile} target="_blank" rel="noreferrer" className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                      Download File <FaExternalLinkAlt size={10} />
-                    </a>
+                    <button
+                      onClick={() => handleViewReceipt(viewDetailsItem._id, viewDetailsItem.receiptFile || viewDetailsItem.receiptLink)}
+                      disabled={receiptLoadingId === viewDetailsItem._id}
+                      className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
+                    >
+                      {receiptLoadingId === viewDetailsItem._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
+                    </button>
                   </div>
                 )}
                 {viewDetailsItem.comment && (

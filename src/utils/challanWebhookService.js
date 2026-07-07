@@ -24,6 +24,14 @@ export const bulkDeleteWebhooks = async (ids) => {
   return res.data;
 };
 
+/** POST /api/challan-webhook/receipt-url
+ *  Pass the PDF key (filename) and get back a pre-signed URL to open the PDF.
+ */
+export const getReceiptUrl = async (key) => {
+  const res = await axios.post(`${BASE_URL}/challan-webhook/receipt-url`, { key });
+  return res.data; // { success, url, data }
+};
+
 const challanWebhookService = {
   getAllWebhooks,
   deleteSingleWebhook,
