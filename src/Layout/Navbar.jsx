@@ -41,7 +41,7 @@ const Navbar = () => {
             />
           </Link>
 
-          {/* Desktop Menu */}
+          {/* Desktopp Menu */}
           <ul className="hidden md:flex space-x-5 text-gray-700 font-medium">
             <li>
               <Link to="/">Home</Link>
