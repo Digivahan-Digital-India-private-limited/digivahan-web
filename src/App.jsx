@@ -109,6 +109,11 @@ import ChallanWebhookAdmin from "./Pages/AdminPannel/ChallanWebhook/ChallanWebho
 import HRManager from "./Pages/AdminPannel/HRManager/HRManager";
 import UserManagement from "./Pages/AdminPannel/UserManagement/UserManagement";
 import Analytics from "./Pages/AdminPannel/Analytics/Analytics";
+import Management from "./Pages/AdminPannel/Management/Management";
+import TrendingCarsManagement from "./Pages/AdminPannel/Management/TrendingCarsManagement";
+import CompareCarsManagement from "./Pages/AdminPannel/Management/CompareCarsManagement";
+import FuelPricesManagement from "./Pages/AdminPannel/Management/FuelPricesManagement";
+import TipsTricksManagement from "./Pages/AdminPannel/Management/TipsTricksManagement";
 
 // Protected Routes
 import ProtectedRoutes from "./ProtectedRoutes/ProtectedRoutes";
@@ -542,6 +547,11 @@ const App = () => {
           <Route path="/hr-manager" element={<HRManager />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/management" element={<Management />} />
+          <Route path="/management/trending-cars" element={<TrendingCarsManagement />} />
+          <Route path="/management/compare-cars" element={<CompareCarsManagement />} />
+          <Route path="/management/fuel-prices" element={<FuelPricesManagement />} />
+          <Route path="/management/tips-tricks" element={<TipsTricksManagement />} />
           <Route path="/post-faq" element={<PostFAQ />} />
           <Route path="/delete-faq" element={<DeleteFAQ />} />
           <Route path="/update-faq" element={<UpdateFAQ />} />

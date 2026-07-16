@@ -1,80 +1,212 @@
+import axios from "axios";
+import Cookies from "js-cookie";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+const CAREER_API = `${BASE_URL}/api/career`;
+
+// ── Helper: get admin auth headers ───────────────────────────────────────────
+const getAdminHeaders = () => {
+  const token = Cookies.get("admin_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+/* ═══════════════════════════════════════════════════════════
+   API — JOBS
+═══════════════════════════════════════════════════════════ */
+
+/**
+ * Fetch all jobs from the backend.
+ * @param {{ status?: string, department?: string, search?: string }} filters
+ * @returns {Promise<Array>}
+ */
+export const fetchJobsFromAPI = async (filters = {}) => {
+  try {
+    const params = {};
+    if (filters.status) params.status = filters.status;
+    if (filters.department && filters.department !== "All")
+      params.department = filters.department;
+    if (filters.search && filters.search.trim())
+      params.search = filters.search.trim();
+
+    const res = await axios.get(`${CAREER_API}/jobs`, { params });
+    return res.data?.jobs || [];
+  } catch (err) {
+    console.error("fetchJobsFromAPI error:", err);
+    return [];
+  }
+};
+
+/**
+ * Post a new job (admin only).
+ * @param {{ title, department, location, type, experience, description }} jobData
+ * @returns {Promise<{ status: boolean, job?: object, message?: string }>}
+ */
+export const postJobToAPI = async (jobData) => {
+  try {
+    const res = await axios.post(`${CAREER_API}/jobs`, jobData, {
+      headers: getAdminHeaders(),
+    });
+    return res.data;
+  } catch (err) {
+    console.error("postJobToAPI error:", err);
+    return {
+      status: false,
+      message: err.response?.data?.message || "Failed to post job",
+    };
+  }
+};
+
+/**
+ * Toggle job status Open ↔ Closed (admin only).
+ * @param {string} jobId  – the DV-XXX jobId
+ * @returns {Promise<{ status: boolean, job?: object, message?: string }>}
+ */
+export const toggleJobStatusAPI = async (jobId) => {
+  try {
+    const res = await axios.patch(
+      `${CAREER_API}/jobs/${encodeURIComponent(jobId)}/status`,
+      {},
+      { headers: getAdminHeaders() }
+    );
+    return res.data;
+  } catch (err) {
+    console.error("toggleJobStatusAPI error:", err);
+    return {
+      status: false,
+      message: err.response?.data?.message || "Failed to toggle job status",
+    };
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   API — APPLICATIONS
+═══════════════════════════════════════════════════════════ */
+
+/**
+ * Submit a job application (public).
+ * @param {{ jobId, jobTitle, candidateName, email, phone, coverLetter }} data
+ * @param {File|null} cvFile
+ * @returns {Promise<{ status: boolean, application?: object, message?: string }>}
+ */
+export const submitApplicationToAPI = async (data, cvFile) => {
+  try {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, val]) => {
+      if (val !== undefined && val !== null) formData.append(key, val);
+    });
+    if (cvFile) formData.append("cv", cvFile);
+
+    const res = await axios.post(`${CAREER_API}/applications`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("submitApplicationToAPI error:", err);
+    return {
+      status: false,
+      message: err.response?.data?.message || "Failed to submit application",
+    };
+  }
+};
+
+/**
+ * Fetch all applications (admin only).
+ * @param {{ jobTitle?: string, search?: string, period?: string }} filters
+ * @returns {Promise<Array>}
+ */
+export const fetchApplicationsFromAPI = async (filters = {}) => {
+  try {
+    const params = {};
+    if (filters.jobTitle && filters.jobTitle !== "All")
+      params.jobTitle = filters.jobTitle;
+    if (filters.search && filters.search.trim())
+      params.search = filters.search.trim();
+    if (filters.period && filters.period !== "all")
+      params.period = filters.period;
+
+    const res = await axios.get(`${CAREER_API}/applications`, {
+      params,
+      headers: getAdminHeaders(),
+    });
+    return res.data?.applications || [];
+  } catch (err) {
+    console.error("fetchApplicationsFromAPI error:", err);
+    return [];
+  }
+};
+
+/**
+ * Update an application status (admin only).
+ * @param {string} id - application MongoDB ID
+ * @param {"Pending"|"Reviewed"|"Shortlisted"|"Rejected"} status
+ * @returns {Promise<{ status: boolean, application?: object, message?: string }>}
+ */
+export const updateApplicationStatusAPI = async (id, status) => {
+  try {
+    const res = await axios.patch(
+      `${CAREER_API}/applications/${encodeURIComponent(id)}/status`,
+      { status },
+      { headers: getAdminHeaders() }
+    );
+    return res.data;
+  } catch (err) {
+    console.error("updateApplicationStatusAPI error:", err);
+    return {
+      status: false,
+      message: err.response?.data?.message || "Failed to update application status",
+    };
+  }
+};
+
+/**
+ * Delete a job posting (admin only).
+ * @param {string} jobId
+ * @returns {Promise<{ status: boolean, message?: string }>}
+ */
+export const deleteJobAPI = async (jobId) => {
+  try {
+    const res = await axios.delete(
+      `${CAREER_API}/jobs/${encodeURIComponent(jobId)}`,
+      { headers: getAdminHeaders() }
+    );
+    return res.data;
+  } catch (err) {
+    console.error("deleteJobAPI error:", err);
+    return {
+      status: false,
+      message: err.response?.data?.message || "Failed to delete job",
+    };
+  }
+};
+
+/**
+ * Delete a job application (admin only).
+ * @param {string} appId
+ * @returns {Promise<{ status: boolean, message?: string }>}
+ */
+export const deleteApplicationAPI = async (appId) => {
+  try {
+    const res = await axios.delete(
+      `${CAREER_API}/applications/${encodeURIComponent(appId)}`,
+      { headers: getAdminHeaders() }
+    );
+    return res.data;
+  } catch (err) {
+    console.error("deleteApplicationAPI error:", err);
+    return {
+      status: false,
+      message: err.response?.data?.message || "Failed to delete application",
+    };
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   LEGACY localStorage helpers (kept for backward compat)
+═══════════════════════════════════════════════════════════ */
 export const CAREER_JOBS_STORAGE_KEY = "digivahanCareerJobs";
 export const CAREER_APPLICATIONS_STORAGE_KEY = "digivahanCareerApplications";
 
-export const DEFAULT_CAREER_JOBS = [
-  {
-    id: "DV-101",
-    title: "Frontend Developer",
-    department: "Engineering",
-    location: "Delhi NCR",
-    type: "Full Time",
-    experience: "1-3 years",
-    posted: "2 days ago",
-    description:
-      "Build and improve user-facing features using React, Tailwind, and API integrations.",
-    status: "Open",
-  },
-  {
-    id: "DV-102",
-    title: "Backend Developer",
-    department: "Engineering",
-    location: "Delhi NCR",
-    type: "Full Time",
-    experience: "2-4 years",
-    posted: "4 days ago",
-    description:
-      "Develop secure APIs, optimize database queries, and support scalable product modules.",
-    status: "Open",
-  },
-  {
-    id: "DV-103",
-    title: "Business Development Executive",
-    department: "Business",
-    location: "Jaipur",
-    type: "Full Time",
-    experience: "1-2 years",
-    posted: "1 week ago",
-    description:
-      "Drive partner onboarding, manage outreach, and expand DigiVahan's dealer network.",
-    status: "Open",
-  },
-  {
-    id: "DV-104",
-    title: "Customer Support Associate",
-    department: "Operations",
-    location: "Remote",
-    type: "Full Time",
-    experience: "0-2 years",
-    posted: "3 days ago",
-    description:
-      "Resolve customer queries, track issues, and coordinate with internal product teams.",
-    status: "Open",
-  },
-  {
-    id: "DV-105",
-    title: "Graphic Designer",
-    department: "Design",
-    location: "Delhi NCR",
-    type: "Part Time",
-    experience: "1-3 years",
-    posted: "5 days ago",
-    description:
-      "Create visual assets for app screens, campaigns, and social media communication.",
-    status: "Open",
-  },
-  {
-    id: "DV-106",
-    title: "Operations Intern",
-    department: "Operations",
-    location: "Noida",
-    type: "Internship",
-    experience: "Freshers",
-    posted: "1 day ago",
-    description:
-      "Support daily operations, reporting, and process coordination across teams.",
-    status: "Open",
-  },
-];
+export const DEFAULT_CAREER_JOBS = [];
 
 export const normalizeCareerJobs = (jobs) =>
   (Array.isArray(jobs) ? jobs : []).map((job, index) => ({
@@ -97,14 +229,19 @@ export const loadCareerJobs = () => {
 };
 
 export const saveCareerJobs = (jobs) => {
-  localStorage.setItem(CAREER_JOBS_STORAGE_KEY, JSON.stringify(normalizeCareerJobs(jobs)));
+  localStorage.setItem(
+    CAREER_JOBS_STORAGE_KEY,
+    JSON.stringify(normalizeCareerJobs(jobs))
+  );
 };
 
 export const normalizeCareerApplications = (applications) =>
-  (Array.isArray(applications) ? applications : []).map((application, index) => ({
-    ...application,
-    id: application.id || `APP-${index + 1}`,
-  }));
+  (Array.isArray(applications) ? applications : []).map(
+    (application, index) => ({
+      ...application,
+      id: application.id || `APP-${index + 1}`,
+    })
+  );
 
 export const loadCareerApplications = () => {
   try {

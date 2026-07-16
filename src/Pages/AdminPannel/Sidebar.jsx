@@ -21,6 +21,7 @@ import {
   Webhook,
   BriefcaseBusiness,
   BarChart2,
+  // Layers,
 } from "lucide-react";
 import { MyContext } from "../../ContextApi/DataProvider";
 
@@ -37,6 +38,7 @@ const menuItems = [
   { name: "Manage Appointment", icon: CalendarDays, link: "/manage-appointment" },
   { name: "Challan Webhook", icon: Webhook, link: "/challan-webhook-admin" },
   { name: "HR Manager", icon: BriefcaseBusiness, link: "/hr-manager" },
+  // { name: "App Management", icon: Layers, link: "/management" },
   // { name: "Reviews", icon: Star, link: "/admin/reviews" },
   // { name: "Issues / Priority", icon: AlertTriangle, link: "/admin/issues" },
   // { name: "Reports", icon: FileText, link: "/admin/reports" },
@@ -92,7 +94,7 @@ function Sidebar() {
             <X className="w-5 h-5" />
           </button>
           {/* Desktop Toggle Button */}
-          <button 
+          <button
             className="hidden lg:block text-gray-600 hover:text-blue-600 transition"
             onClick={() => setCollapsed(!collapsed)}
           >
@@ -119,9 +121,9 @@ function Sidebar() {
 
         {/* Logout (Always at bottom, no overlap) */}
         <div className="px-3 py-4 border-t">
-          <button 
+          <button
             onClick={handleLogout}
-            className={`flex items-center gap-3 w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition ${collapsed ? 'justify-center' : ''}`} 
+            className={`flex items-center gap-3 w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition ${collapsed ? 'justify-center' : ''}`}
             title={collapsed ? 'Logout' : ''}
           >
             <LogOut className="w-5 h-5 shrink-0" />
