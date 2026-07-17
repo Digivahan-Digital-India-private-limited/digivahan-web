@@ -19,6 +19,7 @@ import UserConcernChat from "./Pages/UserConcernChat";
 import VisitUs from "./Pages/VisitUs";
 import Reports from "./Pages/Reports";
 import Explorepage from "./Pages/Explorepage";
+import TipDetails from "./Pages/TipDetails";
 import OrderQrPage from "./Pages/OrderQrPage";
 import CareerPage from "./Pages/CareerPage";
 import DeleteAccountPage from "./Pages/DeleteAccountPage";
@@ -114,6 +115,8 @@ import TrendingCarsManagement from "./Pages/AdminPannel/Management/TrendingCarsM
 import CompareCarsManagement from "./Pages/AdminPannel/Management/CompareCarsManagement";
 import FuelPricesManagement from "./Pages/AdminPannel/Management/FuelPricesManagement";
 import TipsTricksManagement from "./Pages/AdminPannel/Management/TipsTricksManagement";
+import AppVersionManagement from "./Pages/AdminPannel/Management/AppVersionManagement";
+import AppInfoManagement from "./Pages/AdminPannel/Management/AppInfoManagement";
 
 // Protected Routes
 import ProtectedRoutes from "./ProtectedRoutes/ProtectedRoutes";
@@ -347,6 +350,7 @@ const App = () => {
           <Route path="/pay-challan" element={<ChallanPay />} />
           <Route path="/Report-page" element={<Reports />} />
           <Route path="/explore-page" element={<Explorepage />} />
+          <Route path="/tips-tricks/:id" element={<TipDetails />} />
           <Route path="/order-qr" element={<OrderQrPage />} />
           <Route path="/career-page" element={<CareerPage />} />
           <Route path="/delete-account" element={<DeleteAccountPage />} />
@@ -552,6 +556,8 @@ const App = () => {
           <Route path="/management/compare-cars" element={<CompareCarsManagement />} />
           <Route path="/management/fuel-prices" element={<FuelPricesManagement />} />
           <Route path="/management/tips-tricks" element={<TipsTricksManagement />} />
+          <Route path="/management/app-version" element={<AppVersionManagement />} />
+          <Route path="/management/app-info" element={<AppInfoManagement />} />
           <Route path="/post-faq" element={<PostFAQ />} />
           <Route path="/delete-faq" element={<DeleteFAQ />} />
           <Route path="/update-faq" element={<UpdateFAQ />} />

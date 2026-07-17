@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Car, Scale, Droplet, Lightbulb } from "lucide-react";
+import { Car, Scale, Droplet, Lightbulb, Smartphone, Info } from "lucide-react";
 
 const managementCards = [
   {
@@ -35,6 +35,22 @@ const managementCards = [
     icon: Lightbulb,
     link: "/management/tips-tricks",
   },
+  {
+    id: "app-version",
+    title: "Update App Version",
+    description: "Manage Android and iOS app versions and release notes",
+    gradient: "from-teal-500 to-emerald-600",
+    icon: Smartphone,
+    link: "/management/app-version",
+  },
+  // {
+  //   id: "app-info",
+  //   title: "App Info",
+  //   description: "Manage versions, policies, payment keys & more",
+  //   gradient: "from-indigo-500 to-purple-600",
+  //   icon: Info,
+  //   link: "/management/app-info",
+  // },
 ];
 
 function Management() {

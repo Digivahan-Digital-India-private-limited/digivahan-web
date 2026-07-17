@@ -10,16 +10,24 @@ import {
   Edit2,
   Trash2,
   Plus,
+  Eye,
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-/* ─── API helpers ──────────────────────────────────────────────────────────── */
 const getTipsAPI = async () => {
   const token = localStorage.getItem("token") || "";
   const res = await axios.get(`${BASE_URL}/api/v1/tips-tricks`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+const getSingleTipAPI = async (id) => {
+  const token = localStorage.getItem("token") || "";
+  const res = await axios.get(`${BASE_URL}/api/v1/tips-tricks/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
@@ -84,6 +92,43 @@ const DeleteModal = ({ tip, onCancel, onConfirm }) => (
   </div>
 );
 
+const ViewModal = ({ tip, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm overflow-y-auto py-10">
+    <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden relative mt-10 mb-10">
+      <div className="w-full h-48 md:h-64 relative bg-slate-200">
+        <img src={tip.banner} alt={tip.title} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-sm transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="p-6 md:p-8 -mt-8 relative z-10 bg-white rounded-t-3xl shadow-t-xl">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">{tip.title}</h2>
+        <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-8 whitespace-pre-wrap">{tip.summary}</p>
+        
+        {tip.points && tip.points.length > 0 && (
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 mb-4">Key Points</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {tip.points.map((point, index) => (
+                <div key={index} className="flex gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center overflow-hidden">
+                    <img src={point.icon} alt="icon" className="w-6 h-6 object-contain" />
+                  </div>
+                  <p className="text-slate-700 text-sm self-center leading-tight">{point.message}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Main Page
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -108,6 +153,26 @@ const TipsTricksManagement = () => {
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // View modal state
+  const [viewTarget, setViewTarget] = useState(null);
+  const [viewLoadingId, setViewLoadingId] = useState(null);
+
+  const handleViewTip = async (id) => {
+    setViewLoadingId(id);
+    try {
+      const res = await getSingleTipAPI(id);
+      if (res.success) {
+        setViewTarget(res.data);
+      } else {
+        alert(res.message || "Failed to load tip details");
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to load tip details");
+    } finally {
+      setViewLoadingId(null);
+    }
+  };
 
   /* ─── Load Data ──────────────────────────────────────────────────────────── */
   const loadData = useCallback(async () => {
@@ -485,6 +550,13 @@ const TipsTricksManagement = () => {
                          </span>
                          
                          <div className="flex gap-2">
+                           <button onClick={() => handleViewTip(tip._id)} className="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md transition relative" title="View">
+                              {viewLoadingId === tip._id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Eye className="h-3.5 w-3.5" />
+                              )}
+                           </button>
                            <button onClick={() => openEditForm(tip)} className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition" title="Edit">
                               <Edit2 className="h-3.5 w-3.5" />
                            </button>
@@ -507,6 +579,14 @@ const TipsTricksManagement = () => {
           tip={deleteTarget}
           onCancel={() => setDeleteTarget(null)}
           onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {/* View modal */}
+      {viewTarget && (
+        <ViewModal
+          tip={viewTarget}
+          onClose={() => setViewTarget(null)}
         />
       )}
     </main>

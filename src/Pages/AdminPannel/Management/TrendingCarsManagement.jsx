@@ -23,8 +23,12 @@ const getAllCars = async () => {
 
 const addCarAPI = async (payload) => {
   const token = localStorage.getItem("token") || "";
+  const isFormData = payload instanceof FormData;
   const res = await axios.post(`${BASE_URL}/api/add/tranding/car`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      ...(isFormData ? { "Content-Type": "multipart/form-data" } : {})
+    },
   });
   return res.data;
 };
@@ -216,6 +220,7 @@ const TrendingCarsManagement = () => {
   // Add form
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState(null); // {type: 'success'|'error', text}
 
@@ -258,11 +263,28 @@ const TrendingCarsManagement = () => {
     setSubmitting(true);
     setSubmitMsg(null);
     try {
-      const payload = buildPayload(form);
-      const res = await addCarAPI(payload);
+      const payloadJson = buildPayload(form);
+      const formData = new FormData();
+      
+      formData.append("brand_name", payloadJson.brand_name);
+      formData.append("model_name", payloadJson.model_name);
+      if (imageFile) {
+        formData.append("image", imageFile);
+      } else if (payloadJson.image_url) {
+        formData.append("image_url", payloadJson.image_url);
+      }
+      
+      delete payloadJson.brand_name;
+      delete payloadJson.model_name;
+      delete payloadJson.image_url;
+      
+      formData.append("car_details", JSON.stringify(payloadJson));
+
+      const res = await addCarAPI(formData);
       if (res.status) {
         setSubmitMsg({ type: "success", text: "Car added successfully!" });
         setForm(EMPTY_FORM);
+        setImageFile(null);
         setFormOpen(false);
         loadCars();
       } else {
@@ -359,18 +381,34 @@ const TrendingCarsManagement = () => {
               <Field label="Mileage" name="mileage" value={form.mileage} onChange={handleChange} />
               <Field label="Top Speed" name="top_speed" value={form.top_speed} onChange={handleChange} />
               <div className="sm:col-span-2 lg:col-span-3 flex flex-col gap-1">
-                <label className="text-xs font-medium text-slate-600">Image URL</label>
-                <input
-                  type="url"
-                  name="image_url"
-                  value={form.image_url}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                  className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
-                />
-                {form.image_url && (
+                <label className="text-xs font-medium text-slate-600">Image URL or Upload File</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="url"
+                    name="image_url"
+                    value={form.image_url}
+                    onChange={(e) => { handleChange(e); setImageFile(null); }}
+                    placeholder="https://..."
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+                  />
+                  <div className="flex items-center justify-center">
+                    <span className="text-xs font-bold text-slate-400">OR</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setImageFile(e.target.files[0]);
+                        setForm(prev => ({...prev, image_url: ""}));
+                      }
+                    }}
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition cursor-pointer"
+                  />
+                </div>
+                {(form.image_url || imageFile) && (
                   <img
-                    src={form.image_url}
+                    src={imageFile ? URL.createObjectURL(imageFile) : form.image_url}
                     alt="preview"
                     className="mt-2 h-32 w-auto rounded-lg object-contain border border-slate-100"
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -436,7 +474,7 @@ const TrendingCarsManagement = () => {
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => { setFormOpen(false); setForm(EMPTY_FORM); setSubmitMsg(null); }}
+                onClick={() => { setFormOpen(false); setForm(EMPTY_FORM); setImageFile(null); setSubmitMsg(null); }}
                 className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
               >
                 Cancel

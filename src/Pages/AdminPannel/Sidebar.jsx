@@ -38,6 +38,8 @@ const menuItems = [
   { name: "Report Issue", icon: FileText, link: "/report-issues" },
   { name: "Manage Appointment", icon: CalendarDays, link: "/manage-appointment" },
   { name: "Challan Webhook", icon: Webhook, link: "/challan-webhook-admin" },
+  { name: "App Management", icon: Layers, link: "/management" },
+
   { name: "HR Manager", icon: BriefcaseBusiness, link: "/hr-manager" },
 
 ];
