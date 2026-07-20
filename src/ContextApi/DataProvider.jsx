@@ -260,8 +260,9 @@ const DataProvider = ({ children }) => {
 
       // ✅ if logout successful
       if (response.data) {
-        // remove cookie
+        // remove cookie and permissions
         Cookies.remove("admin_token");
+        localStorage.removeItem("admin_permissions");
         toast.success("Logged out successfully");
         return response.data;
       }

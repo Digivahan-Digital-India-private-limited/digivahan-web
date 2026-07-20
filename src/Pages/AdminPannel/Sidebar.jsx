@@ -1,4 +1,5 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
+import Cookies from "js-cookie";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -27,21 +28,19 @@ import { MyContext } from "../../ContextApi/DataProvider";
 
 
 const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, link: "/admin-panel" },
-  { name: "Orders", icon: ShoppingCart, link: "/orders-panel" },
-  { name: "QR Management", icon: QrCode, link: "/qr-panel" },
-  { name: "User Management", icon: Users, link: "/user-management" },
-  { name: "Analytics", icon: BarChart2, link: "/analytics" },
-  { name: "Customer Queries", icon: MessageSquare, link: "/customer-queries" },
-  { name: "Raise Concern", icon: AlertTriangle, link: "/manage-concerns" },
-  { name: "Delete Account Request", icon: UserX, link: "/delete-account-requests" },
-  { name: "Report Issue", icon: FileText, link: "/report-issues" },
-  { name: "Manage Appointment", icon: CalendarDays, link: "/manage-appointment" },
-  { name: "Challan Webhook", icon: Webhook, link: "/challan-webhook-admin" },
-  { name: "App Management", icon: Layers, link: "/management" },
-
-  { name: "HR Manager", icon: BriefcaseBusiness, link: "/hr-manager" },
-
+  { key: "dashboard",                name: "Dashboard",               icon: LayoutDashboard,  link: "/admin-panel" },
+  { key: "orders",                   name: "Orders",                  icon: ShoppingCart,      link: "/orders-panel" },
+  { key: "qr_management",           name: "QR Management",           icon: QrCode,            link: "/qr-panel" },
+  { key: "user_management",         name: "User Management",         icon: Users,             link: "/user-management" },
+  { key: "analytics",               name: "Analytics",               icon: BarChart2,         link: "/analytics" },
+  { key: "customer_queries",        name: "Customer Queries",        icon: MessageSquare,     link: "/customer-queries" },
+  { key: "raise_concern",           name: "Raise Concern",           icon: AlertTriangle,     link: "/manage-concerns" },
+  { key: "delete_account_requests", name: "Delete Account Request",  icon: UserX,             link: "/delete-account-requests" },
+  { key: "report_issue",            name: "Report Issue",            icon: FileText,          link: "/report-issues" },
+  { key: "manage_appointment",      name: "Manage Appointment",      icon: CalendarDays,      link: "/manage-appointment" },
+  { key: "challan_webhook",         name: "Challan Webhook",         icon: Webhook,           link: "/challan-webhook-admin" },
+  { key: "app_management",          name: "App Management",          icon: Layers,            link: "/management" },
+  { key: "hr_manager",              name: "HR Manager",              icon: BriefcaseBusiness, link: "/hr-manager" },
 ];
 
 function Sidebar() {
@@ -49,6 +48,36 @@ function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const { LogoutAdmin } = useContext(MyContext);
+
+  const [permissions, setPermissions] = useState(() => {
+    return JSON.parse(localStorage.getItem("admin_permissions") || "{}");
+  });
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const token = Cookies.get("admin_token");
+        if (!token) return;
+        const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+        const res = await fetch(`${BASE_URL}/api/auth/admin/my-permissions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const fetchedPerms = data.pages || {};
+          setPermissions(fetchedPerms);
+          localStorage.setItem("admin_permissions", JSON.stringify(fetchedPerms));
+        }
+      } catch (error) {
+        console.error("Failed to sync permissions", error);
+      }
+    };
+    fetchPermissions();
+  }, []);
+
+  const visibleItems = menuItems.filter(item =>
+    permissions[item.key] !== false // show if permission is true or not set (default allow)
+  );
 
   const handleLogout = async () => {
     const result = await LogoutAdmin();
@@ -101,7 +130,7 @@ function Sidebar() {
 
         {/* Menu (Scrollable) */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
-          {menuItems.map((item, index) => (
+          {visibleItems.map((item, index) => (
             <Link
               to={item.link}
               key={index}

@@ -64,6 +64,13 @@ const Dashboard = () => {
   const { LogoutAdmin } = useContext(MyContext);
   const navigate = useNavigate();
 
+  const permissions = JSON.parse(localStorage.getItem("admin_permissions") || "{}");
+  const canViewOrders = permissions["card_dashboard_orders"] !== false;
+  const canViewQR = permissions["card_dashboard_qr"] !== false;
+  const canViewQueries = permissions["card_dashboard_queries"] !== false;
+  const canViewTips = permissions["card_dashboard_tips"] !== false;
+  const canViewStats = permissions["card_dashboard_stats"] !== false;
+
   const handleLogout = async () => {
     const result = await LogoutAdmin();
 
@@ -170,71 +177,81 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 px-2 pb-10">
 
         {/* Orders */}
-        <div className="welcome-card welcome-scale card-delay-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
-          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-2xl">📦</div>
-          <h3 className="text-base font-bold text-gray-800">Order Management</h3>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            Track, assign, and fulfil all pending and active orders from a
-            single streamlined dashboard.
-          </p>
-          <a href="/orders-panel" className="text-blue-600 text-sm font-medium mt-auto hover:underline">
-            Open Orders →
-          </a>
-        </div>
+        {canViewOrders && (
+          <div className="welcome-card welcome-scale card-delay-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
+            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-2xl">📦</div>
+            <h3 className="text-base font-bold text-gray-800">Order Management</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Track, assign, and fulfil all pending and active orders from a
+              single streamlined dashboard.
+            </p>
+            <a href="/orders-panel" className="text-blue-600 text-sm font-medium mt-auto hover:underline">
+              Open Orders →
+            </a>
+          </div>
+        )}
 
         {/* QR */}
-        <div className="welcome-card welcome-scale card-delay-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
-          <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center text-yellow-600 text-2xl">📲</div>
-          <h3 className="text-base font-bold text-gray-800">QR Management</h3>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            Generate, assign and monitor Smart QR codes linked to every vehicle
-            on the platform.
-          </p>
-          <a href="/qr-panel" className="text-yellow-600 text-sm font-medium mt-auto hover:underline">
-            Open QR Panel →
-          </a>
-        </div>
+        {canViewQR && (
+          <div className="welcome-card welcome-scale card-delay-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
+            <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center text-yellow-600 text-2xl">📲</div>
+            <h3 className="text-base font-bold text-gray-800">QR Management</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Generate, assign and monitor Smart QR codes linked to every vehicle
+              on the platform.
+            </p>
+            <a href="/qr-panel" className="text-yellow-600 text-sm font-medium mt-auto hover:underline">
+              Open QR Panel →
+            </a>
+          </div>
+        )}
 
         {/* Customer Queries */}
-        <div className="welcome-card welcome-scale card-delay-3 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
-          <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-2xl">💬</div>
-          <h3 className="text-base font-bold text-gray-800">Customer Queries</h3>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            Review, respond to, and resolve customer support queries and
-            frequently asked questions.
-          </p>
-          <a href="/customer-queries" className="text-green-600 text-sm font-medium mt-auto hover:underline">
-            View Queries →
-          </a>
-        </div>
+        {canViewQueries && (
+          <div className="welcome-card welcome-scale card-delay-3 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
+            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-2xl">💬</div>
+            <h3 className="text-base font-bold text-gray-800">Customer Queries</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Review, respond to, and resolve customer support queries and
+              frequently asked questions.
+            </p>
+            <a href="/customer-queries" className="text-green-600 text-sm font-medium mt-auto hover:underline">
+              View Queries →
+            </a>
+          </div>
+        )}
 
         {/* Quick Tips */}
-        <div className="welcome-card welcome-scale card-delay-4 bg-linear-to-br from-indigo-600 to-blue-500 rounded-2xl p-6 shadow-sm flex flex-col gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-2xl">✨</div>
-          <h3 className="text-base font-bold text-white">Quick Tips</h3>
-          <ul className="text-sm text-white/85 leading-relaxed space-y-1 list-disc list-inside">
-            <li>Use the sidebar to navigate sections</li>
-            <li>Check orders daily for timely dispatch</li>
-            <li>Respond to queries within 24 hours</li>
-          </ul>
-        </div>
+        {canViewTips && (
+          <div className="welcome-card welcome-scale card-delay-4 bg-linear-to-br from-indigo-600 to-blue-500 rounded-2xl p-6 shadow-sm flex flex-col gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-2xl">✨</div>
+            <h3 className="text-base font-bold text-white">Quick Tips</h3>
+            <ul className="text-sm text-white/85 leading-relaxed space-y-1 list-disc list-inside">
+              <li>Use the sidebar to navigate sections</li>
+              <li>Check orders daily for timely dispatch</li>
+              <li>Respond to queries within 24 hours</li>
+            </ul>
+          </div>
+        )}
 
       </div>
 
       {/* ── Stats Summary Bar ── */}
-      <div className="welcome-fade mx-2 mb-8 bg-white rounded-2xl shadow-sm border border-gray-100 grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100" style={{ animationDelay: '0.6s' }}>
-        {[
-          { label: "Active Sections",  value: "4",   color: "text-blue-600" },
-          { label: "Orders Pending",   value: "24",  color: "text-orange-500" },
-          { label: "Unassigned QRs",   value: "18",  color: "text-yellow-500" },
-          { label: "Open Queries",     value: "32",  color: "text-green-600" },
-        ].map((s) => (
-          <div key={s.label} className="flex flex-col items-center justify-center py-5 px-4 gap-1">
-            <span className={`text-3xl font-extrabold ${s.color}`}>{s.value}</span>
-            <span className="text-xs text-gray-500 font-medium text-center">{s.label}</span>
-          </div>
-        ))}
-      </div>
+      {canViewStats && (
+        <div className="welcome-fade mx-2 mb-8 bg-white rounded-2xl shadow-sm border border-gray-100 grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100" style={{ animationDelay: '0.6s' }}>
+          {[
+            { label: "Active Sections",  value: "4",   color: "text-blue-600" },
+            { label: "Orders Pending",   value: "24",  color: "text-orange-500" },
+            { label: "Unassigned QRs",   value: "18",  color: "text-yellow-500" },
+            { label: "Open Queries",     value: "32",  color: "text-green-600" },
+          ].map((s) => (
+            <div key={s.label} className="flex flex-col items-center justify-center py-5 px-4 gap-1">
+              <span className={`text-3xl font-extrabold ${s.color}`}>{s.value}</span>
+              <span className="text-xs text-gray-500 font-medium text-center">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── ORIGINAL DASHBOARD OVERVIEW (commented out) ──
       <h2 className="text-2xl md:text-3xl font-bold mb-1">Dashboard Overview</h2>

@@ -66,8 +66,22 @@ const OtpLoginPage = () => {
       const result = await verifyAdminOtp(otpValue);
 
       if (result) {
-        toast.success("Login successful 💛");
+        // Fetch this admin's page permissions and store them
+        try {
+          const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+          const permRes = await fetch(`${BASE_URL}/api/auth/admin/my-permissions`, {
+            headers: { Authorization: `Bearer ${result.token}` },
+          });
+          if (permRes.ok) {
+            const permData = await permRes.json();
+            localStorage.setItem("admin_permissions", JSON.stringify(permData.pages || {}));
+          }
+        } catch {
+          // If permissions fetch fails, just clear — all pages will show
+          localStorage.removeItem("admin_permissions");
+        }
 
+        toast.success("Login successful 💛");
         navigate("/admin-panel", { replace: true });
       } else {
         toast.error("No response received");

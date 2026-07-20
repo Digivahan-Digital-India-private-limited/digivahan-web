@@ -129,7 +129,11 @@ function Order() {
 
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {orderCards.map((card) => {
+            {orderCards.filter((card) => {
+              const permissions = JSON.parse(localStorage.getItem("admin_permissions") || "{}");
+              const pKey = `card_orders_${card.id}`;
+              return permissions[pKey] !== false;
+            }).map((card) => {
               const Icon = card.icon;
               return (
                 <div

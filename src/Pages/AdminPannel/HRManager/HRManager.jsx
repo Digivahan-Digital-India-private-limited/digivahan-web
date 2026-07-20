@@ -440,7 +440,16 @@ const HRManager = () => {
         {/* ── Tab Bar ───────────────────────────────────────────────────────── */}
         <section className="rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-sm backdrop-blur-sm">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {HR_TABS.map((tab) => {
+            {HR_TABS.filter((tab) => {
+              const permissions = JSON.parse(localStorage.getItem("admin_permissions") || "{}");
+              const idToKey = {
+                "post": "card_hr_post",
+                "manage": "card_hr_manage",
+                "closed": "card_hr_closed",
+                "applications": "card_hr_applications"
+              };
+              return permissions[idToKey[tab.id]] !== false;
+            }).map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               const countMap = {

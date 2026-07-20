@@ -66,7 +66,19 @@ function Management() {
 
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {managementCards.map((card) => {
+            {managementCards.filter((card) => {
+              const permissions = JSON.parse(localStorage.getItem("admin_permissions") || "{}");
+              const idToKey = {
+                "trending-cars": "card_management_trending",
+                "compare-cars": "card_management_compare",
+                "fuel-prices": "card_management_fuel",
+                "tips-tricks": "card_management_tips",
+                "app-version": "card_management_version",
+                "app-info": "card_management_info"
+              };
+              const pKey = idToKey[card.id];
+              return permissions[pKey] !== false;
+            }).map((card) => {
               const Icon = card.icon;
               return (
                 <div

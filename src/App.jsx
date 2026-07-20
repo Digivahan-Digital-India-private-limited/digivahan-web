@@ -11,6 +11,7 @@ import MasterAdminLoginpage from "./Components/Authenticationpage/MasterAdminLog
 import MasterAdminOtpPage from "./Components/Authenticationpage/MasterAdminOtpPage";
 import MasterHome from "./Pages/AdminPannel/MasterDashboard/MasterHome";
 import MasterDashboard from "./Pages/AdminPannel/MasterDashboard/MasterDashboard";
+import ManageAdminPermissions from "./Pages/AdminPannel/MasterDashboard/ManageAdminPermissions";
 import MasterProtectedRoutes from "./ProtectedRoutes/MasterProtectedRoutes";
 
 // information page
@@ -253,6 +254,14 @@ const App = () => {
           element={
             <MasterProtectedRoutes>
               <MasterDashboard />
+            </MasterProtectedRoutes>
+          }
+        />
+        <Route
+          path="/page/admin/master/permissions"
+          element={
+            <MasterProtectedRoutes>
+              <ManageAdminPermissions />
             </MasterProtectedRoutes>
           }
         />
