@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
-import { Trash2, Plus, Users, Phone, Mail, Loader2, X, Shield } from "lucide-react";
+import { Trash2, Plus, Users, Phone, Mail, Loader2, X, Shield, AlertTriangle } from "lucide-react";
 import MasterSidebar from "./MasterSidebar";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
@@ -13,6 +13,7 @@ const MasterDashboard = () => {
   const [deleting, setDeleting] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
 
   const [form, setForm] = useState({
     first_name: "",
@@ -62,17 +63,24 @@ const MasterDashboard = () => {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete admin "${name}"? This cannot be undone.`)) return;
+  // Opens the custom confirm modal instead of window.confirm
+  const handleDelete = (id, name) => {
+    setDeleteTarget({ id, name });
+  };
+
+  // Called when user confirms inside the modal
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      setDeleting(id);
-      await axios.delete(`${BASE_URL}/api/auth/admin/master/admins/${id}`, authHeaders);
+      setDeleting(deleteTarget.id);
+      await axios.delete(`${BASE_URL}/api/auth/admin/master/admins/${deleteTarget.id}`, authHeaders);
       toast.success("Admin deleted successfully");
-      setAdmins((prev) => prev.filter((a) => a._id !== id));
+      setAdmins((prev) => prev.filter((a) => a._id !== deleteTarget.id));
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete admin");
     } finally {
       setDeleting(null);
+      setDeleteTarget(null);
     }
   };
 
@@ -273,6 +281,53 @@ const MasterDashboard = () => {
           to   { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+            style={{ animation: "scaleUp 0.2s ease both" }}
+          >
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-red-500" />
+              </div>
+            </div>
+
+            {/* Heading */}
+            <h2 className="text-xl font-bold text-gray-800 text-center mb-2">
+              Delete Admin?
+            </h2>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-gray-700">"{deleteTarget.name}"</span>?
+              <br />This action <span className="text-red-500 font-medium">cannot be undone</span>.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting === deleteTarget.id}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting === deleteTarget.id}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting === deleteTarget.id
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>
+                  : <><Trash2 className="w-4 h-4" /> Delete</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
