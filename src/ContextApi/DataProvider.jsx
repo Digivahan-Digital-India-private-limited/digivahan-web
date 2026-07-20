@@ -82,6 +82,55 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const MasterAdminSignInwithOtp = async (phone) => {
+    try {
+      const response = await axios.post(`${BASE_URL}/api/auth/admin/master/sign-in`, {
+        phone,
+      });
+
+      if (response.data) {
+        return response.data;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "OTP send failed");
+      return null;
+    }
+  };
+
+  const verifyMasterAdminOtp = async (userOtp) => {
+    try {
+      const phone = localStorage.getItem("master_login_phone");
+
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/admin/master/verify`,
+        {
+          phone,
+          OtpCode: userOtp,
+        },
+      );
+
+      if (response && response.data) {
+        const token = response.data.token;
+
+        Cookies.set("master_admin_token", token, {
+          expires: 7,
+          secure: false,
+          sameSite: "Strict",
+        });
+
+        localStorage.removeItem("master_login_phone");
+
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      console.log("Context error:", error);
+      toast.error(error.response?.data?.message || "Verification failed");
+      return null;
+    }
+  };
+
   const UserSignInwithOtp = async (phone) => {
     if (ENABLE_DUMMY_USER_AUTH) {
       return {
@@ -901,6 +950,8 @@ const DataProvider = ({ children }) => {
       value={{
         AdminSignInwithOtp,
         verifyAdminOtp,
+        MasterAdminSignInwithOtp,
+        verifyMasterAdminOtp,
         UserSignInwithOtp,
         verifyUserOtp,
         LogoutAdmin,

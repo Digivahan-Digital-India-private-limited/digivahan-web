@@ -7,6 +7,11 @@ import Updatespage from "./Components/Updatespage/Updatespage";
 import Newspage from "./Components/Newspage/Newspage";
 import Loginpage from "./Components/Authenticationpage/Loginpage";
 import OtpLoginPage from "./Components/Authenticationpage/OtpLoginPage";
+import MasterAdminLoginpage from "./Components/Authenticationpage/MasterAdminLoginpage";
+import MasterAdminOtpPage from "./Components/Authenticationpage/MasterAdminOtpPage";
+import MasterHome from "./Pages/AdminPannel/MasterDashboard/MasterHome";
+import MasterDashboard from "./Pages/AdminPannel/MasterDashboard/MasterDashboard";
+import MasterProtectedRoutes from "./ProtectedRoutes/MasterProtectedRoutes";
 
 // information page
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
@@ -232,6 +237,26 @@ const App = () => {
     <div className="w-full h-full">
       <SeoHead />
       <Routes>
+        {/* Master Admin Routes */}
+        <Route path="/page/admin/master" element={<MasterAdminLoginpage />} />
+        <Route path="/page/admin/master/otp" element={<MasterAdminOtpPage />} />
+        <Route
+          path="/page/admin/master/dashboard"
+          element={
+            <MasterProtectedRoutes>
+              <MasterHome />
+            </MasterProtectedRoutes>
+          }
+        />
+        <Route
+          path="/page/admin/master/admins"
+          element={
+            <MasterProtectedRoutes>
+              <MasterDashboard />
+            </MasterProtectedRoutes>
+          }
+        />
+
         {/* New User System Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/login/otp" element={<OtpVerificationPage />} />
