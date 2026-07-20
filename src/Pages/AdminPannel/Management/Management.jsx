@@ -43,14 +43,14 @@ const managementCards = [
     icon: Smartphone,
     link: "/management/app-version",
   },
-  // {
-  //   id: "app-info",
-  //   title: "App Info",
-  //   description: "Manage versions, policies, payment keys & more",
-  //   gradient: "from-indigo-500 to-purple-600",
-  //   icon: Info,
-  //   link: "/management/app-info",
-  // },
+  {
+    id: "app-info",
+    title: "App Info",
+    description: "Manage versions, policies, payment keys & more",
+    gradient: "from-indigo-500 to-purple-600",
+    icon: Info,
+    link: "/management/app-info",
+  },
 ];
 
 function Management() {
