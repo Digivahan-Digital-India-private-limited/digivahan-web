@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
-import { Trash2, Plus, Users, Phone, Mail, Loader2, X, Shield, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Trash2, Plus, Users, Phone, Mail, Loader2, X, Shield, AlertTriangle, Settings } from "lucide-react";
 import MasterSidebar from "./MasterSidebar";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
 const MasterDashboard = () => {
+  const navigate = useNavigate();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
@@ -52,7 +54,7 @@ const MasterDashboard = () => {
     try {
       setSubmitting(true);
       await axios.post(`${BASE_URL}/api/auth/admin/master/admins`, form, authHeaders);
-      toast.success("Admin added successfully!");
+      toast.success("✅ Admin added! No pages are visible to them yet — go to Manage Permissions to grant access.", { autoClose: 6000 });
       setForm({ first_name: "", last_name: "", phone: "", email: "" });
       setShowModal(false);
       fetchAdmins();
@@ -153,8 +155,8 @@ const MasterDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Role badge + Delete */}
-                  <div className="flex items-center gap-3 self-start sm:self-center">
+                  {/* Role badge + Actions */}
+                  <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
                       admin.role === "super_admin"
                         ? "bg-purple-100 text-purple-700"
@@ -162,6 +164,15 @@ const MasterDashboard = () => {
                     }`}>
                       {admin.role?.replace("_", " ") || "admin"}
                     </span>
+                    {/* ✅ Set Permissions shortcut button */}
+                    <button
+                      onClick={() => navigate("/page/admin/master/permissions")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+                      title="Manage permissions for this admin"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      Permissions
+                    </button>
                     <button
                       onClick={() => handleDelete(admin._id, `${admin.first_name} ${admin.last_name}`)}
                       disabled={deleting === admin._id}

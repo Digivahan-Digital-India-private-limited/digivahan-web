@@ -104,29 +104,30 @@ const ManageAdminPermissions = () => {
         `${BASE_URL}/api/auth/admin/master/permissions/${admin._id}`,
         authHeaders
       );
-      // If a key is missing from DB it means allowed (true)
-      const raw = res.data.pages || {};
-      const full = {};
-      ALL_PAGES.forEach(p => { 
-        full[p.key] = raw[p.key] !== false; 
-        if (p.cards) {
-          p.cards.forEach(c => {
-            full[c.key] = raw[c.key] !== false;
-          });
-        }
-      });
-      setPermissions(full);
-    } catch {
-      toast.error("Failed to load permissions");
-      // Default: all allowed
-      const full = {};
-      ALL_PAGES.forEach(p => { 
-        full[p.key] = true; 
-        if (p.cards) {
-          p.cards.forEach(c => full[c.key] = true);
-        }
-      });
-      setPermissions(full);
+    // ✅ If a key is missing from DB it means DENIED (false) — not allowed by default
+    // Only explicitly true values grant access
+    const raw = res.data.pages || {};
+    const full = {};
+    ALL_PAGES.forEach(p => {
+      full[p.key] = raw[p.key] === true;
+      if (p.cards) {
+        p.cards.forEach(c => {
+          full[c.key] = raw[c.key] === true;
+        });
+      }
+    });
+    setPermissions(full);
+  } catch {
+    toast.error("Failed to load permissions");
+    // Default: all DENIED (safe fallback)
+    const full = {};
+    ALL_PAGES.forEach(p => {
+      full[p.key] = false;
+      if (p.cards) {
+        p.cards.forEach(c => full[c.key] = false);
+      }
+    });
+    setPermissions(full);
     } finally {
       setLoadingPerms(false);
     }

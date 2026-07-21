@@ -7,8 +7,9 @@ import { MyContext } from "../../ContextApi/DataProvider";
 const MasterAdminOtpPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyMasterAdminOtp } = useContext(MyContext);
+  const { verifyMasterAdminOtp, MasterAdminSignInwithOtp } = useContext(MyContext);
   const [Loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputsRef = useRef([]);
@@ -79,6 +80,28 @@ const MasterAdminOtpPage = () => {
     }
   };
 
+  const handleResend = async () => {
+    if (!phone) {
+      toast.error("Phone number not found. Please log in again.");
+      return;
+    }
+    try {
+      setResending(true);
+      const result = await MasterAdminSignInwithOtp(phone);
+      if (result) {
+        toast.success(`OTP resent successfully to +91 ${phone}!`);
+        setOtp(["", "", "", "", "", ""]);
+        if (inputsRef.current[0]) {
+          inputsRef.current[0].focus();
+        }
+      }
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+    } finally {
+      setResending(false);
+    }
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
       <div className="bg-white shadow-lg rounded-2xl flex flex-col md:flex-row w-full max-w-3xl overflow-hidden">
@@ -134,13 +157,12 @@ const MasterAdminOtpPage = () => {
           <div className="mt-6 text-center text-sm text-gray-500">
             Didn't receive the code?{" "}
             <button
-              className="text-yellow-500 font-semibold hover:underline"
-              onClick={() => {
-                // Handle resend OTP logic if needed
-                toast.info("Resend functionality to be implemented");
-              }}
+              type="button"
+              disabled={resending}
+              className={`text-yellow-500 font-semibold hover:underline disabled:text-gray-400 disabled:no-underline`}
+              onClick={handleResend}
             >
-              Resend OTP
+              {resending ? "Resending..." : "Resend OTP"}
             </button>
           </div>
         </div>

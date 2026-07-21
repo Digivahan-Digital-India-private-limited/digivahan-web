@@ -17,7 +17,7 @@ import { toast } from "react-toastify";
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, link: "/page/admin/master/dashboard" },
   { name: "Admin Management", icon: Users, link: "/page/admin/master/admins" },
-  // { name: "Manage Permissions", icon: Sliders, link: "/page/admin/master/permissions" },
+  { name: "Manage Permissions", icon: Sliders, link: "/page/admin/master/permissions" },
 ];
 
 function MasterSidebar() {
