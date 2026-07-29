@@ -201,12 +201,11 @@ function CancelledOrders() {
               <strong className="text-gray-900">
                 {confirmModal.order?.order_id}
               </strong>{" "}
-              ko dobara Delhivery mein bheja jaayega.
+              will be re-submitted to Delhivery.
             </p>
             <p className="text-gray-500 text-xs mb-6">
-              Purana cancelled record delete hoga aur naya waybill generate hoga. Order status{" "}
-              <span className="font-semibold text-emerald-600">CONFIRMED</span>{" "}
-              ho jaayega.
+              The old cancelled record will be deleted and a new waybill will be generated. Order status will be set to{" "}
+              <span className="font-semibold text-emerald-600">CONFIRMED</span>.
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -219,7 +218,7 @@ function CancelledOrders() {
                 onClick={handleConfirmResend}
                 className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold text-sm shadow-md transition-all"
               >
-                Haan, Resend Karo
+                Yes, Resend Order
               </button>
             </div>
           </div>
