@@ -1,15 +1,19 @@
-import React, { useMemo, useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import React, { useMemo, useState, useEffect, useContext } from "react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { MyContext } from "../../../../ContextApi/DataProvider";
 
 function CancelledOrders() {
   const navigate = useNavigate();
+  const { ResendToDelhivery } = useContext(MyContext);
 
   const [cancelledOrders, setCancelledOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resendingOrderId, setResendingOrderId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ open: false, order: null });
 
   const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
@@ -44,6 +48,27 @@ function CancelledOrders() {
     fetchOrders();
   }, [BASE_URL]);
 
+  const handleResendClick = (order) => {
+    setConfirmModal({ open: true, order });
+  };
+
+  const handleConfirmResend = async () => {
+    const order = confirmModal.order;
+    setConfirmModal({ open: false, order: null });
+    setResendingOrderId(order.order_id);
+    try {
+      const result = await ResendToDelhivery(order.order_id);
+      if (result?.status) {
+        // Remove from cancelled list on success
+        setCancelledOrders((prev) =>
+          prev.filter((o) => o.order_id !== order.order_id)
+        );
+      }
+    } finally {
+      setResendingOrderId(null);
+    }
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -51,7 +76,6 @@ function CancelledOrders() {
         selector: (row) => row.order_id,
         sortable: true,
       },
-
       {
         name: "User Name",
         selector: (row) =>
@@ -98,8 +122,37 @@ function CancelledOrders() {
           </span>
         ),
       },
+      {
+        name: "Action",
+        cell: (row) => {
+          const isDelhivery =
+            row.active_partner === "delhivery" ||
+            row.active_partner === "delivery";
+          const isResending = resendingOrderId === row.order_id;
+
+          if (!isDelhivery) return null;
+
+          return (
+            <button
+              onClick={() => handleResendClick(row)}
+              disabled={isResending}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                isResending
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm hover:shadow-md"
+              }`}
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${isResending ? "animate-spin" : ""}`}
+              />
+              {isResending ? "Sending..." : "Resend to Delhivery"}
+            </button>
+          );
+        },
+        width: "180px",
+      },
     ],
-    []
+    [resendingOrderId]
   );
 
   return (
@@ -130,8 +183,51 @@ function CancelledOrders() {
           responsive
         />
       </div>
+
+      {/* Confirm Resend Modal */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                <RefreshCw className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                Resend to Delhivery?
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm mb-2">
+              Order{" "}
+              <strong className="text-gray-900">
+                {confirmModal.order?.order_id}
+              </strong>{" "}
+              ko dobara Delhivery mein bheja jaayega.
+            </p>
+            <p className="text-gray-500 text-xs mb-6">
+              Purana cancelled record delete hoga aur naya waybill generate hoga. Order status{" "}
+              <span className="font-semibold text-emerald-600">CONFIRMED</span>{" "}
+              ho jaayega.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal({ open: false, order: null })}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmResend}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold text-sm shadow-md transition-all"
+              >
+                Haan, Resend Karo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
 export default CancelledOrders;
+

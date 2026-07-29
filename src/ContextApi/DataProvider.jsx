@@ -431,6 +431,44 @@ const DataProvider = ({ children }) => {
     }
   };
 
+  const ResendToDelhivery = async (order_id) => {
+    try {
+      const token = Cookies.get("admin_token");
+
+      if (!token) {
+        toast.error("Session expired");
+        return null;
+      }
+
+      const response = await axios.post(
+        `${BASE_URL}/api/admin/resend-to-delhivery`,
+        { order_id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (response.data?.status) {
+        toast.success(
+          response.data.message || "Order successfully resent to Delhivery!"
+        );
+        return response.data;
+      }
+
+      toast.error(response.data?.message || "Resend failed");
+      return null;
+    } catch (error) {
+      console.error("ResendToDelhivery error:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to resend order to Delhivery"
+      );
+      return null;
+    }
+  };
+
   const fetchPendingOrders = async () => {
     try {
       setLoadingOrders(true);
@@ -962,6 +1000,7 @@ const DataProvider = ({ children }) => {
         ShiprocketOrders,
         OrderConfirms,
         ScheduleBulkDelhivery,
+        ResendToDelhivery,
         ConfirmedOrders,
         PrintManifest,
         PrintShiprocketLabel,
