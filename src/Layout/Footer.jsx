@@ -194,7 +194,7 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Right Part (Icons) */}
+          {/* Right Part (Ic ons) */}
           <div className="flex items-center gap-3 text-gray-600 text-xl mt-2">
             <FaYoutube className="text-red-600 cursor-pointer" />
             <a href="https://www.facebook.com/share/1Ahif9bxWA/" target="_blank" rel="noopener noreferrer">
