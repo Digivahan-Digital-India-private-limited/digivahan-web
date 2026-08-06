@@ -74,7 +74,7 @@ function Management() {
                 "fuel-prices": "card_management_fuel",
                 "tips-tricks": "card_management_tips",
                 "app-version": "card_management_version",
-                "app-info": "card_management_info"
+                "app-info": "card_management_info",
               };
               const pKey = idToKey[card.id];
               return permissions[pKey] !== false;

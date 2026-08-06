@@ -123,6 +123,8 @@ import FuelPricesManagement from "./Pages/AdminPannel/Management/FuelPricesManag
 import TipsTricksManagement from "./Pages/AdminPannel/Management/TipsTricksManagement";
 import AppVersionManagement from "./Pages/AdminPannel/Management/AppVersionManagement";
 import AppInfoManagement from "./Pages/AdminPannel/Management/AppInfoManagement";
+import GarageManagement from "./Pages/AdminPannel/Management/GarageManagement";
+import VehicleForAdd from "./Pages/AdminPannel/Management/VehicleForAdd";
 
 // Protected Routes
 import ProtectedRoutes from "./ProtectedRoutes/ProtectedRoutes";
@@ -586,12 +588,14 @@ const App = () => {
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/management" element={<Management />} />
+          <Route path="/management/vehicle-for-add" element={<VehicleForAdd />} />
           <Route path="/management/trending-cars" element={<TrendingCarsManagement />} />
           <Route path="/management/compare-cars" element={<CompareCarsManagement />} />
           <Route path="/management/fuel-prices" element={<FuelPricesManagement />} />
           <Route path="/management/tips-tricks" element={<TipsTricksManagement />} />
           <Route path="/management/app-version" element={<AppVersionManagement />} />
           <Route path="/management/app-info" element={<AppInfoManagement />} />
+          <Route path="/management/garage" element={<GarageManagement />} />
           <Route path="/post-faq" element={<PostFAQ />} />
           <Route path="/delete-faq" element={<DeleteFAQ />} />
           <Route path="/update-faq" element={<UpdateFAQ />} />

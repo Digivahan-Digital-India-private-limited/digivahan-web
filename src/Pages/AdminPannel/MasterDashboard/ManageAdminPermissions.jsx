@@ -6,7 +6,7 @@ import {
   Users, Phone, ChevronRight, ChevronDown, ArrowLeft, Loader2,
   LayoutDashboard, ShoppingCart, QrCode, MessageSquare,
   AlertTriangle, FileText, CalendarDays, UserX, Webhook,
-  BriefcaseBusiness, BarChart2, Layers, Sliders, Save,
+  BriefcaseBusiness, BarChart2, Layers, Sliders, Save, Warehouse, Car
 } from "lucide-react";
 import MasterSidebar from "./MasterSidebar";
 
@@ -57,6 +57,8 @@ const ALL_PAGES = [
       { key: "card_management_info", name: "App Info" },
     ]
   },
+  { key: "vehicle_for_add", name: "Vehicle for Add", icon: Car, link: "/management/vehicle-for-add" },
+  { key: "garage_management", name: "Garage Management", icon: Warehouse, link: "/management/garage" },
   {
     key: "hr_manager", name: "HR Manager", icon: BriefcaseBusiness, link: "/hr-manager",
     cards: [

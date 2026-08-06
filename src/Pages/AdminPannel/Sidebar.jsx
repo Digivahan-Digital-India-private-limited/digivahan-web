@@ -23,6 +23,8 @@ import {
   BriefcaseBusiness,
   BarChart2,
   Layers,
+  Warehouse,
+  Car,
 } from "lucide-react";
 import { MyContext } from "../../ContextApi/DataProvider";
 
@@ -39,7 +41,9 @@ const menuItems = [
   { key: "report_issue",            name: "Report Issue",            icon: FileText,          link: "/report-issues" },
   { key: "manage_appointment",      name: "Manage Appointment",      icon: CalendarDays,      link: "/manage-appointment" },
   { key: "challan_webhook",         name: "Challan Webhook",         icon: Webhook,           link: "/challan-webhook-admin" },
-  { key: "app_management",          name: "App Management",          icon: Layers,            link: "/management" },
+  { key: "card_management_car_sell_lead", name: "Car Sell Leads", icon: Users,           link: "/management/sell-leads" },
+  { key: "vehicle_for_add",               name: "Vehicle for Add", icon: Car,            link: "/management/vehicle-for-add" },
+  { key: "garage_management",       name: "Garage Management",       icon: Warehouse,         link: "/management/garage" },
   { key: "hr_manager",              name: "HR Manager",              icon: BriefcaseBusiness, link: "/hr-manager" },
 ];
 
