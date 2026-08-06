@@ -5,8 +5,8 @@ import {
   ChevronLeft, ChevronRight, Loader2, X, RefreshCw, Trash2, Calendar
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
 
@@ -26,6 +26,7 @@ export default function VehicleForAdd() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const limit = 50; // Larger limit for easier bulk downloading
 
   const showToast = (msg, type = "success") => {
@@ -123,7 +124,7 @@ export default function VehicleForAdd() {
       tableRows.push(rowData);
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 42,
@@ -167,7 +168,6 @@ export default function VehicleForAdd() {
 
   const handleDelete = async () => {
     if (selectedIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} vehicle(s) from this list?`)) return;
 
     setActionLoading(true);
     try {
@@ -180,6 +180,7 @@ export default function VehicleForAdd() {
       if (data.status) {
         showToast(`✅ ${data.data.deletedCount} vehicles removed`);
         fetchVehicles();
+        setDeleteModalOpen(false);
       } else {
         showToast(data.message || "Failed to delete", "error");
       }
@@ -279,7 +280,7 @@ export default function VehicleForAdd() {
             </p>
             <div className="flex items-center gap-2">
               <button
-                onClick={handleDelete}
+                onClick={() => setDeleteModalOpen(true)}
                 disabled={actionLoading}
                 className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-semibold transition disabled:opacity-50"
               >
@@ -403,6 +404,40 @@ export default function VehicleForAdd() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Vehicles?</h3>
+              <p className="text-slate-500 mb-6">
+                Are you sure you want to delete {selectedIds.length} vehicle(s) from this list? This action cannot be undone.
+              </p>
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setDeleteModalOpen(false)}
+                  disabled={actionLoading}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={actionLoading}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition flex items-center gap-2"
+                >
+                  {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
