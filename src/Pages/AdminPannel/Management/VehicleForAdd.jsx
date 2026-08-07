@@ -137,7 +137,13 @@ export default function VehicleForAdd() {
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/v1/vehicle-for-add/admin/stats`, { headers: getAuthHeaders() });
+      let url = `${BASE_URL}/api/v1/vehicle-for-add/admin/stats`;
+      const params = new URLSearchParams();
+      if (fromDate) params.append("fromDate", fromDate);
+      if (toDate) params.append("toDate", toDate);
+      if (params.toString()) url += `?${params.toString()}`;
+
+      const res = await fetch(url, { headers: getAuthHeaders() });
       const data = await res.json();
       if (data.status) setStats(data.data);
     } catch {
@@ -145,7 +151,7 @@ export default function VehicleForAdd() {
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [fromDate, toDate]);
 
   // ── Fetch Vehicles ──────────────────────────────────────────────────────────
   const fetchVehicles = useCallback(async () => {
