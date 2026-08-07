@@ -111,13 +111,14 @@ export default function VehicleForAdd() {
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
     doc.text(`Total Vehicles: ${selectedVehicles.length}`, 14, 36);
 
-    const tableColumn = ["S.No", "Vehicle Number", "Fail Count", "Last Searched"];
+    const tableColumn = ["S.No", "Vehicle Number", "Failed APIs", "Fail Count", "Last Searched"];
     const tableRows = [];
 
     selectedVehicles.forEach((v, index) => {
       const rowData = [
         index + 1,
         v.vehicleNumber,
+        (v.failedApis || []).join(", "),
         v.failCount,
         new Date(v.lastFailedAt).toLocaleString()
       ];
@@ -346,11 +347,19 @@ export default function VehicleForAdd() {
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                   </div>
-                  <div className="col-span-4 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Car className="w-4 h-4 text-slate-500" />
+                  <div className="col-span-4 flex flex-col justify-center gap-1 py-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Car className="w-4 h-4 text-slate-500" />
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">{v.vehicleNumber}</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">{v.vehicleNumber}</span>
+                    {v.failedApis && v.failedApis.length > 0 && (
+                      <div className="flex gap-1 pl-11">
+                        {v.failedApis.includes("CHALLAN") && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold uppercase">Challan Failed</span>}
+                        {v.failedApis.includes("VEHICLE") && <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-semibold uppercase">Vehicle Details Failed</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="col-span-2">
                     {v.isDownloaded ? (
