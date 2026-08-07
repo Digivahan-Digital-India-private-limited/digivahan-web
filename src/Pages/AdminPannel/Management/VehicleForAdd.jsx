@@ -23,7 +23,7 @@ export default function VehicleForAdd() {
   const [filter, setFilter] = useState("pending"); // pending | downloaded | all
   const [apiType, setApiType] = useState("VEHICLE"); // VEHICLE | CHALLAN
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, allCount: 0, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
   const [selectedIds, setSelectedIds] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -44,7 +44,7 @@ export default function VehicleForAdd() {
       const data = await res.json();
       if (data.status) {
         setVehicles(data.data || []);
-        setPagination(data.pagination || { total: 0, totalPages: 1, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
+        setPagination(data.pagination || { total: 0, totalPages: 1, allCount: 0, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
         // Clear selection on page change or filter change
         setSelectedIds([]);
       } else {
@@ -197,7 +197,7 @@ export default function VehicleForAdd() {
   const tabs = [
     { key: "pending",    label: "Pending to Add",  count: pagination.pendingCount },
     { key: "downloaded", label: "Downloaded",      count: pagination.downloadedCount },
-    { key: "all",        label: "All Vehicles",    count: pagination.total },
+    { key: "all",        label: "All Vehicles",    count: pagination.allCount },
   ];
 
   return (
