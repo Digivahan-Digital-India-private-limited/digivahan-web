@@ -450,13 +450,8 @@ export default function GarageManagement() {
                   </div>
 
                   {/* Source */}
-                  <div className="col-span-2 flex flex-col gap-1 items-start">
+                  <div className="col-span-2">
                     <SourceBadge source={v.source} />
-                    {v.source === "challan" && v.isDataSaved && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                        <Warehouse className="w-2.5 h-2.5" /> Data Saved
-                      </span>
-                    )}
                   </div>
 
                   {/* Owner */}
