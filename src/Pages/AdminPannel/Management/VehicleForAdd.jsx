@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import Cookies from "js-cookie";
 import {
   ArrowLeft, Search, Car, FileDown, CheckCircle2,
-  ChevronLeft, ChevronRight, Loader2, X, RefreshCw, Trash2, Calendar
+  ChevronLeft, ChevronRight, Loader2, X, RefreshCw, Trash2, Calendar,
+  AlertTriangle, CheckCircle, CalendarRange
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
@@ -15,37 +16,167 @@ const getAuthHeaders = () => {
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 };
 
+// ── Donut Chart Component ─────────────────────────────────────────────────────
+function DonutChart({ failCount, successCount, label }) {
+  const total = failCount + successCount;
+  const failPct = total > 0 ? Math.round((failCount / total) * 100) : 0;
+  const successPct = total > 0 ? 100 - failPct : 0;
+
+  const size = 140;
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const failDash = (failPct / 100) * circumference;
+  const successDash = (successPct / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
+          {/* background ring */}
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f1f5f9" strokeWidth="18" />
+
+          {/* success arc (teal) */}
+          {successPct > 0 && (
+            <circle
+              cx={size / 2} cy={size / 2} r={radius}
+              fill="none"
+              stroke="#14b8a6"
+              strokeWidth="18"
+              strokeDasharray={`${successDash} ${circumference - successDash}`}
+              strokeDashoffset={-failDash}
+              strokeLinecap="round"
+            />
+          )}
+
+          {/* fail arc (red-orange) */}
+          {failPct > 0 && (
+            <circle
+              cx={size / 2} cy={size / 2} r={radius}
+              fill="none"
+              stroke="#f97316"
+              strokeWidth="18"
+              strokeDasharray={`${failDash} ${circumference - failDash}`}
+              strokeDashoffset={0}
+              strokeLinecap="round"
+            />
+          )}
+        </svg>
+        {/* center text */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-bold text-slate-800">{total > 0 ? `${failPct}%` : "—"}</span>
+          <span className="text-[10px] text-slate-400 font-medium">Fail Rate</span>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-col gap-1.5 w-full">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0" />
+            <span className="text-xs text-slate-600 font-medium">Fail</span>
+          </div>
+          <span className="text-xs font-bold text-slate-800">{failCount.toLocaleString()} ({failPct}%)</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-teal-400 flex-shrink-0" />
+            <span className="text-xs text-slate-600 font-medium">Success</span>
+          </div>
+          <span className="text-xs font-bold text-slate-800">{successCount.toLocaleString()} ({successPct}%)</span>
+        </div>
+        {label && <p className="text-[10px] text-slate-400 text-center mt-1">{label}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function VehicleForAdd() {
   const navigate = useNavigate();
+
+  // Top-level tab: fail | success
+  const [mainTab, setMainTab] = useState("fail");
+
+  // Second-level tab: VEHICLE | CHALLAN
+  const [apiType, setApiType] = useState("VEHICLE");
+
+  // Filter tab (only for fail): pending | downloaded | all
+  const [filter, setFilter] = useState("pending");
+
+  // Date range filter
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("pending"); // pending | downloaded | all
-  const [apiType, setApiType] = useState("VEHICLE"); // VEHICLE | CHALLAN
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, allCount: 0, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
+  const [pagination, setPagination] = useState({
+    total: 0, totalPages: 1, allCount: 0,
+    pendingCount: 0, downloadedCount: 0,
+    vehicleCount: 0, challanCount: 0,
+  });
+
+  // Stats for pie chart
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
   const [selectedIds, setSelectedIds] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const limit = 50; // Larger limit for easier bulk downloading
+
+  const limit = 50;
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
 
+  // ── Fetch Stats ─────────────────────────────────────────────────────────────
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/v1/vehicle-for-add/admin/stats`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      if (data.status) setStats(data.data);
+    } catch {
+      // ignore stats fetch error silently
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  // ── Fetch Vehicles ──────────────────────────────────────────────────────────
   const fetchVehicles = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page, limit, filter, apiType });
-      if (search.trim()) params.append("search", search.trim());
-      const res = await fetch(`${BASE_URL}/api/v1/vehicle-for-add/admin/list?${params}`, { headers: getAuthHeaders() });
+      let url;
+      let params;
+
+      if (mainTab === "fail") {
+        params = new URLSearchParams({ page, limit, filter, apiType });
+        if (search.trim()) params.append("search", search.trim());
+        if (fromDate) params.append("fromDate", fromDate);
+        if (toDate)   params.append("toDate",   toDate);
+        url = `${BASE_URL}/api/v1/vehicle-for-add/admin/list?${params}`;
+      } else {
+        params = new URLSearchParams({ page, limit, apiType });
+        if (search.trim()) params.append("search", search.trim());
+        if (fromDate) params.append("fromDate", fromDate);
+        if (toDate)   params.append("toDate",   toDate);
+        url = `${BASE_URL}/api/v1/vehicle-for-add/admin/success-list?${params}`;
+      }
+
+      const res = await fetch(url, { headers: getAuthHeaders() });
       const data = await res.json();
       if (data.status) {
         setVehicles(data.data || []);
-        setPagination(data.pagination || { total: 0, totalPages: 1, allCount: 0, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
-        // Clear selection on page change or filter change
+        setPagination(data.pagination || {
+          total: 0, totalPages: 1, allCount: 0,
+          pendingCount: 0, downloadedCount: 0,
+          vehicleCount: 0, challanCount: 0,
+        });
         setSelectedIds([]);
       } else {
         showToast(data.message || "Failed to fetch vehicles", "error");
@@ -55,9 +186,10 @@ export default function VehicleForAdd() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, filter, apiType]);
+  }, [page, search, filter, apiType, mainTab, fromDate, toDate]);
 
   useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -68,7 +200,29 @@ export default function VehicleForAdd() {
   const clearSearch = () => {
     setSearch("");
     setPage(1);
-    setTimeout(fetchVehicles, 0);
+  };
+
+  const changeMainTab = (tab) => {
+    setMainTab(tab);
+    setApiType("VEHICLE");
+    setFilter("pending");
+    setPage(1);
+    setSearch("");
+    setFromDate("");
+    setToDate("");
+    setSelectedIds([]);
+  };
+
+  const clearDateRange = () => {
+    setFromDate("");
+    setToDate("");
+    setPage(1);
+  };
+
+  const changeApiType = (type) => {
+    setApiType(type);
+    setPage(1);
+    setSelectedIds([]);
   };
 
   const changeFilter = (f) => {
@@ -76,36 +230,24 @@ export default function VehicleForAdd() {
     setPage(1);
   };
 
-  // ── Selection Logic ────────────────────────────────────────────────────────
+  // ── Selection ──────────────────────────────────────────────────────────────
   const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedIds(vehicles.map((v) => v.vehicleNumber));
-    } else {
-      setSelectedIds([]);
-    }
+    if (e.target.checked) setSelectedIds(vehicles.map((v) => v.vehicleNumber));
+    else setSelectedIds([]);
   };
 
   const handleSelectOne = (e, vNum) => {
-    if (e.target.checked) {
-      setSelectedIds((prev) => [...prev, vNum]);
-    } else {
-      setSelectedIds((prev) => prev.filter((id) => id !== vNum));
-    }
+    if (e.target.checked) setSelectedIds((prev) => [...prev, vNum]);
+    else setSelectedIds((prev) => prev.filter((id) => id !== vNum));
   };
 
   const isAllSelected = vehicles.length > 0 && selectedIds.length === vehicles.length;
 
-  // ── Download PDF Logic ──────────────────────────────────────────────────────
+  // ── Download PDF ────────────────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
     if (selectedIds.length === 0) return;
-    
-    // Find the selected vehicles objects
     const selectedVehicles = vehicles.filter(v => selectedIds.includes(v.vehicleNumber));
-    
-    // Generate PDF
     const doc = new jsPDF();
-    
-    // Title
     doc.setFontSize(18);
     doc.text("Vehicles To Add to RTO API", 14, 22);
     doc.setFontSize(11);
@@ -113,18 +255,13 @@ export default function VehicleForAdd() {
     doc.text(`Total Vehicles: ${selectedVehicles.length}`, 14, 36);
 
     const tableColumn = ["S.No", "Vehicle Number", "Failed APIs", "Fail Count", "Last Searched"];
-    const tableRows = [];
-
-    selectedVehicles.forEach((v, index) => {
-      const rowData = [
-        index + 1,
-        v.vehicleNumber,
-        (v.failedApis || []).join(", "),
-        v.failCount,
-        new Date(v.lastFailedAt).toLocaleString()
-      ];
-      tableRows.push(rowData);
-    });
+    const tableRows = selectedVehicles.map((v, i) => [
+      i + 1,
+      v.vehicleNumber,
+      (v.failedApis || []).join(", "),
+      v.failCount,
+      new Date(v.lastFailedAt).toLocaleString(),
+    ]);
 
     autoTable(doc, {
       head: [tableColumn],
@@ -135,10 +272,8 @@ export default function VehicleForAdd() {
       headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255] },
     });
 
-    // Save the PDF
     doc.save(`Vehicles_To_Add_${new Date().getTime()}.pdf`);
 
-    // Only mark as downloaded if we are currently looking at pending vehicles
     if (filter === "pending" || filter === "all") {
       await markAsDownloaded(selectedIds);
     } else {
@@ -158,6 +293,7 @@ export default function VehicleForAdd() {
       if (data.status) {
         showToast(`✅ ${data.data.modifiedCount} vehicles marked as downloaded`);
         fetchVehicles();
+        fetchStats();
       } else {
         showToast(data.message || "Failed to update status", "error");
       }
@@ -170,7 +306,6 @@ export default function VehicleForAdd() {
 
   const handleDelete = async () => {
     if (selectedIds.length === 0) return;
-
     setActionLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/api/v1/vehicle-for-add/admin/delete`, {
@@ -182,6 +317,7 @@ export default function VehicleForAdd() {
       if (data.status) {
         showToast(`✅ ${data.data.deletedCount} vehicles removed`);
         fetchVehicles();
+        fetchStats();
         setDeleteModalOpen(false);
       } else {
         showToast(data.message || "Failed to delete", "error");
@@ -193,15 +329,39 @@ export default function VehicleForAdd() {
     }
   };
 
+  // ── Derived data ─────────────────────────────────────────────────────────
+  const isFail = mainTab === "fail";
 
-  const tabs = [
+  const apiSubTabs = [
+    {
+      key: "VEHICLE",
+      label: isFail ? "Vehicle Details Failed" : "Vehicle Details Success",
+      count: pagination.vehicleCount || 0,
+    },
+    {
+      key: "CHALLAN",
+      label: isFail ? "Challan Failed" : "Challan Success",
+      count: pagination.challanCount || 0,
+    },
+  ];
+
+  const filterTabs = [
     { key: "pending",    label: "Pending to Add",  count: pagination.pendingCount },
     { key: "downloaded", label: "Downloaded",      count: pagination.downloadedCount },
     { key: "all",        label: "All Vehicles",    count: pagination.allCount },
   ];
 
+  // chart data per current apiType context
+  const chartData = stats
+    ? apiType === "VEHICLE"
+      ? stats.vehicle
+      : apiType === "CHALLAN"
+      ? stats.challan
+      : stats.overall
+    : null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #f0fdf4 100%)" }}>
       {/* Toast */}
       {toast && (
         <div className={`fixed top-5 right-5 z-[100] px-5 py-3 rounded-xl shadow-xl text-sm font-medium text-white transition-all duration-300 ${toast.type === "success" ? "bg-emerald-600" : "bg-red-600"}`}>
@@ -226,7 +386,11 @@ export default function VehicleForAdd() {
               </div>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <button onClick={fetchVehicles} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition" title="Refresh">
+              <button
+                onClick={() => { fetchVehicles(); fetchStats(); }}
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition"
+                title="Refresh"
+              >
                 <RefreshCw className={`w-4 h-4 text-slate-600 ${loading ? "animate-spin" : ""}`} />
               </button>
             </div>
@@ -235,53 +399,120 @@ export default function VehicleForAdd() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        
-        {/* Main API Tabs */}
-        <div className="flex border-b border-slate-200 mb-6 gap-2">
+
+        {/* ── TOP TABS: Fail / Success ─────────────────────────────────────── */}
+        <div className="flex gap-3 mb-6">
           <button
-            onClick={() => { setApiType("VEHICLE"); setPage(1); }}
-            className={`pb-3 px-4 text-sm font-semibold transition border-b-2 ${
-              apiType === "VEHICLE"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+            onClick={() => changeMainTab("fail")}
+            className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 shadow-sm ${
+              mainTab === "fail"
+                ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-orange-200 shadow-lg"
+                : "bg-white text-slate-600 border border-slate-200 hover:border-orange-200 hover:text-orange-600"
             }`}
           >
-            Vehicle Details Failed <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${apiType === "VEHICLE" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{pagination.vehicleCount || 0}</span>
+            <AlertTriangle className="w-4 h-4" />
+            Fail
+            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${mainTab === "fail" ? "bg-white/25 text-white" : "bg-orange-100 text-orange-700"}`}>
+              {(apiType === "VEHICLE" ? stats?.vehicle?.fail : apiType === "CHALLAN" ? stats?.challan?.fail : stats?.overall?.fail) ?? "—"}
+            </span>
           </button>
           <button
-            onClick={() => { setApiType("CHALLAN"); setPage(1); }}
-            className={`pb-3 px-4 text-sm font-semibold transition border-b-2 ${
-              apiType === "CHALLAN"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+            onClick={() => changeMainTab("success")}
+            className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 shadow-sm ${
+              mainTab === "success"
+                ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-teal-200 shadow-lg"
+                : "bg-white text-slate-600 border border-slate-200 hover:border-teal-200 hover:text-teal-600"
             }`}
           >
-            Challan Failed <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${apiType === "CHALLAN" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{pagination.challanCount || 0}</span>
+            <CheckCircle className="w-4 h-4" />
+            Success
+            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${mainTab === "success" ? "bg-white/25 text-white" : "bg-teal-100 text-teal-700"}`}>
+              {(apiType === "VEHICLE" ? stats?.vehicle?.success : apiType === "CHALLAN" ? stats?.challan?.success : stats?.overall?.success) ?? "—"}
+            </span>
           </button>
         </div>
 
-        {/* Actions Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-            {tabs.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => changeFilter(t.key)}
-                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                  filter === t.key
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {t.label}
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${filter === t.key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
-                  {t.count}
-                </span>
-              </button>
-            ))}
+        {/* ── CHART + SECOND-LEVEL TABS LAYOUT ─────────────────────────────── */}
+        <div className="flex gap-5 mb-6 flex-col lg:flex-row">
+
+          {/* Donut Chart Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col items-center justify-center min-w-[200px]">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+              {apiType === "VEHICLE" ? "Vehicle API" : apiType === "CHALLAN" ? "Challan API" : "All APIs"} Stats
+            </p>
+            {statsLoading ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <Loader2 className="w-8 h-8 text-teal-400 animate-spin" />
+                <p className="text-xs text-slate-400">Loading stats...</p>
+              </div>
+            ) : chartData ? (
+              <DonutChart
+                failCount={chartData.fail}
+                successCount={chartData.success}
+                label={`of ${chartData.total.toLocaleString()} total requests`}
+              />
+            ) : (
+              <p className="text-xs text-slate-400">No data</p>
+            )}
           </div>
 
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-sm">
+          {/* Right column: secondary tabs + filter tabs */}
+          <div className="flex-1 flex flex-col gap-4">
+
+            {/* ── API TYPE TABS: Vehicle Details / Challan ─────────────── */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="flex">
+                {apiSubTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => changeApiType(tab.key)}
+                    className={`flex-1 flex flex-col items-center justify-center py-4 px-4 transition-all duration-200 border-b-2 ${
+                      apiType === tab.key
+                        ? isFail
+                          ? "border-orange-500 bg-orange-50"
+                          : "border-teal-500 bg-teal-50"
+                        : "border-transparent hover:bg-slate-50"
+                    }`}
+                  >
+                    <span className={`text-sm font-bold ${apiType === tab.key ? (isFail ? "text-orange-700" : "text-teal-700") : "text-slate-600"}`}>
+                      {tab.label}
+                    </span>
+                    <span className={`mt-1.5 text-xl font-black ${apiType === tab.key ? (isFail ? "text-orange-600" : "text-teal-600") : "text-slate-400"}`}>
+                      {tab.count.toLocaleString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── FILTER TABS (only for fail tab) ─────────────────────── */}
+            {isFail && (
+              <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+                {filterTabs.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => changeFilter(t.key)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      filter === t.key
+                        ? "bg-orange-500 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {t.label}
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${filter === t.key ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500"}`}>
+                      {t.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── SEARCH + DATE RANGE BAR ──────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          {/* Search */}
+          <form onSubmit={handleSearchSubmit} className="relative min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
             <input
               type="text"
@@ -296,12 +527,51 @@ export default function VehicleForAdd() {
               </button>
             )}
           </form>
+
+          {/* Date Range */}
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
+            <CalendarRange className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <input
+              type="date"
+              value={fromDate}
+              max={toDate || undefined}
+              onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
+              className="text-sm text-slate-700 border-none outline-none bg-transparent cursor-pointer"
+              title="From date"
+            />
+            <span className="text-slate-300 font-semibold">→</span>
+            <input
+              type="date"
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+              className="text-sm text-slate-700 border-none outline-none bg-transparent cursor-pointer"
+              title="To date"
+            />
+            {(fromDate || toDate) && (
+              <button
+                onClick={clearDateRange}
+                className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-slate-100 hover:bg-red-100 hover:text-red-500 transition flex-shrink-0"
+                title="Clear date filter"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Active date badge */}
+          {(fromDate || toDate) && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-xs font-semibold text-blue-700">
+              <Calendar className="w-3.5 h-3.5" />
+              {fromDate && toDate ? `${fromDate} to ${toDate}` : fromDate ? `From ${fromDate}` : `Until ${toDate}`}
+            </div>
+          )}
         </div>
 
-        {/* Bulk Actions */}
-        {selectedIds.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2">
-            <p className="text-sm font-semibold text-blue-800">
+        {/* ── BULK ACTIONS (fail tab only) ─────────────────────────────────── */}
+        {isFail && selectedIds.length > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm">
+            <p className="text-sm font-semibold text-orange-800">
               {selectedIds.length} vehicle(s) selected
             </p>
             <div className="flex items-center gap-2">
@@ -315,7 +585,7 @@ export default function VehicleForAdd() {
               <button
                 onClick={handleDownloadPDF}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-semibold transition shadow-sm disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white hover:bg-orange-600 rounded-lg text-sm font-semibold transition shadow-sm disabled:opacity-50"
               >
                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
                 Download PDF
@@ -324,24 +594,27 @@ export default function VehicleForAdd() {
           </div>
         )}
 
-        {/* Table */}
+        {/* ── TABLE ───────────────────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50 border-b border-slate-200 items-center">
-            <div className="col-span-1">
-              <input
-                type="checkbox"
-                checked={isAllSelected}
-                onChange={handleSelectAll}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                disabled={vehicles.length === 0}
-              />
-            </div>
-            <div className="col-span-4 text-xs font-semibold text-slate-500 uppercase tracking-wide">Vehicle Number</div>
-            <div className="col-span-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</div>
-            <div className="col-span-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Fail Count</div>
-            <div className="col-span-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Last Checked</div>
+          {/* Table Header */}
+          <div className={`grid items-center px-5 py-3 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wide ${isFail ? "grid-cols-12 gap-3" : "grid-cols-10 gap-3"}`}>
+            {isFail && (
+              <div className="col-span-1">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 cursor-pointer"
+                  disabled={vehicles.length === 0}
+                />
+              </div>
+            )}
+            <div className={isFail ? "col-span-5" : "col-span-6"}>Vehicle Number</div>
+            <div className="col-span-3">Status</div>
+            <div className="col-span-3">{isFail ? "Last Failed" : "Last Success"}</div>
           </div>
 
+          {/* Table Body */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -350,69 +623,99 @@ export default function VehicleForAdd() {
           ) : vehicles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3">
               <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-slate-400" />
+                {isFail ? <AlertTriangle className="w-8 h-8 text-slate-300" /> : <CheckCircle2 className="w-8 h-8 text-slate-300" />}
               </div>
               <div className="text-center">
                 <p className="font-semibold text-slate-700">No Vehicles Found</p>
-                <p className="text-sm text-slate-500 mt-1">{search ? `No results for "${search}"` : "All caught up! No vehicles pending."}</p>
+                <p className="text-sm text-slate-500 mt-1">{search ? `No results for "${search}"` : "Nothing here yet."}</p>
               </div>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {vehicles.map((v) => (
-                <div
-                  key={v.vehicleNumber}
-                  className={`grid grid-cols-12 gap-3 px-5 py-3.5 items-center transition ${selectedIds.includes(v.vehicleNumber) ? "bg-blue-50/50" : "hover:bg-slate-50/70"}`}
-                >
-                  <div className="col-span-1">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(v.vehicleNumber)}
-                      onChange={(e) => handleSelectOne(e, v.vehicleNumber)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                  </div>
-                  <div className="col-span-4 flex flex-col justify-center gap-1 py-1">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Car className="w-4 h-4 text-slate-500" />
+              {vehicles.map((v) => {
+                const isSelected = selectedIds.includes(v.vehicleNumber);
+                const dateStr = isFail
+                  ? (v.lastFailedAt ? new Date(v.lastFailedAt).toLocaleString() : "—")
+                  : (v.lastSuccessAt ? new Date(v.lastSuccessAt).toLocaleString() : "—");
+
+                return (
+                  <div
+                    key={v.vehicleNumber}
+                    className={`grid items-center px-5 py-3.5 transition-colors ${isFail ? "grid-cols-12 gap-3" : "grid-cols-10 gap-3"} ${isSelected ? "bg-orange-50/60" : "hover:bg-slate-50/70"}`}
+                  >
+                    {isFail && (
+                      <div className="col-span-1">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleSelectOne(e, v.vehicleNumber)}
+                          className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 cursor-pointer"
+                        />
                       </div>
-                      <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">{v.vehicleNumber}</span>
+                    )}
+
+                    {/* Vehicle Number */}
+                    <div className={`${isFail ? "col-span-5" : "col-span-6"} flex flex-col gap-1`}>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isFail ? "bg-orange-50" : "bg-teal-50"}`}>
+                          <Car className={`w-4 h-4 ${isFail ? "text-orange-400" : "text-teal-400"}`} />
+                        </div>
+                        <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">{v.vehicleNumber}</span>
+                      </div>
+                      {/* API type badges */}
+                      {isFail && v.failedApis && v.failedApis.length > 0 && (
+                        <div className="flex gap-1 pl-10">
+                          {v.failedApis.includes("CHALLAN") && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold uppercase">Challan</span>
+                          )}
+                          {v.failedApis.includes("VEHICLE") && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold uppercase">Vehicle</span>
+                          )}
+                        </div>
+                      )}
+                      {!isFail && v.apiTypes && v.apiTypes.length > 0 && (
+                        <div className="flex gap-1 pl-10">
+                          {v.apiTypes.map(type => (
+                            <span key={type} className="text-[10px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 font-semibold uppercase">
+                              {type === "challan_plus_api" ? "Challan" : "Vehicle"}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {v.failedApis && v.failedApis.length > 0 && (
-                      <div className="flex gap-1 pl-11">
-                        {v.failedApis.includes("CHALLAN") && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold uppercase">Challan Failed</span>}
-                        {v.failedApis.includes("VEHICLE") && <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-semibold uppercase">Vehicle Details Failed</span>}
-                      </div>
-                    )}
+
+                    {/* Status */}
+                    <div className="col-span-3">
+                      {isFail ? (
+                        v.isDownloaded ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                            Downloaded
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
+                            Pending
+                          </span>
+                        )
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 border border-teal-200">
+                          ✓ Success
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Date */}
+                    <div className="col-span-3 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-xs text-slate-600">{dateStr}</span>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    {v.isDownloaded ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
-                        Downloaded
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
-                        Pending
-                      </span>
-                    )}
-                  </div>
-                  <div className="col-span-2">
-                    <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md bg-slate-100 text-xs font-bold text-slate-600">
-                      {v.failCount}x
-                    </span>
-                  </div>
-                  <div className="col-span-3 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-xs text-slate-600">{new Date(v.lastFailedAt).toLocaleString()}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Pagination */}
+        {/* ── PAGINATION ───────────────────────────────────────────────────── */}
         {pagination.totalPages > 1 && (
           <div className="flex items-center justify-between mt-4 bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-3">
             <p className="text-sm text-slate-600">
@@ -439,9 +742,9 @@ export default function VehicleForAdd() {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* ── DELETE CONFIRMATION MODAL ─────────────────────────────────────── */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="p-6">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
