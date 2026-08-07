@@ -21,8 +21,9 @@ export default function VehicleForAdd() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("pending"); // pending | downloaded | all
+  const [apiType, setApiType] = useState("VEHICLE"); // VEHICLE | CHALLAN
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, pendingCount: 0, downloadedCount: 0 });
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
   const [selectedIds, setSelectedIds] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -37,13 +38,13 @@ export default function VehicleForAdd() {
   const fetchVehicles = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page, limit, filter });
+      const params = new URLSearchParams({ page, limit, filter, apiType });
       if (search.trim()) params.append("search", search.trim());
       const res = await fetch(`${BASE_URL}/api/v1/vehicle-for-add/admin/list?${params}`, { headers: getAuthHeaders() });
       const data = await res.json();
       if (data.status) {
         setVehicles(data.data || []);
-        setPagination(data.pagination || { total: 0, totalPages: 1, pendingCount: 0, downloadedCount: 0 });
+        setPagination(data.pagination || { total: 0, totalPages: 1, pendingCount: 0, downloadedCount: 0, vehicleCount: 0, challanCount: 0 });
         // Clear selection on page change or filter change
         setSelectedIds([]);
       } else {
@@ -54,7 +55,7 @@ export default function VehicleForAdd() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, filter]);
+  }, [page, search, filter, apiType]);
 
   useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
 
@@ -235,6 +236,30 @@ export default function VehicleForAdd() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         
+        {/* Main API Tabs */}
+        <div className="flex border-b border-slate-200 mb-6 gap-2">
+          <button
+            onClick={() => { setApiType("VEHICLE"); setPage(1); }}
+            className={`pb-3 px-4 text-sm font-semibold transition border-b-2 ${
+              apiType === "VEHICLE"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+            }`}
+          >
+            Vehicle Details Failed <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${apiType === "VEHICLE" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{pagination.vehicleCount || 0}</span>
+          </button>
+          <button
+            onClick={() => { setApiType("CHALLAN"); setPage(1); }}
+            className={`pb-3 px-4 text-sm font-semibold transition border-b-2 ${
+              apiType === "CHALLAN"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+            }`}
+          >
+            Challan Failed <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${apiType === "CHALLAN" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{pagination.challanCount || 0}</span>
+          </button>
+        </div>
+
         {/* Actions Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
