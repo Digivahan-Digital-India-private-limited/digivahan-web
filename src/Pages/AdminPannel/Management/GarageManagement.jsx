@@ -138,8 +138,18 @@ export default function GarageManagement() {
       const res  = await fetch(`${BASE_URL}/api/v1/garage/admin/all-garages?${params}`, { headers: getAuthHeaders() });
       const data = await res.json();
       if (data.status) {
-        setVehicles(data.data || []);
-        setPagination(data.pagination || { total: 0, totalPages: 1, garageCount: 0, challanCount: 0, vehicleInfoCount: 0, allCount: 0 });
+        // Filter out vehicleinfo so it doesn't show in the "All" tab table
+        const rawVehicles = data.data || [];
+        const filteredVehicles = rawVehicles.filter(v => v.source !== "vehicleinfo");
+        
+        setVehicles(filteredVehicles);
+        
+        const p = data.pagination || { total: 0, totalPages: 1, garageCount: 0, challanCount: 0, vehicleInfoCount: 0, allCount: 0 };
+        // Update allCount to exclude vehicleInfoCount for the stats card
+        setPagination({
+          ...p,
+          allCount: (p.garageCount || 0) + (p.challanCount || 0)
+        });
       } else {
         showToast(data.message || "Failed to fetch vehicles", "error");
       }
