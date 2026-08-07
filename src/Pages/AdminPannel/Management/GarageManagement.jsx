@@ -219,7 +219,6 @@ export default function GarageManagement() {
     { key: "all",         label: "All",          count: pagination.allCount,         icon: <Car className="w-3.5 h-3.5" /> },
     { key: "garage",      label: "Garage",        count: pagination.garageCount,      icon: <Warehouse className="w-3.5 h-3.5" /> },
     { key: "challan",     label: "Challan Data",  count: pagination.challanCount,     icon: <Activity className="w-3.5 h-3.5" /> },
-    { key: "vehicleinfo", label: "RC Details",    count: pagination.vehicleInfoCount, icon: <Database className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -263,13 +262,12 @@ export default function GarageManagement() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Stats Bar — 4 cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        {/* Stats Bar — 3 cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
           {[
             { label: "Total Cached",  count: pagination.allCount,         icon: <Car className="w-5 h-5 text-blue-600" />,     bg: "bg-blue-100" },
             { label: "In Garage",     count: pagination.garageCount,      icon: <Warehouse className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100" },
             { label: "Challan Data",  count: pagination.challanCount,     icon: <Activity className="w-5 h-5 text-violet-600" />, bg: "bg-violet-100" },
-            { label: "RC Details",    count: pagination.vehicleInfoCount, icon: <Database className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-100" },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
               <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center`}>{s.icon}</div>
