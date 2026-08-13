@@ -1145,24 +1145,30 @@ const ChallanPay = () => {
                           </div>
 
                           {challan.category === 'UNPAID' && (
-                            <button 
-                              onClick={() => handlePayNow(challan)}
-                              disabled={payingChallan === challan.challanNumber}
-                              className={`w-full py-3 text-white rounded-xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 ${
-                                payingChallan === challan.challanNumber 
-                                  ? 'bg-indigo-400 cursor-not-allowed' 
-                                  : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-                              }`}
-                            >
-                               {payingChallan === challan.challanNumber ? (
-                                 <>
-                                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                   Initiating Payment...
-                                 </>
-                               ) : (
-                                 'Pay Now'
-                               )}
-                            </button>
+                            challan.court_status_desc === "VIRTUAL COURT" ? (
+                              <div className="w-full py-3 bg-slate-50 text-slate-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-slate-200 text-center">
+                                <FaExclamationTriangle className="text-amber-500" /> Your challan is in virtual court
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => handlePayNow(challan)}
+                                disabled={payingChallan === challan.challanNumber}
+                                className={`w-full py-3 text-white rounded-xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 ${
+                                  payingChallan === challan.challanNumber 
+                                    ? 'bg-indigo-400 cursor-not-allowed' 
+                                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                                }`}
+                              >
+                                 {payingChallan === challan.challanNumber ? (
+                                   <>
+                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                     Initiating Payment...
+                                   </>
+                                 ) : (
+                                   'Pay Now'
+                                 )}
+                              </button>
+                            )
                           )}
                           
                           {challan.category === 'UNDER_PROCESS' && (
