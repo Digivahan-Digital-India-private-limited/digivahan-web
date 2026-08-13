@@ -17,7 +17,7 @@ const ChallanPay = () => {
     phone: "",
     otp: ["", "", "", "", "", ""], // 6-digit OTP
   });
-  
+
   const [flowId, setFlowId] = useState("");
   const [challans, setChallans] = useState([]);
   const [userDetails, setUserDetails] = useState(null);
@@ -57,10 +57,10 @@ const ChallanPay = () => {
         if (historyRes.status && historyRes.history) {
           setWebhookRecords(historyRes.history);
           const savedState = JSON.parse(localStorage.getItem("challan_pay_state") || "{}");
-          
+
           const currentToken = Cookies.get("token") || Cookies.get("user_token");
           if (currentToken) {
-            try { savedState.userId = jwtDecode(currentToken).userId; } catch(e) {}
+            try { savedState.userId = jwtDecode(currentToken).userId; } catch (e) { }
           }
 
           savedState.webhookRecords = historyRes.history;
@@ -72,10 +72,10 @@ const ChallanPay = () => {
       if (challanRes.status && challanRes.challans) {
         setChallans(challanRes.challans);
         const savedState = JSON.parse(localStorage.getItem("challan_pay_state") || "{}");
-        
+
         const currentToken = Cookies.get("token") || Cookies.get("user_token");
         if (currentToken) {
-          try { savedState.userId = jwtDecode(currentToken).userId; } catch(e) {}
+          try { savedState.userId = jwtDecode(currentToken).userId; } catch (e) { }
         }
 
         savedState.challans = challanRes.challans;
@@ -152,7 +152,7 @@ const ChallanPay = () => {
     const token = Cookies.get("token") || Cookies.get("user_token");
     let currentUserId = null;
     if (token) {
-      try { currentUserId = jwtDecode(token).userId; } catch(e) {}
+      try { currentUserId = jwtDecode(token).userId; } catch (e) { }
     }
 
     // 🔐 AUTH GUARD on mount: if no token, clear any stale saved state
@@ -234,7 +234,7 @@ const ChallanPay = () => {
           clearChallanPageData();
           currentUserId = newUserId; // Update to avoid loop
         }
-      } catch(e) {}
+      } catch (e) { }
     }, 1500);
 
     // Load Razorpay script in the background asynchronously to make the payment gateway open faster without preload warnings
@@ -257,13 +257,13 @@ const ChallanPay = () => {
       toast.error("Please enter a valid RC number");
       return;
     }
-    
+
     // 🪙 Block if no credits
     if (credits !== null && credits <= 0) {
       toast.error("You have used all your credits. You cannot search any more challans.");
       return;
     }
-    
+
     // Check if user is logged in
     const isLoggedIn = !!(Cookies.get("token") || Cookies.get("user_token"));
     if (isLoggedIn) {
@@ -273,7 +273,7 @@ const ChallanPay = () => {
         if (data.status) {
           const { user } = data;
           const realChallans = user?.challans || data.challans || [];
-          
+
           setChallans(realChallans);
           setUserDetails(user || null);
 
@@ -303,7 +303,7 @@ const ChallanPay = () => {
           if (currentToken) {
             try {
               currentUserId = jwtDecode(currentToken).userId;
-            } catch(e) {}
+            } catch (e) { }
           }
 
           const stateToSave = {
@@ -355,7 +355,7 @@ const ChallanPay = () => {
         setFlowId(data.flow_id);
         setStep(3);
         toast.success(data.message || "OTP sent successfully");
-        
+
         // Save minimal state to survive refresh during OTP step
         localStorage.setItem("challan_pay_state", JSON.stringify({
           step: 3,
@@ -383,13 +383,13 @@ const ChallanPay = () => {
       setLoading(true);
       const otpString = formData.otp.join("");
       console.log(`[ChallanPay] Verifying OTP: ${otpString} for flow: ${flowId}`);
-      
+
       const data = await verifyChallanOtp(flowId, otpString);
 
       if (data.status) {
         const { user } = data;
         const realChallans = user.challans || [];
-        
+
         console.log(`[ChallanPay] Received ${realChallans.length} real challans from backend`);
         setChallans(realChallans);
         setUserDetails(user);
@@ -426,14 +426,14 @@ const ChallanPay = () => {
 
         setStep(4);
         toast.success(data.message || "Verification successful");
-        
+
         // Save state to localStorage for persistence on refresh
         const currentToken = Cookies.get("token") || Cookies.get("user_token");
         let currentUserId = null;
         if (currentToken) {
           try {
             currentUserId = jwtDecode(currentToken).userId;
-          } catch(e) {}
+          } catch (e) { }
         }
 
         const stateToSave = {
@@ -474,7 +474,7 @@ const ChallanPay = () => {
     const newOtp = [...formData.otp];
     newOtp[index] = value ? value.substring(value.length - 1) : "";
     setFormData({ ...formData, otp: newOtp });
-    
+
     if (value && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -548,7 +548,7 @@ const ChallanPay = () => {
     try {
       setPayingChallan(challan.challanNumber);
       const vehicleNumber = formData.rcNumber;
-      
+
       if (!vehicleNumber) {
         toast.error("Vehicle number not found. Please search again.");
         setPayingChallan(null);
@@ -557,10 +557,10 @@ const ChallanPay = () => {
 
       console.log(`[ChallanPay] Requesting payment URL for ${vehicleNumber} and challan ${challan.challanNumber}`);
       const data = await getChallanPaymentUrl(vehicleNumber, [challan.challanNumber]);
-      
+
       if (data.status && data.paymentUrl) {
         let cleanUrl = data.paymentUrl.trim();
-        
+
         // Remove outer quotes if they exist
         if (cleanUrl.startsWith('"') && cleanUrl.endsWith('"')) {
           cleanUrl = cleanUrl.substring(1, cleanUrl.length - 1);
@@ -575,8 +575,8 @@ const ChallanPay = () => {
           .replace(/\\"/g, '"')
           .replace(/\\\\/g, '\\');
 
-        const isHtml = cleanUrl.toLowerCase().includes("<!doctype html>") || 
-                       cleanUrl.toLowerCase().includes("<html");
+        const isHtml = cleanUrl.toLowerCase().includes("<!doctype html>") ||
+          cleanUrl.toLowerCase().includes("<html");
 
         if (isHtml) {
           console.log("[ChallanPay] Opening payment HTML...");
@@ -886,7 +886,7 @@ const ChallanPay = () => {
                   {loading ? "Processing..." : "Send OTP"}
                 </button>
                 <div className="text-center">
-                    <button onClick={() => setStep(1)} className="text-indigo-600 font-bold text-sm hover:underline">← Change Vehicle</button>
+                  <button onClick={() => setStep(1)} className="text-indigo-600 font-bold text-sm hover:underline">← Change Vehicle</button>
                 </div>
               </div>
             )}
@@ -896,7 +896,7 @@ const ChallanPay = () => {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
                 <div className="text-slate-700 font-bold text-sm mb-1">Enter 6-digit OTP</div>
                 <p className="text-slate-500 text-sm mb-6">OTP sent to <span className="text-indigo-600 font-bold">+91 {formData.phone.replace(/.(?=.{4})/g, "X")}</span></p>
-                
+
                 <div className="flex justify-center gap-2 mb-6">
                   {formData.otp.map((digit, idx) => (
                     <input
@@ -920,9 +920,9 @@ const ChallanPay = () => {
                 <button className="btn-primary mb-8 disabled:opacity-70" onClick={handleVerifyFlow} disabled={loading}>
                   {loading ? "Verifying..." : "Verify OTP"}
                 </button>
-                
+
                 <div className="text-center">
-                    <button onClick={() => setStep(2)} className="text-slate-400 font-bold text-sm hover:text-slate-600">Change phone number?</button>
+                  <button onClick={() => setStep(2)} className="text-slate-400 font-bold text-sm hover:text-slate-600">Change phone number?</button>
                 </div>
               </div>
             )}
@@ -987,7 +987,7 @@ const ChallanPay = () => {
                     return cleanWebhook === cleanActual;
                   };
 
-                  const currentVehicleWebhooks = webhookRecords.filter(r => 
+                  const currentVehicleWebhooks = webhookRecords.filter(r =>
                     r.transactionStatus !== 'SEARCHED' && isMatchingRc(r.rcNumber, formData.rcNumber)
                   );
 
@@ -1040,8 +1040,8 @@ const ChallanPay = () => {
                           <div className="text-slate-500 text-xs font-bold uppercase tracking-wider">Vehicle Number</div>
                           <div className="flex items-center gap-3">
                             <div className="text-slate-900 font-black text-xl">{formData.rcNumber}</div>
-                            <button 
-                              onClick={handleRefreshData} 
+                            <button
+                              onClick={handleRefreshData}
                               disabled={isRefreshing || (credits !== null && credits <= 0)}
                               className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded hover:bg-indigo-100 font-bold transition disabled:opacity-50"
                             >
@@ -1051,15 +1051,14 @@ const ChallanPay = () => {
                         </div>
                         {/* 🪙 CREDIT BADGE */}
                         <div className="flex flex-col items-end gap-1">
-                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${
-                            credits === null
+                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${credits === null
                               ? 'bg-slate-50 border-slate-200 text-slate-500'
                               : credits <= 0
-                              ? 'bg-red-50 border-red-200 text-red-600'
-                              : credits <= 3
-                              ? 'bg-amber-50 border-amber-200 text-amber-700'
-                              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                          }`}>
+                                ? 'bg-red-50 border-red-200 text-red-600'
+                                : credits <= 3
+                                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                                  : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            }`}>
                             <span className="text-base">🪙</span>
                             <div>
                               <div className="text-[10px] uppercase tracking-wider opacity-70">Credits Left</div>
@@ -1090,31 +1089,28 @@ const ChallanPay = () => {
                       <div className="flex gap-2 mb-6 border-b border-slate-200 pb-2 overflow-x-auto custom-scrollbar">
                         <button
                           onClick={() => setActiveTab("UNPAID")}
-                          className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-all ${
-                            activeTab === "UNPAID"
+                          className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-all ${activeTab === "UNPAID"
                               ? "text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50"
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           Unpaid ({processedChallans.filter(c => c.category === 'UNPAID').length})
                         </button>
                         <button
                           onClick={() => setActiveTab("UNDER_PROCESS")}
-                          className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-all ${
-                            activeTab === "UNDER_PROCESS"
+                          className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-all ${activeTab === "UNDER_PROCESS"
                               ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           Under Process ({processedChallans.filter(c => c.category === 'UNDER_PROCESS').length})
                         </button>
                         <button
                           onClick={() => setActiveTab("PAID")}
-                          className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-all ${
-                            activeTab === "PAID"
+                          className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-all ${activeTab === "PAID"
                               ? "text-green-600 border-b-2 border-green-600 bg-green-50/50"
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           Paid ({processedChallans.filter(c => c.category === 'PAID').length})
                         </button>
@@ -1125,7 +1121,7 @@ const ChallanPay = () => {
                           {displayChallans.map((challan, idx) => {
                             const isPaid = challan.category === 'PAID';
                             const isUnderProcess = challan.category === 'UNDER_PROCESS';
-                            
+
                             return (
                               <div key={idx} className={`challan-card hover:border-indigo-200 transition-all shadow-sm ${isPaid ? 'opacity-80 bg-slate-50/50' : ''} ${isUnderProcess ? 'border-blue-200 bg-blue-50/30' : ''}`}>
                                 <div className="flex justify-between items-start mb-4">
@@ -1137,209 +1133,214 @@ const ChallanPay = () => {
                                     {isPaid ? 'PAID' : isUnderProcess ? 'PROCESSING' : 'UNPAID'}
                                   </span>
                                 </div>
-                          
-                          <div className="space-y-2 mb-4">
-                              <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Amount</span><span className={`font-black text-lg ${isPaid ? 'text-slate-600' : 'text-red-500'}`}>₹{challan.amountSettledAt || 0}</span></div>
-                              <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Date</span><span className="text-slate-700 font-bold">{new Date(challan.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
-                              <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Reason</span><span className="text-slate-700 font-bold">{challan.offence}</span></div>
-                          </div>
 
-                          {challan.category === 'UNPAID' && (
-                            challan.court_status_desc === "VIRTUAL COURT" ? (
-                              <div className="w-full py-3 bg-slate-50 text-slate-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-slate-200 text-center">
-                                <FaExclamationTriangle className="text-amber-500" /> Your challan is in virtual court
-                              </div>
-                            ) : (
-                              <button 
-                                onClick={() => handlePayNow(challan)}
-                                disabled={payingChallan === challan.challanNumber}
-                                className={`w-full py-3 text-white rounded-xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 ${
-                                  payingChallan === challan.challanNumber 
-                                    ? 'bg-indigo-400 cursor-not-allowed' 
-                                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-                                }`}
-                              >
-                                 {payingChallan === challan.challanNumber ? (
-                                   <>
-                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                     Initiating Payment...
-                                   </>
-                                 ) : (
-                                   'Pay Now'
-                                 )}
-                              </button>
-                            )
-                          )}
-                          
-                          {challan.category === 'UNDER_PROCESS' && (
-                            <div className="space-y-2">
-                              <div className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-blue-100">
-                                <FaCheckCircle /> Payment Processing (Settlement in 3-4 days)
-                              </div>
-                              {challan._webhookRecord ? (
-                                <div className="mt-3 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                                  <div className="grid grid-cols-2 gap-y-3 gap-x-2">
-                                    {challan._webhookRecord.requestId && (
-                                      <div className="col-span-2">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Request ID</span>
-                                        <span className="text-xs font-semibold text-slate-700 break-all">{challan._webhookRecord.requestId}</span>
-                                      </div>
-                                    )}
-                                    {challan._webhookRecord.ioStatus && (
-                                      <div>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">IO Status</span>
-                                        <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
-                                      </div>
-                                    )}
-                                    {challan.isSettled !== undefined && (
-                                      <div className="mt-2 text-right">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
-                                        <span className={`text-xs font-semibold ${challan.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
-                                          {challan.isSettled ? 'Yes' : 'No'}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {challan._webhookRecord.convenienceFee ? (
-                                      <div>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Conv. Fee</span>
-                                        <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.convenienceFee}</span>
-                                      </div>
-                                    ) : null}
-                                    {challan._webhookRecord.paymentGatewayFee ? (
-                                      <div>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">PG Fee</span>
-                                        <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
-                                      </div>
-                                    ) : null}
-                                    {(challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink) && (
-                                       <div className="col-span-2">
-                                         <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Link</span>
-                                         <button
-                                           onClick={() => handleViewReceipt(challan._webhookRecord._id, challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink)}
-                                           disabled={receiptLoadingId === challan._webhookRecord._id}
-                                           className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
-                                         >
-                                           {receiptLoadingId === challan._webhookRecord._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
-                                         </button>
-                                       </div>
-                                     )}
-                                    {challan._webhookRecord.receiptNumber && (
-                                      <div className="col-span-2">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Number</span>
-                                        <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.receiptNumber}</span>
-                                      </div>
-                                    )}
-                                    {challan._webhookRecord.refundAmount && (challan._webhookRecord.refundAmount !== "0" && challan._webhookRecord.refundAmount !== 0) && (
-                                      <div>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Refund</span>
-                                        <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.refundAmount}</span>
-                                      </div>
-                                    )}
-                                    {challan._webhookRecord.comment && (
-                                      <div className="col-span-2">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Comment</span>
-                                        <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.comment}</span>
-                                      </div>
-                                    )}
+                                <div className="space-y-2 mb-4">
+                                  <div className="flex justify-between text-xs items-center">
+                                    <span className="text-slate-400 font-bold">Amount</span>
+                                    <div className="text-right">
+                                      <span className={`font-black text-lg ${isPaid ? 'text-slate-600' : 'text-red-500'}`}>₹{challan.amountSettledAt || 0}</span>
+                                      {!isPaid && <div className="text-[10px] text-slate-500 font-bold mt-[-2px]">299 + taxes</div>}
+                                    </div>
                                   </div>
+                                  <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Date</span><span className="text-slate-700 font-bold">{new Date(challan.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+                                  <div className="flex justify-between text-xs"><span className="text-slate-400 font-bold">Reason</span><span className="text-slate-700 font-bold">{challan.offence}</span></div>
                                 </div>
-                              ) : null}
+
+                                {challan.category === 'UNPAID' && (
+                                  challan.court_status_desc === "VIRTUAL COURT" ? (
+                                    <div className="w-full py-3 bg-slate-50 text-slate-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-slate-200 text-center">
+                                      <FaExclamationTriangle className="text-amber-500" /> Your challan is in virtual court
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => handlePayNow(challan)}
+                                      disabled={payingChallan === challan.challanNumber}
+                                      className={`w-full py-3 text-white rounded-xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 ${payingChallan === challan.challanNumber
+                                          ? 'bg-indigo-400 cursor-not-allowed'
+                                          : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                                        }`}
+                                    >
+                                      {payingChallan === challan.challanNumber ? (
+                                        <>
+                                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                          Initiating Payment...
+                                        </>
+                                      ) : (
+                                        'Pay Now'
+                                      )}
+                                    </button>
+                                  )
+                                )}
+
+                                {challan.category === 'UNDER_PROCESS' && (
+                                  <div className="space-y-2">
+                                    <div className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-blue-100">
+                                      <FaCheckCircle /> Payment Processing (Settlement in 3-4 days)
+                                    </div>
+                                    {challan._webhookRecord ? (
+                                      <div className="mt-3 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                                        <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                                          {challan._webhookRecord.requestId && (
+                                            <div className="col-span-2">
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Request ID</span>
+                                              <span className="text-xs font-semibold text-slate-700 break-all">{challan._webhookRecord.requestId}</span>
+                                            </div>
+                                          )}
+                                          {challan._webhookRecord.ioStatus && (
+                                            <div>
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">IO Status</span>
+                                              <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
+                                            </div>
+                                          )}
+                                          {challan.isSettled !== undefined && (
+                                            <div className="mt-2 text-right">
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
+                                              <span className={`text-xs font-semibold ${challan.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
+                                                {challan.isSettled ? 'Yes' : 'No'}
+                                              </span>
+                                            </div>
+                                          )}
+                                          {challan._webhookRecord.convenienceFee ? (
+                                            <div>
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Conv. Fee</span>
+                                              <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.convenienceFee}</span>
+                                            </div>
+                                          ) : null}
+                                          {challan._webhookRecord.paymentGatewayFee ? (
+                                            <div>
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">PG Fee</span>
+                                              <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
+                                            </div>
+                                          ) : null}
+                                          {(challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink) && (
+                                            <div className="col-span-2">
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Link</span>
+                                              <button
+                                                onClick={() => handleViewReceipt(challan._webhookRecord._id, challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink)}
+                                                disabled={receiptLoadingId === challan._webhookRecord._id}
+                                                className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
+                                              >
+                                                {receiptLoadingId === challan._webhookRecord._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
+                                              </button>
+                                            </div>
+                                          )}
+                                          {challan._webhookRecord.receiptNumber && (
+                                            <div className="col-span-2">
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Number</span>
+                                              <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.receiptNumber}</span>
+                                            </div>
+                                          )}
+                                          {challan._webhookRecord.refundAmount && (challan._webhookRecord.refundAmount !== "0" && challan._webhookRecord.refundAmount !== 0) && (
+                                            <div>
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Refund</span>
+                                              <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.refundAmount}</span>
+                                            </div>
+                                          )}
+                                          {challan._webhookRecord.comment && (
+                                            <div className="col-span-2">
+                                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Comment</span>
+                                              <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.comment}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )}
+
+                                {challan.category === 'PAID' && challan._webhookRecord ? (
+                                  <div className="mt-3 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                                    <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                                      {challan._webhookRecord.requestId && (
+                                        <div className="col-span-2">
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Request ID</span>
+                                          <span className="text-xs font-semibold text-slate-700 break-all">{challan._webhookRecord.requestId}</span>
+                                        </div>
+                                      )}
+                                      {challan._webhookRecord.ioStatus && (
+                                        <div>
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">IO Status</span>
+                                          <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
+                                        </div>
+                                      )}
+                                      {challan.isSettled !== undefined && (
+                                        <div className="mt-2 flex-1">
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
+                                          <span className={`text-xs font-semibold ${challan.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
+                                            {challan.isSettled ? 'Yes' : 'No'}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {challan._webhookRecord.convenienceFee ? (
+                                        <div>
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Conv. Fee</span>
+                                          <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.convenienceFee}</span>
+                                        </div>
+                                      ) : null}
+                                      {challan._webhookRecord.paymentGatewayFee ? (
+                                        <div>
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">PG Fee</span>
+                                          <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
+                                        </div>
+                                      ) : null}
+                                      {(challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink) && (
+                                        <div className="col-span-2">
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Link</span>
+                                          <button
+                                            onClick={() => handleViewReceipt(challan._webhookRecord._id, challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink)}
+                                            disabled={receiptLoadingId === challan._webhookRecord._id}
+                                            className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
+                                          >
+                                            {receiptLoadingId === challan._webhookRecord._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
+                                          </button>
+                                        </div>
+                                      )}
+                                      {challan._webhookRecord.receiptNumber && (
+                                        <div className="col-span-2">
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Number</span>
+                                          <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.receiptNumber}</span>
+                                        </div>
+                                      )}
+                                      {challan._webhookRecord.refundAmount && (challan._webhookRecord.refundAmount !== "0" && challan._webhookRecord.refundAmount !== 0) && (
+                                        <div>
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Refund</span>
+                                          <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.refundAmount}</span>
+                                        </div>
+                                      )}
+                                      {challan._webhookRecord.comment && (
+                                        <div className="col-span-2">
+                                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Comment</span>
+                                          <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.comment}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : challan.category === 'PAID' ? (
+                                  <div className="w-full py-3 bg-green-50 text-green-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-green-100">
+                                    <FaCheckCircle /> Payment Completed
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-5xl mb-6">{activeTab === "UNPAID" ? "✅" : "📂"}</div>
+                          <h3 className="text-slate-900 font-black text-2xl mb-2">No {activeTab.replace('_', ' ').toLowerCase()} challans!</h3>
+                          <p className="text-slate-500 text-sm leading-relaxed mb-8">
+                            {activeTab === "UNPAID"
+                              ? "Great news! No pending challans were found for your vehicle in this category."
+                              : "There are no challans in this category right now."}
+                          </p>
+                          {activeTab === "UNPAID" && (
+                            <div className="guarantee-box">
+                              <span className="text-2xl">🏅</span>
+                              <p className="text-sm text-slate-700">Settlement within <strong className="text-green-600">3 – 4 days</strong>, or get a <strong className="text-green-600">100% refund</strong> – guaranteed</p>
                             </div>
                           )}
-
-                          {challan.category === 'PAID' && challan._webhookRecord ? (
-                            <div className="mt-3 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                              <div className="grid grid-cols-2 gap-y-3 gap-x-2">
-                                {challan._webhookRecord.requestId && (
-                                  <div className="col-span-2">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Request ID</span>
-                                    <span className="text-xs font-semibold text-slate-700 break-all">{challan._webhookRecord.requestId}</span>
-                                  </div>
-                                )}
-                                {challan._webhookRecord.ioStatus && (
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">IO Status</span>
-                                    <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.ioStatus}</span>
-                                  </div>
-                                )}
-                                {challan.isSettled !== undefined && (
-                                  <div className="mt-2 flex-1">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Settled</span>
-                                    <span className={`text-xs font-semibold ${challan.isSettled ? 'text-green-600' : 'text-amber-600'}`}>
-                                      {challan.isSettled ? 'Yes' : 'No'}
-                                    </span>
-                                  </div>
-                                )}
-                                {challan._webhookRecord.convenienceFee ? (
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Conv. Fee</span>
-                                    <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.convenienceFee}</span>
-                                  </div>
-                                ) : null}
-                                {challan._webhookRecord.paymentGatewayFee ? (
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">PG Fee</span>
-                                    <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.paymentGatewayFee}</span>
-                                  </div>
-                                ) : null}
-                                {(challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink) && (
-                                  <div className="col-span-2">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Link</span>
-                                    <button
-                                      onClick={() => handleViewReceipt(challan._webhookRecord._id, challan._webhookRecord.receiptFile || challan._webhookRecord.receiptLink)}
-                                      disabled={receiptLoadingId === challan._webhookRecord._id}
-                                      className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-60 disabled:cursor-wait"
-                                    >
-                                      {receiptLoadingId === challan._webhookRecord._id ? "Loading..." : <>{"View Receipt"} <FaExternalLinkAlt size={10} /></>}
-                                    </button>
-                                  </div>
-                                )}
-                                {challan._webhookRecord.receiptNumber && (
-                                  <div className="col-span-2">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Receipt Number</span>
-                                    <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.receiptNumber}</span>
-                                  </div>
-                                )}
-                                {challan._webhookRecord.refundAmount && (challan._webhookRecord.refundAmount !== "0" && challan._webhookRecord.refundAmount !== 0) && (
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Refund</span>
-                                    <span className="text-xs font-semibold text-slate-700">₹{challan._webhookRecord.refundAmount}</span>
-                                  </div>
-                                )}
-                                {challan._webhookRecord.comment && (
-                                  <div className="col-span-2">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Comment</span>
-                                    <span className="text-xs font-semibold text-slate-700">{challan._webhookRecord.comment}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ) : challan.category === 'PAID' ? (
-                            <div className="w-full py-3 bg-green-50 text-green-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-green-100">
-                               <FaCheckCircle /> Payment Completed
-                            </div>
-                          ) : null}
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-5xl mb-6">{activeTab === "UNPAID" ? "✅" : "📂"}</div>
-                    <h3 className="text-slate-900 font-black text-2xl mb-2">No {activeTab.replace('_', ' ').toLowerCase()} challans!</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed mb-8">
-                      {activeTab === "UNPAID" 
-                        ? "Great news! No pending challans were found for your vehicle in this category."
-                        : "There are no challans in this category right now."}
-                    </p>
-                    {activeTab === "UNPAID" && (
-                      <div className="guarantee-box">
-                        <span className="text-2xl">🏅</span>
-                        <p className="text-sm text-slate-700">Settlement within <strong className="text-green-600">3 – 4 days</strong>, or get a <strong className="text-green-600">100% refund</strong> – guaranteed</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
                     </>
                   );
                 })()}
@@ -1365,7 +1366,7 @@ const ChallanPay = () => {
                 <FaTimes size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto bg-slate-50 flex-1">
               {loadingHistory ? (
                 <div className="flex justify-center items-center py-10">
@@ -1388,7 +1389,7 @@ const ChallanPay = () => {
                     }, {})
                   ).map((vehicle, idx) => (
                     <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                      <div 
+                      <div
                         className="p-5 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition"
                         onClick={() => setExpandedRc(expandedRc === vehicle.rcNumber ? null : vehicle.rcNumber)}
                       >
@@ -1419,16 +1420,15 @@ const ChallanPay = () => {
                                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Challan No.</span>
                                       <span className="font-bold text-slate-800">{item.challanNumber || '—'}</span>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                                      item.transactionStatus === 'SUCCESS' || item.transactionStatus === 'PAID' || (item.transactionStatus?.toLowerCase() === 'captured' && item.isSettled) ? 'bg-green-100 text-green-700' :
-                                      item.transactionStatus?.toLowerCase() === 'initiated' || item.transactionStatus?.toLowerCase() === 'captured' ? 'bg-blue-100 text-blue-700' :
-                                      item.transactionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                      'bg-slate-100 text-slate-600'
-                                    }`}>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${item.transactionStatus === 'SUCCESS' || item.transactionStatus === 'PAID' || (item.transactionStatus?.toLowerCase() === 'captured' && item.isSettled) ? 'bg-green-100 text-green-700' :
+                                        item.transactionStatus?.toLowerCase() === 'initiated' || item.transactionStatus?.toLowerCase() === 'captured' ? 'bg-blue-100 text-blue-700' :
+                                          item.transactionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-slate-100 text-slate-600'
+                                      }`}>
                                       {(item.transactionStatus?.toLowerCase() === 'captured' && item.isSettled) ? 'PAID' : (item.transactionStatus || '')}
                                     </span>
                                   </div>
-                                  
+
                                   <div className="grid grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-4">
                                     {item.amountSettledAt !== undefined && item.amountSettledAt !== null && (
                                       <div>
@@ -1520,9 +1520,9 @@ const ChallanPay = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="p-4 bg-white border-t border-slate-100 text-center">
-              <button 
+              <button
                 onClick={() => setShowHistory(false)}
                 className="px-6 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition"
               >
@@ -1544,12 +1544,11 @@ const ChallanPay = () => {
                 <span className="font-extrabold text-slate-800 text-lg">{viewDetailsItem.challanNumber || '—'}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                  viewDetailsItem.transactionStatus === 'SUCCESS' || viewDetailsItem.transactionStatus === 'PAID' || (viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' && viewDetailsItem.isSettled) ? 'bg-green-100 text-green-700' :
-                  viewDetailsItem.transactionStatus?.toLowerCase() === 'initiated' || viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' ? 'bg-blue-100 text-blue-700' :
-                  viewDetailsItem.transactionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-slate-100 text-slate-600'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${viewDetailsItem.transactionStatus === 'SUCCESS' || viewDetailsItem.transactionStatus === 'PAID' || (viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' && viewDetailsItem.isSettled) ? 'bg-green-100 text-green-700' :
+                    viewDetailsItem.transactionStatus?.toLowerCase() === 'initiated' || viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' ? 'bg-blue-100 text-blue-700' :
+                      viewDetailsItem.transactionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-slate-100 text-slate-600'
+                  }`}>
                   {(viewDetailsItem.transactionStatus?.toLowerCase() === 'captured' && viewDetailsItem.isSettled) ? 'PAID' : (viewDetailsItem.transactionStatus || 'Processing')}
                 </span>
                 <button onClick={() => setViewDetailsItem(null)} className="text-slate-400 hover:text-red-500 transition">
