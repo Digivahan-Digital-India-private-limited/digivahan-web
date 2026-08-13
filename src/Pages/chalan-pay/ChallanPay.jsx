@@ -1147,9 +1147,9 @@ const ChallanPay = () => {
                                 </div>
 
                                 {challan.category === 'UNPAID' && (
-                                  challan.court_status_desc === "VIRTUAL COURT" ? (
+                                  (challan.court_name && challan.court_name.trim() !== "") ? (
                                     <div className="w-full py-3 bg-slate-50 text-slate-600 rounded-xl font-black text-xs flex items-center justify-center gap-2 border border-slate-200 text-center">
-                                      <FaExclamationTriangle className="text-amber-500" /> Your challan is in virtual court
+                                      <FaExclamationTriangle className="text-amber-500" /> Offline Challan (Court Name: {challan.court_name})
                                     </div>
                                   ) : (
                                     <button
