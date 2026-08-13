@@ -90,7 +90,9 @@ const ChallanPay = () => {
     } catch (error) {
       console.error("Refresh error:", error);
       // 🪙 Handle no_credits error from backend
-      if (error?.error_type === "no_credits" || (typeof error === "string" && error.includes("credits"))) {
+      if (error?.error_type === "RTO_DOWN") {
+        navigate('/service-unavailable');
+      } else if (error?.error_type === "no_credits" || (typeof error === "string" && error.includes("credits"))) {
         setCredits(0);
         toast.error("You have used all your credits!");
       } else if (typeof error === "string" && (error.toLowerCase().includes("deleted") || error.toLowerCase().includes("deactivated") || error.toLowerCase().includes("blocked"))) {
@@ -448,7 +450,11 @@ const ChallanPay = () => {
         localStorage.setItem("challan_pay_state", JSON.stringify(stateToSave));
       }
     } catch (error) {
-      toast.error(error.toString());
+      if (error?.error_type === "RTO_DOWN") {
+        navigate('/service-unavailable');
+      } else {
+        toast.error(error.message || error.toString());
+      }
     } finally {
       setLoading(false);
     }

@@ -40,6 +40,7 @@ export const verifyChallanOtp = async (flowId, otp) => {
     });
     return response.data;
   } catch (error) {
+    if (error.response?.data) throw error.response.data;
     throw error.response?.data?.message || error.message || "Verification failed";
   }
 };
@@ -102,6 +103,7 @@ export const refreshChallanData = async (rcNumber) => {
     );
     return response.data;
   } catch (error) {
+    if (error.response?.data) throw error.response.data;
     throw error.response?.data?.message || error.message || "Failed to refresh challans";
   }
 };
@@ -124,6 +126,7 @@ export const directSearchChallanData = async (rcNumber) => {
     );
     return response.data;
   } catch (error) {
+    if (error.response?.data) throw error.response.data;
     throw error.response?.data?.message || error.message || "Failed to search challans";
   }
 };

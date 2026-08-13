@@ -52,7 +52,11 @@ const AddVehiclePage = () => {
       toast.success("Vehicle details fetched successfully");
     },
     onError: (error) => {
-      toast.error(error?.response?.data?.message || "Vehicle details not found in RTO registry");
+      if (error?.response?.data?.error_type === "RTO_DOWN" || error?.response?.data?.message === "RTO_DOWN") {
+        navigate('/service-unavailable');
+      } else {
+        toast.error(error?.response?.data?.message || "Vehicle details not found in RTO registry");
+      }
     },
   });
 

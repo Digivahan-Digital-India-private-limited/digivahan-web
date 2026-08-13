@@ -36,6 +36,7 @@ import EmergencyContactUspage from "./Pages/EmergencyContactUspage";
 import AccessVehicleDoc from "./Pages/AccessVehicleDoc";
 import ChallanPay from "./Pages/chalan-pay/ChallanPay";
 import ChallanPayForApp from "./Pages/chalan-for-app/ChallanPayForApp";
+import ServiceUnavailable from "./Pages/ServiceUnavailable";
 
 // Admin Pannel
 import AdminPannel from "./Pages/AdminPannel/AdminPannel";
@@ -390,6 +391,7 @@ const App = () => {
           <Route path="/order-qr" element={<OrderQrPage />} />
           <Route path="/career-page" element={<CareerPage />} />
           <Route path="/delete-account" element={<DeleteAccountPage />} />
+          <Route path="/service-unavailable" element={<ServiceUnavailable />} />
 
           {/* Information page */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

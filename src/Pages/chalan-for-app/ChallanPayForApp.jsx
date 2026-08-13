@@ -61,7 +61,11 @@ const ChallanPayForApp = () => {
       toast.success("Data refreshed successfully");
     } catch (error) {
       console.error("Refresh error:", error);
-      toast.error("Failed to refresh data");
+      if (error?.error_type === "RTO_DOWN") {
+        navigate('/service-unavailable');
+      } else {
+        toast.error("Failed to refresh data");
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -188,7 +192,11 @@ const ChallanPayForApp = () => {
         }
       } catch (error) {
         console.error("Direct fetch failed, falling back to OTP flow:", error);
-        setStep(2);
+        if (error?.error_type === "RTO_DOWN") {
+          navigate('/service-unavailable');
+        } else {
+          setStep(2);
+        }
       } finally {
         setLoading(false);
       }
@@ -286,7 +294,11 @@ const ChallanPayForApp = () => {
         localStorage.setItem("challan_pay_state", JSON.stringify(stateToSave));
       }
     } catch (error) {
-      toast.error(error.toString());
+      if (error?.error_type === "RTO_DOWN") {
+        navigate('/service-unavailable');
+      } else {
+        toast.error(error.message || error.toString());
+      }
     } finally {
       setLoading(false);
     }
