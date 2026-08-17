@@ -125,7 +125,8 @@ export default function VehicleForAdd() {
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedUsersForModal, setSelectedUsersForModal] = useState(null);
+  const [selectedDetailsForModal, setSelectedDetailsForModal] = useState(null);
+  const [rtoErrorModal, setRtoErrorModal] = useState(false);
 
   const limit = 50;
 
@@ -354,7 +355,11 @@ export default function VehicleForAdd() {
         fetchVehicles();
         fetchStats();
       } else {
-        showToast(data.message || "Failed to add vehicle to garage", "error");
+        if (data.error_type === "RTO_DOWN") {
+          setRtoErrorModal(data.message);
+        } else {
+          showToast(data.message || "Failed to add vehicle to garage", "error");
+        }
       }
     } catch {
       showToast("Network error while adding to garage.", "error");
@@ -731,7 +736,7 @@ export default function VehicleForAdd() {
                               {v.userIds.length > 1 && <span className="text-slate-400 ml-1">(+{v.userIds.length - 1})</span>}
                             </span>
                             <button
-                              onClick={() => setSelectedUsersForModal(v.userIds)}
+                              onClick={() => setSelectedDetailsForModal(v)}
                               className="text-[10px] text-blue-600 hover:text-blue-800 underline underline-offset-2 font-semibold"
                             >
                               View Details
@@ -851,52 +856,107 @@ export default function VehicleForAdd() {
         </div>
       )}
 
-      {/* ── USER DETAILS MODAL ─────────────────────────────────────── */}
-      {selectedUsersForModal && (
+      {/* ── DETAILS MODAL ─────────────────────────────────────── */}
+      {selectedDetailsForModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="text-lg font-bold text-gray-900">User Details</h3>
+              <h3 className="text-lg font-bold text-gray-900">Failure Details</h3>
               <button
-                onClick={() => setSelectedUsersForModal(null)}
+                onClick={() => setSelectedDetailsForModal(null)}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 transition"
               >
                 <X className="w-4 h-4 text-slate-600" />
               </button>
             </div>
-            <div className="p-4 overflow-y-auto space-y-3">
-              {selectedUsersForModal.map((user, idx) => {
-                const name = user?.public_details?.nick_name || `${user?.basic_details?.first_name || ""} ${user?.basic_details?.last_name || ""}`.trim() || "Unknown User";
-                const phone = user?.basic_details?.phone_number || "N/A";
-                const uid = user?._id || "N/A";
-
-                return (
-                  <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                        <User className="w-3.5 h-3.5 text-blue-600" />
+            
+            <div className="p-4 overflow-y-auto space-y-6">
+              {/* API Error Logs */}
+              {selectedDetailsForModal.apiErrorLogs && selectedDetailsForModal.apiErrorLogs.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" /> API Error Logs
+                  </h4>
+                  <div className="bg-slate-900 rounded-xl p-3 space-y-3">
+                    {selectedDetailsForModal.apiErrorLogs.map((log, idx) => (
+                      <div key={idx} className="border-b border-slate-700 pb-2 last:border-0 last:pb-0">
+                        <pre className="text-[10px] sm:text-xs text-red-400 font-mono whitespace-pre-wrap break-all">
+                          {log}
+                        </pre>
                       </div>
-                      <span className="font-semibold text-slate-800 text-sm">{name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                        <Phone className="w-3.5 h-3.5 text-green-600" />
-                      </div>
-                      <span className="text-sm font-medium text-slate-600">{phone}</span>
-                    </div>
-                    <div className="mt-2 text-[10px] text-slate-400 font-mono bg-white px-2 py-1 rounded border border-slate-100 self-start">
-                      ID: {uid}
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Users */}
+              {selectedDetailsForModal.userIds && selectedDetailsForModal.userIds.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-500" /> Affected Users
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedDetailsForModal.userIds.map((user, idx) => {
+                      const name = user?.public_details?.nick_name || `${user?.basic_details?.first_name || ""} ${user?.basic_details?.last_name || ""}`.trim() || "Unknown User";
+                      const phone = user?.basic_details?.phone_number || "N/A";
+                      const uid = user?._id || "N/A";
+
+                      return (
+                        <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                              <User className="w-3.5 h-3.5 text-blue-600" />
+                            </div>
+                            <span className="font-semibold text-slate-800 text-sm">{name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                              <Phone className="w-3.5 h-3.5 text-green-600" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-600">{phone}</span>
+                          </div>
+                          <div className="mt-2 text-[10px] text-slate-400 font-mono bg-white px-2 py-1 rounded border border-slate-100 self-start">
+                            ID: {uid}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
+
             <div className="p-4 border-t border-slate-200 bg-slate-50">
               <button
-                onClick={() => setSelectedUsersForModal(null)}
+                onClick={() => setSelectedDetailsForModal(null)}
                 className="w-full px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RTO Error Modal */}
+      {rtoErrorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">API Error</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                {rtoErrorModal}
+              </p>
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center">
+              <button
+                onClick={() => setRtoErrorModal(false)}
+                className="px-6 py-2 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition"
+              >
+                Okay
               </button>
             </div>
           </div>
