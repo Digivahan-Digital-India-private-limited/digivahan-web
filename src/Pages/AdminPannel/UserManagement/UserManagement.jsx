@@ -767,6 +767,8 @@ const UserManagement = () => {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("ACTIVE");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Debounce search input (500ms)
   useEffect(() => {
@@ -783,6 +785,8 @@ const UserManagement = () => {
     try {
       const params = new URLSearchParams({ page, limit: 20, status: activeTab });
       if (debouncedSearch) params.set("search", debouncedSearch);
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
 
       const res = await httpClient.get(`/api/user/all-users?${params}`);
       setUsers(res.data.users || []);
@@ -792,7 +796,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, activeTab]);
+  }, [page, debouncedSearch, activeTab, startDate, endDate]);
 
   useEffect(() => {
     fetchUsers();
@@ -821,24 +825,49 @@ const UserManagement = () => {
           </p>
         </div>
 
-        {/* Search bar */}
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search by name, phone, email…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Date Filter */}
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-blue-300 focus-within:border-blue-400 transition">
+            <Calendar className="w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-transparent border-none focus:outline-none text-gray-700 max-w-[120px]"
+            />
+            <span className="text-gray-400">to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-transparent border-none focus:outline-none text-gray-700 max-w-[120px]"
+            />
+            {(startDate || endDate) && (
+              <button onClick={() => { setStartDate(""); setEndDate(""); setPage(1); }} className="ml-1 text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Search bar */}
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by name, phone, email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
