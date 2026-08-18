@@ -877,7 +877,7 @@ export default function VehicleForAdd() {
                   <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-500" /> API Error Logs
                   </h4>
-                  <div className="bg-slate-900 rounded-xl p-3 space-y-3">
+                  <div className="bg-slate-900 rounded-xl p-3 space-y-3 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
                     {selectedDetailsForModal.apiErrorLogs.map((log, idx) => (
                       <div key={idx} className="border-b border-slate-700 pb-2 last:border-0 last:pb-0">
                         <pre className="text-[10px] sm:text-xs text-red-400 font-mono whitespace-pre-wrap break-all">
