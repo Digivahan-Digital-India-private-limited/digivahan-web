@@ -1,10 +1,33 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { httpClient } from "../../../features/shared/api/httpClient";
-import { ArrowRight, CheckCircle2, Mail, Phone, RefreshCcw, Search, User2, UserX, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Mail,
+  Phone,
+  RefreshCcw,
+  Search,
+  User2,
+  UserX,
+  Trash2,
+  Apple,
+  Smartphone,
+  Globe,
+  Layers,
+  Clock,
+  Calendar,
+} from "lucide-react";
 import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://api.digivahan.in";
+
+const PLATFORM_TABS = [
+  { label: "All Requests", value: "all", icon: Layers },
+  { label: "iOS App", value: "ios", icon: Apple },
+  { label: "Android App", value: "android", icon: Smartphone },
+  { label: "Website", value: "web", icon: Globe },
+];
 
 const FILTER_OPTIONS = [
   { label: "All", value: "all" },
@@ -28,6 +51,10 @@ const mapApiRequest = (item) => ({
   reason: item?.reason || "-",
   otherReason: item?.otherReason || "",
   status: String(item?.status || "new").toLowerCase(),
+  deviceType: String(item?.deviceType || "web").toLowerCase(),
+  duration: Number(item?.duration ?? 0),
+  deleteRequestDate: item?.deleteRequestDate || null,
+  deleteRequestProcessDate: item?.deleteRequestProcessDate || null,
   createdAt: item?.createdAt || "",
   updatedAt: item?.updatedAt || "",
 });
@@ -62,7 +89,9 @@ const getActionButtonClass = (nextStatus) => {
 
 const DeleteAccountRequests = () => {
   const [requests, setRequests] = useState([]);
+  const [platformTab, setPlatformTab] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [counts, setCounts] = useState({ all: 0, ios: 0, android: 0, web: 0 });
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [updatingRequestId, setUpdatingRequestId] = useState("");
@@ -77,11 +106,18 @@ const DeleteAccountRequests = () => {
       if (statusFilter !== "all") {
         params.status = statusFilter;
       }
+      if (platformTab !== "all") {
+        params.deviceType = platformTab;
+      }
 
       const response = await httpClient.get("/api/delete-account/list", { params });
 
       if (!response?.data?.success) {
         throw new Error(response?.data?.message || "Failed to fetch delete account requests.");
+      }
+
+      if (response?.data?.counts) {
+        setCounts(response.data.counts);
       }
 
       const mapped = (response?.data?.data || []).map(mapApiRequest);
@@ -92,7 +128,7 @@ const DeleteAccountRequests = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, platformTab]);
 
   useEffect(() => {
     fetchDeleteRequests();
@@ -252,7 +288,7 @@ const DeleteAccountRequests = () => {
       `}</style>
 
       <div className="max-w-350 mx-auto animate-fade-in">
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-2">
             <UserX className="w-7 h-7 text-red-600" /> Delete Account Requests
           </h1>
@@ -260,10 +296,51 @@ const DeleteAccountRequests = () => {
             type="button"
             onClick={fetchDeleteRequests}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition disabled:opacity-60 cursor-pointer"
           >
             <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} /> Refresh
           </button>
+        </div>
+
+        {/* Source / Platform Tabs */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {PLATFORM_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = platformTab === tab.value;
+            const count = counts[tab.value] ?? 0;
+
+            let activeClass = "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200";
+            if (tab.value === "ios") {
+              activeClass = "bg-slate-900 text-white border-slate-900 shadow-md shadow-slate-300";
+            } else if (tab.value === "android") {
+              activeClass = "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200";
+            }
+
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setPlatformTab(tab.value)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 border cursor-pointer ${
+                  isActive
+                    ? activeClass
+                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-500"}`} />
+                <span>{tab.label}</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-4 mb-5 animate-slide-in">
@@ -293,7 +370,7 @@ const DeleteAccountRequests = () => {
                   key={option.value}
                   type="button"
                   onClick={() => setStatusFilter(option.value)}
-                  className={`tab-btn px-4 py-2 rounded-full border text-sm font-semibold ${
+                  className={`tab-btn px-4 py-2 rounded-full border text-sm font-semibold cursor-pointer ${
                     isActive
                       ? "tab-btn-active border-blue-200 bg-linear-to-r from-blue-600 to-indigo-600 text-white"
                       : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"
@@ -304,7 +381,7 @@ const DeleteAccountRequests = () => {
               );
             })}
           </div>
-            </div>
+        </div>
         
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -325,10 +402,26 @@ const DeleteAccountRequests = () => {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="font-semibold text-slate-800 text-lg flex items-center gap-2">
-                      <User2 className="w-4 h-4 text-slate-500" /> {item.name}
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5 break-all">Request ID: {item.id}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="font-semibold text-slate-800 text-lg flex items-center gap-2">
+                        <User2 className="w-4 h-4 text-slate-500" /> {item.name}
+                      </h2>
+                      {/* Device Type Badge */}
+                      {item.deviceType === "ios" ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-900 text-white shadow-xs">
+                          <Apple className="w-3 h-3" /> iOS App
+                        </span>
+                      ) : item.deviceType === "android" ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
+                          <Smartphone className="w-3 h-3" /> Android App
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                          <Globe className="w-3 h-3 text-slate-500" /> Web Portal
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 break-all">Request ID: {item.id}</p>
                   </div>
                   <span className={`px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${STATUS_CLASSES[item.status] || "bg-slate-100 text-slate-700 border-slate-200"}`}>
                     {toStatusLabel(item.status)}
@@ -339,6 +432,22 @@ const DeleteAccountRequests = () => {
                   <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-slate-500" /> {item.phoneNumber}</p>
                   <p className="flex items-center gap-2 break-all"><Mail className="w-4 h-4 text-slate-500" /> {item.email}</p>
                 </div>
+
+                {/* Scheduled / Process Date Info for App Requests */}
+                {(item.deleteRequestProcessDate || item.duration > 0 || (item.deviceType !== "web" && item.duration === 0)) && (
+                  <div className="mt-3 p-2.5 rounded-xl border border-indigo-100 bg-linear-to-r from-indigo-50/70 to-blue-50/70 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-indigo-900">
+                      <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                      {item.duration === 0 ? "Immediate Deletion" : `Scheduled: ${item.duration} Days`}
+                    </span>
+                    {item.deleteRequestProcessDate && (
+                      <span className="inline-flex items-center gap-1.5 font-medium text-slate-600">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                        Process Date: <strong className="text-indigo-900">{item.deleteRequestProcessDate}</strong>
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div className="mt-4 p-3 rounded-xl border border-slate-200 bg-slate-50">
                   <p className="text-xs text-slate-500 mb-1">Reason</p>
