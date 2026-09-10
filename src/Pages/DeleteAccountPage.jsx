@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { FaTimes, FaTrashAlt, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
+import { FaTimes, FaTrashAlt, FaArrowLeft, FaCheckCircle, FaClock, FaCalendarAlt, FaShieldAlt } from "react-icons/fa";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 import { httpClient } from "../features/shared/api/httpClient";
 import { MyContext } from "../ContextApi/DataProvider";
 import { getProfile } from "../features/profile/services/profileApi";
@@ -38,10 +39,12 @@ const DeleteAccountPage = () => {
     full_name: "",
     mobile: "",
     email: "",
+    duration: 5,
     reason: "",
     description: "",
     confirm: false,
   });
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [deletionStatus, setDeletionStatus] = useState({ status: "LOADING", daysLeft: 0 });
@@ -49,21 +52,47 @@ const DeleteAccountPage = () => {
 
   const sectionRefs = useRef({});
 
+  // Helper: Get formatted scheduled date for preview
+  const getScheduledDateString = (days) => {
+    const num = Number(days || 0);
+    const d = new Date();
+    d.setDate(d.getDate() + num);
+    return d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   useEffect(() => {
-    // Auto-fill user info from localStorage or API
+    // Auto-fill user info from token & profile API
     const loadUserInfo = async () => {
       try {
         setLoading(true);
-        // Always fetch fresh profile from API (getProfile handles internal fallback)
+        const token = Cookies.get("user_token");
+        let decodedId = "";
+        if (token) {
+          try {
+            const decoded = jwtDecode(token);
+            decodedId = decoded.userId || decoded.user_id || "";
+          } catch (e) {
+            console.error("Token decode error:", e);
+          }
+        }
+
+        // Fetch fresh profile from API
         const profile = await getProfile();
         
         if (profile) {
+          setUserProfile({ ...profile, tokenUserId: decodedId });
           setFormData((prev) => ({
             ...prev,
             full_name: profile.name || `${profile.firstName || ""} ${profile.lastName || ""}`.trim(),
             mobile: profile.phone || "",
             email: profile.email || "",
           }));
+        } else if (decodedId) {
+          setUserProfile({ tokenUserId: decodedId });
         }
       } catch (err) {
         console.error("Error loading user info", err);
@@ -161,9 +190,74 @@ const DeleteAccountPage = () => {
       return;
     }
 
+    const durationDays = Number(formData.duration);
+    if (isNaN(durationDays) || durationDays < 0 || !Number.isInteger(durationDays)) {
+      alert("Please enter a valid duration (0 or more days).");
+      return;
+    }
+
+    if (!formData.reason) {
+      alert("Please select a reason for deletion.");
+      return;
+    }
+
+    const token = Cookies.get("user_token");
+
+    // If user is already logged in with token, submit directly using active session
+    if (token) {
+      try {
+        setLoading(true);
+        const reasonText = formData.description?.trim()
+          ? `${normalizeReasonForApi(formData.reason)} - ${formData.description.trim()}`
+          : normalizeReasonForApi(formData.reason);
+
+        const idToSend = formData.mobile?.trim() || userProfile?.phone || userProfile?.tokenUserId || userProfile?.id;
+
+        if (!idToSend) {
+          alert("Could not identify your account from token. Please enter your mobile number.");
+          return;
+        }
+
+        const payload = {
+          id: idToSend,
+          duration: durationDays,
+          reason: reasonText,
+          deviceType: "web", // default web (hidden from user)
+        };
+
+        const response = await httpClient.post("/api/user-account/delete", payload);
+
+        if (!response?.data?.success) {
+          throw new Error(response?.data?.message || "Failed to submit account deletion request.");
+        }
+
+        setSuccess(response?.data?.message || "Your account deletion request has been submitted successfully.");
+        setIsModalOpen(false);
+        alert(
+          durationDays === 0
+            ? "Account has been deleted immediately."
+            : `Delete account request submitted successfully! Your account will be permanently deleted in ${durationDays} day(s).`
+        );
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } catch (error) {
+        alert(error.response?.data?.message || error.message || "Failed to submit deletion request.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // If not logged in, initiate OTP flow to verify ownership
     try {
       setLoading(true);
       const cleanPhone = formData.mobile.trim();
+      if (!cleanPhone) {
+        alert("Please enter your registered mobile number.");
+        return;
+      }
       localStorage.setItem("user_login_phone", cleanPhone);
       
       const res = await UserSignInwithOtp(cleanPhone);
@@ -190,14 +284,14 @@ const DeleteAccountPage = () => {
       setLoading(true);
       const verifyRes = await verifyUserOtp(otpValue);
       if (verifyRes) {
-        // OTP verified successfully, now submit the deletion request to the new API
+        const durationDays = Number(formData.duration ?? 5);
         const reasonText = formData.description?.trim()
           ? `${normalizeReasonForApi(formData.reason)} - ${formData.description.trim()}`
           : normalizeReasonForApi(formData.reason);
 
         const payload = {
           id: formData.mobile.trim(),
-          duration: 5,
+          duration: durationDays,
           reason: reasonText,
           deviceType: "web", // default web (hidden from user)
         };
@@ -209,12 +303,16 @@ const DeleteAccountPage = () => {
         }
 
         setSuccess(response?.data?.message || "Your account deletion request has been submitted successfully.");
-        setFormData({ ...formData, reason: "", description: "", confirm: false });
+        setIsOtpModalOpen(false);
+        alert(
+          durationDays === 0
+            ? "Account has been deleted immediately."
+            : `Delete account request submitted successfully! Your account will be permanently deleted in ${durationDays} day(s).`
+        );
         
-        // Refresh the page after 2 seconds to show the new status
         setTimeout(() => {
           window.location.reload();
-        }, 2000);
+        }, 1500);
       }
     } catch (error) {
       alert(error.response?.data?.message || error.message || "Failed to verify OTP or submit request.");
@@ -702,65 +800,145 @@ const DeleteAccountPage = () => {
 
             {/* Form */}
             <form className="space-y-5" onSubmit={handleSubmit}>
-              {/* Full Name */}
-              <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                <label className="text-sm font-semibold text-gray-700">Full Name *</label>
-                <input
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  required
-                  readOnly={!!Cookies.get("user_token") && !!formData.full_name}
-                  className={`w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-300 ${
-                    Cookies.get("user_token") && formData.full_name
-                      ? "bg-gray-100 text-gray-600 cursor-not-allowed"
-                      : "bg-white text-gray-800 focus:ring-2 focus:ring-red-400"
-                  }`}
-                />
-              </div>
-
-              {/* Mobile & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                  <label className="text-sm font-semibold text-gray-700">Mobile Number *</label>
-                  <input
-                    type="tel"
-                    name="mobile"
-                    value={formData.mobile}
-                    onChange={handleChange}
-                    placeholder="Registered mobile number"
-                    required
-                    readOnly={!!Cookies.get("user_token") && !!formData.mobile}
-                    className={`w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-300 ${
-                      Cookies.get("user_token") && formData.mobile
-                        ? "bg-gray-100 text-gray-600 cursor-not-allowed"
-                        : "bg-white text-gray-800 focus:ring-2 focus:ring-red-400"
-                    }`}
-                  />
+              {/* Account Identification (Token se auto-fill ya manual input) */}
+              {Cookies.get("user_token") ? (
+                <div className="p-4 bg-linear-to-br from-slate-50 to-slate-100/70 border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-linear-to-br from-red-500 to-rose-600 flex items-center justify-center text-white font-bold text-base shadow-sm">
+                      {formData.full_name?.charAt(0) || "U"}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        {formData.full_name || "Digivahan User"}
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+                          <FaCheckCircle className="text-[10px]" /> Verified
+                        </span>
+                      </p>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        📱 Mobile: <strong className="text-slate-800">+91 {formData.mobile || "Registered Mobile"}</strong>
+                        {formData.email && <span className="ml-2 text-slate-500">| ✉️ {formData.email}</span>}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 shrink-0 hidden sm:inline-block">
+                    🔑 Active Token
+                  </span>
                 </div>
-                <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                  <label className="text-sm font-semibold text-gray-700">Email Address *</label>
+              ) : (
+                <>
+                  {/* Full Name */}
+                  <div className="transform transition-all duration-300 hover:scale-[1.01]">
+                    <label className="text-sm font-semibold text-gray-700">Full Name *</label>
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={formData.full_name}
+                      onChange={handleChange}
+                      placeholder="Enter your full name"
+                      required
+                      className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 bg-white text-gray-800 transition-all duration-300"
+                    />
+                  </div>
+
+                  {/* Mobile & Email */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="transform transition-all duration-300 hover:scale-[1.01]">
+                      <label className="text-sm font-semibold text-gray-700">Mobile Number *</label>
+                      <input
+                        type="tel"
+                        name="mobile"
+                        value={formData.mobile}
+                        onChange={handleChange}
+                        placeholder="Registered mobile number"
+                        required
+                        className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 bg-white text-gray-800 transition-all duration-300"
+                      />
+                    </div>
+                    <div className="transform transition-all duration-300 hover:scale-[1.01]">
+                      <label className="text-sm font-semibold text-gray-700">Email Address</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="Registered email"
+                        className="w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 bg-white text-gray-800 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Duration Field (User enters or selects duration) */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <FaClock className="text-red-500" /> Deletion Timeline (Duration) *
+                  </label>
+                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                    Number(formData.duration) === 0
+                      ? "bg-red-100 text-red-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}>
+                    {Number(formData.duration) === 0 ? "⚡ Immediate Deletion" : `⏳ ${formData.duration} Day(s)`}
+                  </span>
+                </div>
+
+                {/* Quick Selection Chips */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { days: 0, label: "⚡ Immediate (0d)" },
+                    { days: 5, label: "5 Days (Default)" },
+                    { days: 15, label: "15 Days" },
+                    { days: 30, label: "30 Days" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.days}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, duration: opt.days }))}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                        Number(formData.duration) === opt.days
+                          ? "bg-red-600 text-white border-red-600 shadow-sm scale-102"
+                          : "bg-white text-slate-700 border-slate-300 hover:border-red-400 hover:bg-red-50/50"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Days Input */}
+                <div className="flex items-center gap-3 pt-1">
+                  <span className="text-xs font-semibold text-slate-600 shrink-0">Enter Custom Days:</span>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
+                    type="number"
+                    min="0"
+                    max="90"
+                    name="duration"
+                    value={formData.duration}
                     onChange={handleChange}
-                    placeholder="Registered email"
                     required
-                    readOnly={!!Cookies.get("user_token") && !!formData.email}
-                    className={`w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-300 ${
-                      Cookies.get("user_token") && formData.email
-                        ? "bg-gray-100 text-gray-600 cursor-not-allowed"
-                        : "bg-white text-gray-800 focus:ring-2 focus:ring-red-400"
-                    }`}
+                    className="w-24 px-3 py-1.5 border-2 border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:border-red-500 bg-white"
                   />
+                  <span className="text-xs text-slate-500">(0 for immediate deletion, or number of days)</span>
+                </div>
+
+                {/* Live Info Preview */}
+                <div className={`p-3 rounded-lg text-xs font-medium border ${
+                  Number(formData.duration) === 0
+                    ? "bg-red-50 border-red-200 text-red-700"
+                    : "bg-blue-50 border-blue-200 text-blue-800"
+                }`}>
+                  {Number(formData.duration) === 0 ? (
+                    <span>⚠️ <strong>Immediate Deletion:</strong> Your account, vehicles, and active QR codes will be permanently erased immediately upon submission.</span>
+                  ) : (
+                    <span>📅 <strong>Scheduled Deletion:</strong> Your account will be permanently deleted on <strong>{getScheduledDateString(formData.duration)}</strong> ({formData.duration} days from now). You can cancel anytime before this date!</span>
+                  )}
                 </div>
               </div>
 
               {/* Reason */}
-              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+              <div className="transform transition-all duration-300 hover:scale-[1.01]">
                 <label className="text-sm font-semibold text-gray-700">Reason for Deletion *</label>
                 <select
                   name="reason"
@@ -779,7 +957,8 @@ const DeleteAccountPage = () => {
                 </select>
               </div>
 
-              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+              {/* Description */}
+              <div className="transform transition-all duration-300 hover:scale-[1.01]">
                 <label className="text-sm font-semibold text-gray-700">Description *</label>
                 <textarea
                   name="description"
@@ -808,11 +987,11 @@ const DeleteAccountPage = () => {
                 </label>
               </div>
 
-              {/* Submit */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading || !formData.confirm}
-                className="w-full bg-linear-to-r from-red-500 to-red-600 text-white py-4 rounded-lg font-bold hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="w-full bg-linear-to-r from-red-500 to-red-600 text-white py-4 rounded-lg font-bold hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
