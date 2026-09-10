@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { FaTimes, FaTrashAlt, FaArrowLeft, FaCheckCircle, FaClock, FaCalendarAlt, FaShieldAlt } from "react-icons/fa";
+import {
+  FaTimes,
+  FaTrashAlt,
+  FaArrowLeft,
+  FaCheckCircle,
+  FaClock,
+  FaCalendarAlt,
+  FaShieldAlt,
+  FaExclamationTriangle,
+  FaInfoCircle,
+} from "react-icons/fa";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
@@ -34,6 +44,51 @@ const DeleteAccountPage = () => {
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const otpInputsRef = useRef([]);
+
+  const [feedbackModal, setFeedbackModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "OK",
+    cancelText: "Cancel",
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const showAlertModal = (title, message, type = "info", onClose = null) => {
+    setFeedbackModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText: "OK",
+      onConfirm: () => {
+        setFeedbackModal((prev) => ({ ...prev, isOpen: false }));
+        if (onClose) onClose();
+      },
+      onCancel: null,
+    });
+  };
+
+  const showConfirmModal = (title, message, onConfirm, onCancel = null) => {
+    setFeedbackModal({
+      isOpen: true,
+      type: "confirm",
+      title,
+      message,
+      confirmText: "Yes, Cancel Deletion",
+      cancelText: "Keep Request",
+      onConfirm: () => {
+        setFeedbackModal((prev) => ({ ...prev, isOpen: false }));
+        if (onConfirm) onConfirm();
+      },
+      onCancel: () => {
+        setFeedbackModal((prev) => ({ ...prev, isOpen: false }));
+        if (onCancel) onCancel();
+      },
+    });
+  };
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -147,9 +202,12 @@ const DeleteAccountPage = () => {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = isModalOpen ? "hidden" : "unset";
-    return () => { document.body.style.overflow = "unset"; };
-  }, [isModalOpen]);
+    document.body.style.overflow =
+      isModalOpen || isOtpModalOpen || feedbackModal.isOpen ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isModalOpen, isOtpModalOpen, feedbackModal.isOpen]);
 
   const setRef = (key) => (el) => { sectionRefs.current[key] = el; };
 
@@ -186,18 +244,30 @@ const DeleteAccountPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.confirm) {
-      alert("Please confirm that you understand this action is irreversible.");
+      showAlertModal(
+        "Confirmation Required",
+        "Please confirm that you understand this action is irreversible by ticking the checkbox.",
+        "warning"
+      );
       return;
     }
 
     const durationDays = Number(formData.duration);
     if (isNaN(durationDays) || durationDays < 0 || !Number.isInteger(durationDays)) {
-      alert("Please enter a valid duration (0 or more days).");
+      showAlertModal(
+        "Invalid Duration",
+        "Please enter a valid duration (0 or more days).",
+        "warning"
+      );
       return;
     }
 
     if (!formData.reason) {
-      alert("Please select a reason for deletion.");
+      showAlertModal(
+        "Reason Required",
+        "Please select a reason for deletion.",
+        "warning"
+      );
       return;
     }
 
@@ -214,7 +284,11 @@ const DeleteAccountPage = () => {
         const idToSend = formData.mobile?.trim() || userProfile?.phone || userProfile?.tokenUserId || userProfile?.id;
 
         if (!idToSend) {
-          alert("Could not identify your account from token. Please enter your mobile number.");
+          showAlertModal(
+            "Account Identification",
+            "Could not identify your account from token. Please enter your mobile number.",
+            "error"
+          );
           return;
         }
 
@@ -233,17 +307,22 @@ const DeleteAccountPage = () => {
 
         setSuccess(response?.data?.message || "Your account deletion request has been submitted successfully.");
         setIsModalOpen(false);
-        alert(
+        showAlertModal(
+          durationDays === 0 ? "Account Deleted" : "Request Submitted",
           durationDays === 0
-            ? "Account has been deleted immediately."
-            : `Delete account request submitted successfully! Your account will be permanently deleted in ${durationDays} day(s).`
+            ? "Your account has been deleted immediately."
+            : `Delete account request submitted successfully! Your account will be permanently deleted in ${durationDays} day(s).`,
+          "success",
+          () => {
+            window.location.reload();
+          }
         );
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
       } catch (error) {
-        alert(error.response?.data?.message || error.message || "Failed to submit deletion request.");
+        showAlertModal(
+          "Submission Failed",
+          error.response?.data?.message || error.message || "Failed to submit deletion request.",
+          "error"
+        );
       } finally {
         setLoading(false);
       }
@@ -255,7 +334,11 @@ const DeleteAccountPage = () => {
       setLoading(true);
       const cleanPhone = formData.mobile.trim();
       if (!cleanPhone) {
-        alert("Please enter your registered mobile number.");
+        showAlertModal(
+          "Mobile Number Required",
+          "Please enter your registered mobile number.",
+          "warning"
+        );
         return;
       }
       localStorage.setItem("user_login_phone", cleanPhone);
@@ -266,7 +349,11 @@ const DeleteAccountPage = () => {
         setIsModalOpen(false); // Hide the main form, show OTP modal
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to send OTP.");
+      showAlertModal(
+        "Failed to Send OTP",
+        error.response?.data?.message || "Failed to send OTP to your number.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -276,7 +363,11 @@ const DeleteAccountPage = () => {
     e.preventDefault();
     const otpValue = otp.join("");
     if (otpValue.length !== 4) {
-      alert("Please enter the complete 4-digit OTP");
+      showAlertModal(
+        "Incomplete OTP",
+        "Please enter the complete 4-digit OTP sent to your phone.",
+        "warning"
+      );
       return;
     }
 
@@ -304,42 +395,59 @@ const DeleteAccountPage = () => {
 
         setSuccess(response?.data?.message || "Your account deletion request has been submitted successfully.");
         setIsOtpModalOpen(false);
-        alert(
+        showAlertModal(
+          durationDays === 0 ? "Account Deleted" : "Request Submitted",
           durationDays === 0
-            ? "Account has been deleted immediately."
-            : `Delete account request submitted successfully! Your account will be permanently deleted in ${durationDays} day(s).`
+            ? "Your account has been deleted immediately."
+            : `Delete account request submitted successfully! Your account will be permanently deleted in ${durationDays} day(s).`,
+          "success",
+          () => {
+            window.location.reload();
+          }
         );
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
       }
     } catch (error) {
-      alert(error.response?.data?.message || error.message || "Failed to verify OTP or submit request.");
+      showAlertModal(
+        "Verification Failed",
+        error.response?.data?.message || error.message || "Failed to verify OTP or submit request.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelDeletion = async () => {
-    if (!window.confirm("Are you sure you want to cancel your account deletion request? Your account will remain active.")) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await httpClient.post("/api/user-account/cancel-delete");
-      if (response?.data?.success) {
-        alert("Account deletion request has been cancelled successfully. Your account is now ACTIVE.");
-        window.location.reload();
-      } else {
-        throw new Error(response?.data?.message || "Failed to cancel deletion request.");
+    showConfirmModal(
+      "Cancel Account Deletion",
+      "Are you sure you want to cancel your account deletion request? Your account will remain active.",
+      async () => {
+        try {
+          setLoading(true);
+          const response = await httpClient.post("/api/user-account/cancel-delete");
+          if (response?.data?.success) {
+            showAlertModal(
+              "Deletion Cancelled",
+              "Account deletion request has been cancelled successfully. Your account is now ACTIVE.",
+              "success",
+              () => {
+                window.location.reload();
+              }
+            );
+          } else {
+            throw new Error(response?.data?.message || "Failed to cancel deletion request.");
+          }
+        } catch (err) {
+          showAlertModal(
+            "Cancellation Failed",
+            err?.response?.data?.message || err.message || "Failed to cancel deletion.",
+            "error"
+          );
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (err) {
-      alert(err?.response?.data?.message || err.message || "Failed to cancel deletion.");
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const steps = [
@@ -1083,6 +1191,98 @@ const DeleteAccountPage = () => {
               >
                 <FaArrowLeft />
                 Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── FEEDBACK / ALERT / CONFIRMATION MODAL ─── */}
+      {feedbackModal.isOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            onClick={() => {
+              if (feedbackModal.type !== "confirm") {
+                setFeedbackModal((prev) => ({ ...prev, isOpen: false }));
+              }
+            }}
+          />
+
+          <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 text-center transform animate-fade-in z-10">
+            {/* Close button for non-confirm modals */}
+            {feedbackModal.type !== "confirm" && (
+              <button
+                type="button"
+                onClick={() => setFeedbackModal((prev) => ({ ...prev, isOpen: false }))}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition-all cursor-pointer"
+              >
+                <FaTimes className="text-lg" />
+              </button>
+            )}
+
+            {/* Icon Header */}
+            <div className="mx-auto mb-4 flex items-center justify-center">
+              {feedbackModal.type === "success" && (
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-inner">
+                  <FaCheckCircle className="text-3xl" />
+                </div>
+              )}
+              {feedbackModal.type === "error" && (
+                <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-inner">
+                  <FaTimes className="text-3xl" />
+                </div>
+              )}
+              {feedbackModal.type === "warning" && (
+                <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
+                  <FaExclamationTriangle className="text-3xl" />
+                </div>
+              )}
+              {feedbackModal.type === "confirm" && (
+                <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shadow-inner">
+                  <FaShieldAlt className="text-3xl" />
+                </div>
+              )}
+              {feedbackModal.type === "info" && (
+                <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-inner">
+                  <FaInfoCircle className="text-3xl" />
+                </div>
+              )}
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {feedbackModal.title}
+            </h3>
+
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              {feedbackModal.message}
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3 justify-center">
+              {feedbackModal.type === "confirm" && (
+                <button
+                  type="button"
+                  onClick={feedbackModal.onCancel}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold text-sm transition-all cursor-pointer"
+                >
+                  {feedbackModal.cancelText || "Cancel"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={feedbackModal.onConfirm}
+                className={`flex-1 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition-all shadow-md cursor-pointer active:scale-95 ${
+                  feedbackModal.type === "error" || feedbackModal.type === "confirm"
+                    ? "bg-linear-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-200"
+                    : feedbackModal.type === "success"
+                    ? "bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-200"
+                    : feedbackModal.type === "warning"
+                    ? "bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-200"
+                    : "bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200"
+                }`}
+              >
+                {feedbackModal.confirmText || "OK"}
               </button>
             </div>
           </div>

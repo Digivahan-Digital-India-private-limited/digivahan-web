@@ -11,7 +11,6 @@ import {
   Search,
   User2,
   UserX,
-  Trash2,
   Apple,
   Smartphone,
   Globe,
@@ -195,37 +194,6 @@ const DeleteAccountRequests = () => {
     }
   };
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [targetRequestId, setTargetRequestId] = useState(null);
-
-  const handleDeleteRequest = (requestId) => {
-    setTargetRequestId(requestId);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteRequest = async () => {
-    if (!targetRequestId) return;
-    
-    try {
-      setUpdatingRequestId(targetRequestId);
-      const response = await httpClient.delete(`/api/delete-account/request/${targetRequestId}`);
-      
-      if (response?.data?.success) {
-        toast.success("Request rejected and deleted successfully.");
-        setRequests((prev) => prev.filter((r) => r.id !== targetRequestId));
-      } else {
-        throw new Error(response?.data?.message || "Failed to delete request.");
-      }
-    } catch (error) {
-      console.error("Delete Action Error:", error);
-      toast.error(error.message || "Something went wrong.");
-    } finally {
-      setUpdatingRequestId("");
-      setTargetRequestId(null);
-      setShowDeleteModal(false);
-    }
-  };
-
   const filteredRequests = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -241,47 +209,6 @@ const DeleteAccountRequests = () => {
 
   return (
     <section className="min-h-screen bg-linear-to-br from-slate-100 via-white to-red-50 p-5 md:p-8">
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform animate-fade-in">
-            <div className="p-6">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
-                <Trash2 className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
-                Confirm Deletion
-              </h3>
-              <p className="text-center text-gray-600 mb-6 font-medium">
-                Are you sure you want to reject and delete this request? The user will be able to submit a new one.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setTargetRequestId(null);
-                  }}
-                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDeleteRequest}
-                  disabled={!!updatingRequestId}
-                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 flex items-center justify-center gap-2"
-                >
-                  {updatingRequestId ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                  Delete Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
@@ -500,15 +427,6 @@ const DeleteAccountRequests = () => {
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteRequest(item.id)}
-                    disabled={updatingRequestId === item.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 hover:border-red-300 transition-all cursor-pointer"
-                    title="Reject & Delete Request"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Reject Request
-                  </button>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
