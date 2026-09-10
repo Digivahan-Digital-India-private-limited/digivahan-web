@@ -4,6 +4,7 @@ import { httpClient } from "../../../features/shared/api/httpClient";
 import {
   ArrowRight,
   CheckCircle2,
+  XCircle,
   Mail,
   Phone,
   RefreshCcw,
@@ -30,15 +31,18 @@ const PLATFORM_TABS = [
 ];
 
 const FILTER_OPTIONS = [
-  { label: "All", value: "all" },
-  { label: "New", value: "new" },
-  { label: "Checked", value: "checked" },
-  { label: "Closed", value: "closed" },
+  { label: "All", value: "all", countKey: "all" },
+  { label: "Pending", value: "pending", countKey: "pending" },
+  { label: "Cancelled", value: "cancelled", countKey: "cancelled" },
+  { label: "Completed", value: "completed", countKey: "completed" },
 ];
 
 const STATUS_CLASSES = {
-  new: "bg-blue-100 text-blue-700 border-blue-200",
+  pending: "bg-amber-100 text-amber-700 border-amber-200",
+  new: "bg-amber-100 text-amber-700 border-amber-200",
   checked: "bg-amber-100 text-amber-700 border-amber-200",
+  cancelled: "bg-rose-100 text-rose-700 border-rose-200",
+  completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
   closed: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
@@ -77,7 +81,11 @@ const isValidTransition = (currentStatus, nextStatus) =>
 
 const toStatusLabel = (status) => {
   if (!status) return "";
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  const s = status.toLowerCase();
+  if (s === "completed" || s === "closed") return "Completed";
+  if (s === "cancelled") return "Cancelled";
+  if (s === "pending" || s === "new" || s === "checked") return "Pending";
+  return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
 const getActionButtonClass = (nextStatus) => {
@@ -91,7 +99,15 @@ const DeleteAccountRequests = () => {
   const [requests, setRequests] = useState([]);
   const [platformTab, setPlatformTab] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [counts, setCounts] = useState({ all: 0, ios: 0, android: 0, web: 0 });
+  const [counts, setCounts] = useState({
+    all: 0,
+    pending: 0,
+    cancelled: 0,
+    completed: 0,
+    ios: 0,
+    android: 0,
+    web: 0,
+  });
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [updatingRequestId, setUpdatingRequestId] = useState("");
@@ -364,19 +380,29 @@ const DeleteAccountRequests = () => {
           <div className="mt-4 flex flex-wrap gap-2">
             {FILTER_OPTIONS.map((option) => {
               const isActive = statusFilter === option.value;
+              const count = counts[option.countKey] ?? 0;
 
               return (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => setStatusFilter(option.value)}
-                  className={`tab-btn px-4 py-2 rounded-full border text-sm font-semibold cursor-pointer ${
+                  className={`tab-btn inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold cursor-pointer ${
                     isActive
-                      ? "tab-btn-active border-blue-200 bg-linear-to-r from-blue-600 to-indigo-600 text-white"
+                      ? "tab-btn-active border-blue-200 bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200"
                       : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"
                   }`}
                 >
-                  {option.label}
+                  <span>{option.label}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                      isActive
+                        ? "bg-white/20 text-white"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {count}
+                  </span>
                 </button>
               );
             })}
@@ -457,93 +483,32 @@ const DeleteAccountRequests = () => {
                   ) : null}
                 </div>
 
-                <div className="mt-4">
-                  {item.status === "closed" ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        disabled
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold cursor-not-allowed"
-                      >
-                        <CheckCircle2 className="w-4 h-4" /> Request Closed
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteRequest(item.id)}
-                        disabled={updatingRequestId === item.id}
-                        className="px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors"
-                        title="Delete Request"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActionOpenRequestId((prev) => (prev === item.id ? "" : item.id))
-                          }
-                          disabled={updatingRequestId === item.id}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold transition-all duration-300 hover:from-violet-700 hover:to-blue-700 hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          <ArrowRight className={`w-4 h-4 transition-transform ${actionOpenRequestId === item.id ? "rotate-90" : ""}`} />
-                          {actionOpenRequestId === item.id ? "Hide Actions" : "Take Action"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteRequest(item.id)}
-                          disabled={updatingRequestId === item.id}
-                          className="px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors"
-                          title="Delete Request"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      {actionOpenRequestId === item.id && (
-                        <div className="mt-2.5 p-3 rounded-xl border border-slate-200 bg-white shadow-sm animate-fade-in mb-2">
-                          <div className="mb-3">
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 block">
-                              Schedule Deletion (Days)
-                            </label>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="number"
-                                min="0"
-                                max="30"
-                                value={deletionDays}
-                                onChange={(e) => setDeletionDays(e.target.value)}
-                                className="w-full sm:w-32 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                                placeholder="30"
-                              />
-                              <span className="text-xs text-slate-500 font-medium">
-                                {deletionDays == 0 ? "(Immediate Deletion)" : `(Account deletes in ${deletionDays} days)`}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {getAllowedNextStatuses(item.status).map((nextStatus) => (
-                            <button
-                              key={`${item.id}-${nextStatus}`}
-                              type="button"
-                              onClick={() => handleTakeAction(item, nextStatus)}
-                              disabled={updatingRequestId === item.id}
-                              className={`action-btn w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-linear-to-r text-white font-semibold transition-all duration-300 hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed ${getActionButtonClass(nextStatus)}`}
-                            >
-                              {updatingRequestId !== item.id && <ArrowRight className="w-4 h-4" />}
-                              {updatingRequestId === item.id
-                                ? "Updating..."
-                                : `Mark as ${toStatusLabel(nextStatus)}`}
-                            </button>
-                          ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div className="mt-4 flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-2">
+                    {item.status === "completed" || item.status === "closed" ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Completed (Account Deleted)
+                      </span>
+                    ) : item.status === "cancelled" ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600" /> Cancelled by User
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        {item.duration === 0 ? "⚡ Immediate Deletion" : `Pending Deletion (${item.duration} Days)`}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRequest(item.id)}
+                    disabled={updatingRequestId === item.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 hover:border-red-300 transition-all cursor-pointer"
+                    title="Reject & Delete Request"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Reject Request
+                  </button>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
