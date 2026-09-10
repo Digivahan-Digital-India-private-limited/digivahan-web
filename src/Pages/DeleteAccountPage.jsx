@@ -190,31 +190,55 @@ const DeleteAccountPage = () => {
       setLoading(true);
       const verifyRes = await verifyUserOtp(otpValue);
       if (verifyRes) {
-        // OTP verified successfully, now submit the deletion request
+        // OTP verified successfully, now submit the deletion request to the new API
+        const reasonText = formData.description?.trim()
+          ? `${normalizeReasonForApi(formData.reason)} - ${formData.description.trim()}`
+          : normalizeReasonForApi(formData.reason);
+
         const payload = {
-          name: formData.full_name.trim(),
-          phoneNumber: formData.mobile.trim(),
-          email: formData.email.trim(),
-          reason: normalizeReasonForApi(formData.reason),
-          otherReason: formData.description.trim(),
+          id: formData.mobile.trim(),
+          duration: 5,
+          reason: reasonText,
+          deviceType: "web", // default web (hidden from user)
         };
 
-        const response = await httpClient.post("/api/delete-account/raise", payload);
+        const response = await httpClient.post("/api/user-account/delete", payload);
 
         if (!response?.data?.success) {
           throw new Error(response?.data?.message || "Failed to submit account deletion request.");
         }
 
-        setSuccess(response?.data?.message || "Your account deletion request has been submitted. Our team will process it within 3–7 working days.");
+        setSuccess(response?.data?.message || "Your account deletion request has been submitted successfully.");
         setFormData({ ...formData, reason: "", description: "", confirm: false });
         
-        // Refresh the page after 2.5 seconds to show the new status
+        // Refresh the page after 2 seconds to show the new status
         setTimeout(() => {
           window.location.reload();
-        }, 2500);
+        }, 2000);
       }
     } catch (error) {
       alert(error.response?.data?.message || error.message || "Failed to verify OTP or submit request.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    if (!window.confirm("Are you sure you want to cancel your account deletion request? Your account will remain active.")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await httpClient.post("/api/user-account/cancel-delete");
+      if (response?.data?.success) {
+        alert("Account deletion request has been cancelled successfully. Your account is now ACTIVE.");
+        window.location.reload();
+      } else {
+        throw new Error(response?.data?.message || "Failed to cancel deletion request.");
+      }
+    } catch (err) {
+      alert(err?.response?.data?.message || err.message || "Failed to cancel deletion.");
     } finally {
       setLoading(false);
     }
@@ -363,7 +387,7 @@ const DeleteAccountPage = () => {
                     <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                       <FaTrashAlt className="text-2xl" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-lg font-bold text-red-800">⏳ Deletion Scheduled</h3>
                       <p className="text-sm text-red-700 mt-1">
                         Your account will be permanently deleted on{" "}
@@ -380,25 +404,42 @@ const DeleteAccountPage = () => {
                           {deletionStatus.daysLeft} day{deletionStatus.daysLeft !== 1 ? "s" : ""} remaining
                         </p>
                       )}
-                      <p className="text-xs text-red-400 mt-2">Contact support if you wish to cancel this request.</p>
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={handleCancelDeletion}
+                          disabled={loading}
+                          className="px-5 py-2.5 bg-white border-2 border-red-500 text-red-600 hover:bg-red-600 hover:text-white rounded-xl text-sm font-bold transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
+                        >
+                          {loading ? "Cancelling..." : "Cancel Deletion Request"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : deletionStatus.status === "NOT_LOGGED_IN" ? (
-                <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-4 shadow-sm">
-                  <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center shrink-0">
-                    <FaTimes className="text-2xl" />
+                <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center shrink-0">
+                      <FaTimes className="text-2xl" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Not Logged In</h3>
+                      <p className="text-sm text-slate-700">Please log in to your account or enter your mobile number to request deletion.</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800">Not Logged In</h3>
-                    <p className="text-sm text-slate-700 mb-3">Please log in to your account to request deletion.</p>
-                   
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(true)}
+                    className="px-6 py-3 bg-linear-to-r from-red-500 to-red-600 text-white rounded-xl text-sm font-bold hover:from-red-600 hover:to-red-700 transition-all shadow-md cursor-pointer whitespace-nowrap active:scale-95"
+                  >
+                    Request Deletion
+                  </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="btn-delete mt-8 bg-linear-to-r from-red-500 to-red-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95"
+                  className="btn-delete mt-8 bg-linear-to-r from-red-500 to-red-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95 cursor-pointer"
                 >
                   Request Account Deletion
                 </button>
@@ -671,8 +712,12 @@ const DeleteAccountPage = () => {
                   onChange={handleChange}
                   placeholder="Enter your full name"
                   required
-                  readOnly
-                  className="w-full mt-1 px-4 py-3 border-2 border-gray-200 bg-gray-100 text-gray-600 rounded-lg focus:outline-none cursor-not-allowed transition-all duration-300"
+                  readOnly={!!Cookies.get("user_token") && !!formData.full_name}
+                  className={`w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-300 ${
+                    Cookies.get("user_token") && formData.full_name
+                      ? "bg-gray-100 text-gray-600 cursor-not-allowed"
+                      : "bg-white text-gray-800 focus:ring-2 focus:ring-red-400"
+                  }`}
                 />
               </div>
 
@@ -687,8 +732,12 @@ const DeleteAccountPage = () => {
                     onChange={handleChange}
                     placeholder="Registered mobile number"
                     required
-                    readOnly
-                    className="w-full mt-1 px-4 py-3 border-2 border-gray-200 bg-gray-100 text-gray-600 rounded-lg focus:outline-none cursor-not-allowed transition-all duration-300"
+                    readOnly={!!Cookies.get("user_token") && !!formData.mobile}
+                    className={`w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-300 ${
+                      Cookies.get("user_token") && formData.mobile
+                        ? "bg-gray-100 text-gray-600 cursor-not-allowed"
+                        : "bg-white text-gray-800 focus:ring-2 focus:ring-red-400"
+                    }`}
                   />
                 </div>
                 <div className="transform transition-all duration-300 hover:scale-[1.02]">
@@ -700,8 +749,12 @@ const DeleteAccountPage = () => {
                     onChange={handleChange}
                     placeholder="Registered email"
                     required
-                    readOnly
-                    className="w-full mt-1 px-4 py-3 border-2 border-gray-200 bg-gray-100 text-gray-600 rounded-lg focus:outline-none cursor-not-allowed transition-all duration-300"
+                    readOnly={!!Cookies.get("user_token") && !!formData.email}
+                    className={`w-full mt-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-300 ${
+                      Cookies.get("user_token") && formData.email
+                        ? "bg-gray-100 text-gray-600 cursor-not-allowed"
+                        : "bg-white text-gray-800 focus:ring-2 focus:ring-red-400"
+                    }`}
                   />
                 </div>
               </div>
