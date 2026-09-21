@@ -131,9 +131,9 @@ const Heropage = () => {
               {/* QR card — stays stationary */}
               <div className="relative z-10">
                 <img
-                  src="/DigiVahan Updated QR.png"
+                  src="/image (45).png"
                   alt="Scan Digivahan QR to access vehicle details"
-                  className="w-52"
+                  className="w-72 sm:w-80 rounded-xl shadow-lg"
                   loading="lazy"
                 />
               </div>
